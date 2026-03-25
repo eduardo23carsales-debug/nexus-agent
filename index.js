@@ -228,8 +228,23 @@ Devuelve SOLO HTML desde <!DOCTYPE> hasta </html>.
 
   if (decision === 'CANCELAR') return null;
 
-  // Publicar
+  // Publicar en Vercel
   const url = await deploy.publicarLanding({ nombre: nicho.nombre_producto, html: htmlLimpio, nicho: nicho.nicho });
+
+  // Publicar en Gumroad (en paralelo, no bloquea si falla)
+  let gumroadUrl = null;
+  try {
+    const { gumroad } = await import('./core/gumroad.js');
+    const gData = await gumroad.crearProducto({
+      nombre: nicho.nombre_producto,
+      descripcion: `${nicho.subtitulo}\n\n${nicho.problema_que_resuelve}`,
+      precio: nicho.precio,
+      contenido
+    });
+    gumroadUrl = gData.gumroad_url;
+  } catch (e) {
+    console.error('[Gumroad] Error publicando:', e.message);
+  }
 
   const experimento = await db.crearExperimento({
     nicho: nicho.nicho,
@@ -246,7 +261,8 @@ Devuelve SOLO HTML desde <!DOCTYPE> hasta </html>.
   await enviar(
     `🚀 <b>PUBLICADO</b>\n` +
     `🌐 ${url}\n` +
-    `💳 ${stripeData.stripe_payment_link}`
+    `💳 ${stripeData.stripe_payment_link}` +
+    (gumroadUrl ? `\n🛒 Gumroad: ${gumroadUrl}` : '')
   );
 
   return { url, experimento, stripeData };
