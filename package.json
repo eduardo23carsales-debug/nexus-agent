@@ -8,9 +8,6 @@
     "start": "node index.js",
     "dev": "node --watch index.js"
   },
-  "config": {
-    "puppeteer_skip_chromium_download": true
-  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.0",
     "@supabase/supabase-js": "^2.47.0",
@@ -19,7 +16,6 @@
     "dotenv": "^16.4.0",
     "node-cron": "^3.0.3",
     "node-telegram-bot-api": "^0.66.0",
-    "puppeteer": "^22.0.0",
     "resend": "^4.0.0",
     "rss-parser": "^3.13.0",
     "stripe": "^17.0.0"
