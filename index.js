@@ -194,8 +194,9 @@ Problema: ${nicho.problema_que_resuelve}
 
 Usa SOLO estilos inline. Fondo #0f0f0f, acento #00ff88, texto blanco.
 Incluye: hero, beneficios, precio con botón de compra, 2 testimonios, garantía, CTA final.
+IMPORTANTE: El HTML debe estar 100% completo, desde <!DOCTYPE> hasta </html> sin cortar nada.
 Devuelve SOLO HTML desde <!DOCTYPE> hasta </html>.
-`, 'Experto en landing pages de alta conversión para mercado hispano.', 'publisher', 8000);
+`, 'Experto en landing pages de alta conversión para mercado hispano.', 'publisher', 16000);
 
   const htmlLimpio = html.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
 

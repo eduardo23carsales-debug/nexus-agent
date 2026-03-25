@@ -52,7 +52,7 @@ Formato para CADA prompt:
 
 Crea 30 prompts variados, todos útiles y listos para usar.
 Lenguaje: español, directo, profesional.
-`, SYSTEM, 'generator', 4096);
+`, SYSTEM, 'generator', 12000);
 }
 
 async function generarGuiaPDF(nicho) {
@@ -89,7 +89,7 @@ Estructura:
 
 Extensión: mínimo 2,500 palabras. Contenido real, sin relleno, con ejemplos específicos.
 Lenguaje: español neutro pero dinámico.
-`, SYSTEM, 'generator', 4096);
+`, SYSTEM, 'generator', 12000);
 }
 
 async function generarPlantilla(nicho) {
@@ -107,5 +107,5 @@ La plantilla debe incluir:
 
 Hazla profesional, lista para usar desde el día 1.
 Lenguaje: español, claro y directo.
-`, SYSTEM, 'generator', 4096);
+`, SYSTEM, 'generator', 12000);
 }
