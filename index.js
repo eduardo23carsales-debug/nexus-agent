@@ -26,6 +26,7 @@ const API = `https://api.telegram.org/bot${TOKEN}`;
 
 let telegramOffset = 0;
 let aprobacionPendiente = null; // { tipo, datos, resolve }
+let experimentoEnCurso = false;
 
 // ════════════════════════════════════
 // INICIALIZACIÓN
@@ -131,6 +132,11 @@ async function leerComandosTelegram() {
 // ════════════════════════════════════
 
 async function lanzarExperimento() {
+  if (experimentoEnCurso) {
+    await enviar('⚠️ Ya hay un experimento en curso. Espera a que termine.');
+    return;
+  }
+  experimentoEnCurso = true;
   console.log('\n[Motor 1] Iniciando nuevo experimento...');
 
   try {
@@ -157,6 +163,8 @@ async function lanzarExperimento() {
   } catch (err) {
     console.error('[Motor 1] Error:', err.message);
     await alerta.errorCritico('motor1', err.message);
+  } finally {
+    experimentoEnCurso = false;
   }
 }
 
