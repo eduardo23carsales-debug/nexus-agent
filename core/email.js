@@ -17,55 +17,67 @@ const FROM_NAME = process.env.EMAIL_FROM_NAME || 'NEXUS Products';
 export const email = {
 
   // ── Entrega el producto digital al comprador ──
-  async entregarProducto({ para, nombreCliente, nombreProducto, contenido, stripePaymentId }) {
+  async entregarProducto({ para, nombreCliente, nombreProducto, contenido, productoUrl, stripePaymentId }) {
     const asunto = `✅ Tu acceso a "${nombreProducto}" — Aquí está todo`;
 
     const html = `
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f5f5f5;">
-  <div style="max-width:600px;margin:40px auto;background:#fff;border-radius:12px;overflow:hidden;">
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0f0f0f;">
+  <div style="max-width:600px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;border:1px solid #222;">
 
     <!-- Header -->
-    <div style="background:#0f0f0f;padding:32px;text-align:center;">
-      <h1 style="color:#00ff88;margin:0;font-size:1.5em;">✅ ¡Compra exitosa!</h1>
-      <p style="color:#ccc;margin:8px 0 0;">Tu producto está listo</p>
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:40px 32px;text-align:center;border-bottom:3px solid #00ff88;">
+      <p style="color:#00ff88;font-size:0.85em;font-weight:bold;margin:0 0 12px;letter-spacing:2px;">NEXUS PRODUCTS</p>
+      <h1 style="color:#fff;margin:0 0 8px;font-size:1.6em;line-height:1.3;">✅ ¡Tu compra fue exitosa!</h1>
+      <p style="color:#aaa;margin:0;font-size:1em;">Tu producto está listo para usar</p>
     </div>
 
     <!-- Body -->
-    <div style="padding:40px;">
-      <p style="font-size:1.1em;color:#333;">Hola${nombreCliente ? ` <strong>${nombreCliente}</strong>` : ''},</p>
-      <p style="color:#555;line-height:1.7;">
-        Gracias por tu compra. Aquí tienes acceso completo a
-        <strong>${nombreProducto}</strong>. Todo el contenido está incluido abajo.
+    <div style="padding:40px 32px;">
+      <p style="font-size:1.1em;color:#e0e0e0;margin:0 0 16px;">Hola${nombreCliente ? ` <strong style="color:#00ff88;">${nombreCliente}</strong>` : ''},</p>
+      <p style="color:#aaa;line-height:1.8;margin:0 0 32px;">
+        Gracias por tu compra de <strong style="color:#fff;">${nombreProducto}</strong>.
+        Aquí debajo tienes el botón para acceder a tu producto completo.
       </p>
 
-      <div style="background:#f9f9f9;border-left:4px solid #00ff88;padding:24px;border-radius:8px;margin:24px 0;">
-        <h2 style="color:#333;margin:0 0 16px;font-size:1.1em;">📦 Tu producto:</h2>
-        <div style="color:#444;line-height:1.8;white-space:pre-wrap;font-size:0.95em;">${contenido.slice(0, 8000)}</div>
-        ${contenido.length > 8000 ? '<p style="color:#888;font-size:0.85em;margin-top:16px;"><em>(Contenido completo — ver abajo)</em></p>' : ''}
+      ${productoUrl ? `
+      <!-- CTA Principal -->
+      <div style="text-align:center;margin:32px 0;">
+        <a href="${productoUrl}" style="background:#00ff88;color:#000;padding:18px 40px;font-size:1.15em;font-weight:bold;text-decoration:none;border-radius:8px;display:inline-block;">
+          🚀 Abrir mi producto ahora
+        </a>
+        <p style="color:#666;font-size:0.85em;margin:12px 0 0;">Guarda este link — es tu acceso permanente</p>
       </div>
 
-      ${contenido.length > 8000 ? `
-      <div style="background:#f9f9f9;border-left:4px solid #0066ff;padding:24px;border-radius:8px;margin:24px 0;">
-        <div style="color:#444;line-height:1.8;white-space:pre-wrap;font-size:0.95em;">${contenido.slice(8000)}</div>
-      </div>` : ''}
+      <div style="background:#0d1f0d;border:1px solid #00ff88;border-radius:8px;padding:20px;margin:24px 0;">
+        <p style="margin:0;color:#00ff88;font-size:0.95em;">
+          📌 <strong>Tu link de acceso:</strong><br>
+          <a href="${productoUrl}" style="color:#00ff88;word-break:break-all;">${productoUrl}</a>
+        </p>
+      </div>
+      ` : `
+      <!-- Contenido directo si no hay URL -->
+      <div style="background:#111;border-left:4px solid #00ff88;padding:24px;border-radius:8px;margin:24px 0;">
+        <p style="color:#00ff88;font-weight:bold;margin:0 0 16px;">📦 Tu producto:</p>
+        <div style="color:#ccc;line-height:1.8;font-size:0.95em;">${contenido.slice(0, 5000)}</div>
+      </div>
+      `}
 
-      <div style="background:#fff8e1;border:1px solid #ffcc00;border-radius:8px;padding:20px;margin:24px 0;">
-        <p style="margin:0;color:#555;font-size:0.9em;">
-          💡 <strong>Tip:</strong> Guarda este email para acceder a tu producto cuando lo necesites.
-          Si tienes preguntas, responde directamente a este correo.
+      <!-- Info de soporte -->
+      <div style="background:#111;border:1px solid #333;border-radius:8px;padding:20px;margin:24px 0;">
+        <p style="margin:0;color:#888;font-size:0.9em;">
+          💬 <strong style="color:#ccc;">¿Necesitas ayuda?</strong> Responde este email y te atendemos.<br>
+          🔒 <strong style="color:#ccc;">Pago seguro</strong> procesado por Stripe.
+          ${stripePaymentId ? `Referencia: <code style="color:#666;">${stripePaymentId.slice(-8)}</code>` : ''}
         </p>
       </div>
     </div>
 
     <!-- Footer -->
-    <div style="background:#0f0f0f;padding:20px;text-align:center;">
-      <p style="color:#555;font-size:0.8em;margin:0;">
-        ${FROM_NAME} · Pago verificado por Stripe
-        ${stripePaymentId ? `· Ref: ${stripePaymentId.slice(-8)}` : ''}
-      </p>
+    <div style="background:#111;padding:24px 32px;text-align:center;border-top:1px solid #222;">
+      <p style="color:#444;font-size:0.8em;margin:0;">${FROM_NAME} · Todos los derechos reservados © 2026</p>
     </div>
   </div>
 </body>
@@ -144,6 +156,7 @@ export const email = {
           nombreCliente: sesion.customer_details?.name,
           nombreProducto: exp.nombre,
           contenido: contenidoProducto,
+          productoUrl: exp.producto_url || null,
           stripePaymentId: sesion.payment_intent
         });
 

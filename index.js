@@ -232,8 +232,21 @@ Devuelve SOLO HTML desde <!DOCTYPE> hasta </html>.
 
   if (decision === 'CANCELAR') return null;
 
-  // Publicar en Vercel
+  // Publicar landing page en Vercel
   const url = await deploy.publicarLanding({ nombre: nicho.nombre_producto, html: htmlLimpio, nicho: nicho.nicho });
+
+  // Publicar página del producto (lo que recibe el cliente) en Vercel
+  let productoUrl = null;
+  try {
+    productoUrl = await deploy.publicarLanding({
+      nombre: `${nicho.nombre_producto} — Producto`,
+      html: contenido,
+      nicho: `${nicho.nicho}-producto`
+    });
+    console.log(`[Publisher] Página del producto: ${productoUrl}`);
+  } catch (e) {
+    console.error('[Publisher] Error desplegando página de producto:', e.message);
+  }
 
   // Publicar en Gumroad (en paralelo, no bloquea si falla)
   let gumroadUrl = null;
@@ -261,17 +274,19 @@ Devuelve SOLO HTML desde <!DOCTYPE> hasta </html>.
     precio: nicho.precio,
     estado: 'corriendo',
     contenido_producto: contenido,
-    landing_html: htmlLimpio
+    landing_html: htmlLimpio,
+    producto_url: productoUrl
   });
 
   await enviar(
     `🚀 <b>PUBLICADO</b>\n` +
-    `🌐 ${url}\n` +
-    `💳 ${stripeData.stripe_payment_link}` +
+    `🌐 Landing: ${url}\n` +
+    `📦 Producto: ${productoUrl || 'no disponible'}\n` +
+    `💳 Pago: ${stripeData.stripe_payment_link}` +
     (gumroadUrl ? `\n🛒 Gumroad: ${gumroadUrl}` : '')
   );
 
-  return { url, experimento, stripeData };
+  return { url, productoUrl, experimento, stripeData };
 }
 
 // ════════════════════════════════════

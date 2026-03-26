@@ -17,6 +17,13 @@ const MIGRATIONS = [
       ADD COLUMN IF NOT EXISTS contenido_producto TEXT,
       ADD COLUMN IF NOT EXISTS landing_html TEXT;
     `
+  },
+  {
+    id: '002_producto_url',
+    sql: `
+      ALTER TABLE experiments
+      ADD COLUMN IF NOT EXISTS producto_url TEXT;
+    `
   }
   // Agrega aquí futuras migraciones
 ];
