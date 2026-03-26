@@ -119,31 +119,23 @@ export const email = {
       const yaEntregado = await db.getCustomerPorEmail(emailCliente);
       if (yaEntregado) continue;
 
-      // Buscar el experimento/producto por payment link
+      // Buscar el experimento que corresponde a este pago por payment link
       const { data: exps } = await db.supabase
         .from('experiments')
         .select('*')
         .not('stripe_payment_link', 'is', null)
-        .limit(10);
+        .order('fecha_inicio', { ascending: false })
+        .limit(20);
 
       if (!exps?.length) continue;
 
-      // Encontrar el experimento que corresponde
+      // Primero busca por payment link exacto, si no toma el más reciente
       const exp = exps.find(e =>
         sesion.payment_link && e.stripe_payment_link?.includes(sesion.payment_link)
       ) || exps[0];
 
-      // Leer el contenido del producto
-      const { data: logs } = await db.supabase
-        .from('agent_logs')
-        .select('detalle')
-        .eq('agente', 'generator')
-        .eq('accion', 'producto_generado')
-        .order('fecha', { ascending: false })
-        .limit(1);
-
-      const contenidoProducto = logs?.[0]?.detalle?.preview ||
-        `Bienvenido a ${exp.nombre}.\n\nGracias por tu compra. El equipo de soporte te enviará el contenido completo en las próximas horas.`;
+      const contenidoProducto = exp.contenido_producto ||
+        `Bienvenido a ${exp.nombre}.\n\nGracias por tu compra. Recibirás el contenido completo en las próximas horas.`;
 
       // Entregar por email
       try {

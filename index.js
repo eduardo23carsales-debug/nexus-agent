@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { db } from './core/database.js';
+import { runMigrations } from './core/migrate.js';
 import { alerta, enviar } from './core/telegram.js';
 import { brain } from './core/brain.js';
 import { email } from './core/email.js';
@@ -38,6 +39,9 @@ async function iniciar() {
   // Verificar conexiones
   await db.ping();
   console.log('✅ Supabase conectado');
+
+  // Migraciones automáticas
+  await runMigrations();
 
   // Limpiar offset de Telegram para solo leer mensajes nuevos
   try {

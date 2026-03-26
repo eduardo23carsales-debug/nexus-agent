@@ -173,7 +173,9 @@ export async function publicarProducto(nicho, contenido) {
     stripe_product_id: stripeData.stripe_product_id,
     stripe_payment_link: stripeData.stripe_payment_link,
     precio: nicho.precio,
-    estado: 'corriendo'
+    estado: 'corriendo',
+    contenido_producto: contenido,
+    landing_html: html
   });
 
   // 8. Notificar al dueño con el link final
