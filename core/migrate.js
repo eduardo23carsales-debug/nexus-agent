@@ -24,6 +24,34 @@ const MIGRATIONS = [
       ALTER TABLE experiments
       ADD COLUMN IF NOT EXISTS producto_url TEXT;
     `
+  },
+  {
+    id: '003_campaigns_table',
+    sql: `
+      CREATE TABLE IF NOT EXISTS campaigns (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        experiment_id UUID REFERENCES experiments(id),
+        plataforma TEXT DEFAULT 'meta',
+        campaign_id_externo TEXT,
+        adset_id TEXT,
+        nombre TEXT,
+        estado TEXT DEFAULT 'activo',
+        presupuesto_diario INTEGER DEFAULT 500,
+        gasto_total DECIMAL(10,2) DEFAULT 0,
+        impresiones INTEGER DEFAULT 0,
+        clicks INTEGER DEFAULT 0,
+        conversiones INTEGER DEFAULT 0,
+        revenue_generado DECIMAL(10,2) DEFAULT 0,
+        ctr DECIMAL(5,2) DEFAULT 0,
+        cpa DECIMAL(10,2) DEFAULT 0,
+        roas DECIMAL(5,2) DEFAULT 0,
+        decision TEXT,
+        razon_decision TEXT,
+        fecha_inicio TIMESTAMP DEFAULT NOW(),
+        fecha_decision TIMESTAMP,
+        fecha_ultimo_update TIMESTAMP DEFAULT NOW()
+      );
+    `
   }
   // Agrega aquí futuras migraciones
 ];

@@ -20,6 +20,8 @@ import { generarProducto } from './agents/digital/generator.js';
 import { publicarProducto } from './agents/digital/publisher.js';
 import { calificarLeadManual } from './agents/leadgen/lead-qualifier.js';
 import { entregarLeadsCalificados } from './agents/leadgen/lead-delivery.js';
+import { lanzarCampanaParaProducto } from './agents/advanced/ads-manager.js';
+import { validarCampanas } from './agents/ads/campaign-validator.js';
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -307,6 +309,11 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
     (gumroadUrl ? `\n🛒 Gumroad: ${gumroadUrl}` : '')
   );
 
+  // Lanzar campaña de Meta Ads automáticamente
+  lanzarCampanaParaProducto(experimento).catch(e =>
+    console.error('[AdsManager] Error en background:', e.message)
+  );
+
   return { url, productoUrl, experimento, stripeData };
 }
 
@@ -356,6 +363,12 @@ function iniciarCrons() {
   setInterval(async () => {
     await leerComandosTelegram();
   }, 5000);
+
+  // Cada 6 horas — validar campañas de Meta Ads
+  cron.schedule('0 */6 * * *', async () => {
+    console.log('[Cron] Validando campañas Meta Ads...');
+    try { await validarCampanas(); } catch (err) { console.error('[Cron] Error validando campañas:', err.message); }
+  });
 
   // Cada día a las 9am — lanzar nuevo experimento
   cron.schedule('0 9 * * *', async () => {
