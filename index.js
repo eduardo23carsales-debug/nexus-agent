@@ -252,7 +252,7 @@ Devuelve SOLO HTML desde <!DOCTYPE> hasta </html>.
 
   const experimento = await db.crearExperimento({
     nicho: nicho.nicho,
-    tipo: nicho.tipo === 'toolkit' ? 'plantilla' : nicho.tipo,
+    tipo: ['prompts', 'plantilla', 'guia', 'curso', 'toolkit'].includes(nicho.tipo) ? nicho.tipo : 'plantilla',
     nombre: nicho.nombre_producto,
     descripcion: nicho.subtitulo,
     url,
