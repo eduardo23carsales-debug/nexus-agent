@@ -259,7 +259,9 @@ Devuelve SOLO HTML desde <!DOCTYPE> hasta </html>.
     stripe_product_id: stripeData.stripe_product_id,
     stripe_payment_link: stripeData.stripe_payment_link,
     precio: nicho.precio,
-    estado: 'corriendo'
+    estado: 'corriendo',
+    contenido_producto: contenido,
+    landing_html: htmlLimpio
   });
 
   await enviar(
