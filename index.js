@@ -156,17 +156,36 @@ async function lanzarExperimento() {
   try {
     // 1. Investigar nicho
     const nicho = await investigarNicho();
+
+    // 2. Mostrar nicho y pedir aprobación ANTES de generar
     await enviar(
-      `🔍 <b>Nicho encontrado: ${nicho.nombre_producto}</b>\n` +
-      `Score: ${nicho.score}/100 | Precio: $${nicho.precio}\n` +
-      `<i>Generando producto...</i>`
+      `🔍 <b>Nicho encontrado:</b> ${nicho.nombre_producto}\n` +
+      `📊 Score: ${nicho.score}/100 | 💵 Precio: $${nicho.precio}\n` +
+      `🎯 <i>${nicho.subtitulo}</i>\n` +
+      `💡 ${nicho.problema_que_resuelve}\n\n` +
+      `Escribe <b>PUBLICAR</b> para generar y lanzar\n` +
+      `Escribe <b>CANCELAR</b> para descartar`
     );
 
-    // 2. Generar contenido
-    const contenido = await generarProducto(nicho);
+    // 3. Esperar decisión (timeout 4h → auto-publicar)
+    const decision = await new Promise((resolve) => {
+      aprobacionPendiente = { tipo: 'publicar', resolve };
+      setTimeout(() => {
+        if (aprobacionPendiente) {
+          aprobacionPendiente = null;
+          resolve('PUBLICAR');
+        }
+      }, 4 * 60 * 60 * 1000);
+    });
 
-    // 3. Publicar (con aprobación vía Telegram)
-    const resultado = await publicarConAprobacion(nicho, contenido);
+    if (decision === 'CANCELAR') {
+      await enviar('❌ Publicación cancelada.');
+      return;
+    }
+
+    // 4. Aprobado — generar y publicar todo automático
+    await enviar('⚙️ Aprobado. Generando producto y landing page...');
+    const resultado = await publicarAutomatico(nicho);
 
     if (resultado) {
       await memory.aprenderDeExperimento({ ...nicho, metricas: { revenue: 0 }, aprendizaje: 'recién lanzado' });
@@ -181,23 +200,26 @@ async function lanzarExperimento() {
   }
 }
 
-// Versión de publicar que usa el sistema de aprobación del orquestador
-async function publicarConAprobacion(nicho, contenido) {
+// Genera, publica y lanza campaña — corre todo automático tras aprobación
+async function publicarAutomatico(nicho) {
   const { stripeCore } = await import('./core/stripe.js');
   const { deploy } = await import('./core/deploy.js');
-  const fs = await import('fs/promises');
-  const path = await import('path');
+  const { preguntar } = await import('./core/claude.js');
+
+  // Generar contenido del producto y landing en paralelo
+  await enviar('📝 Generando contenido del producto...');
+  const contenido = await generarProducto(nicho);
 
   // Crear producto en Stripe
+  await enviar('💳 Creando producto en Stripe...');
   const stripeData = await stripeCore.crearProductoCompleto({
     nombre: nicho.nombre_producto,
     descripcion: nicho.problema_que_resuelve,
     precio: nicho.precio
   });
 
-  // Generar HTML
-  const { preguntar } = await import('./core/claude.js');
-  const beneficios = nicho.puntos_de_venta.map(p => `<li>✅ ${p}</li>`).join('\n');
+  // Generar landing page HTML
+  await enviar('🎨 Generando landing page...');
   const html = await preguntar(`
 Crea landing page HTML con estilos inline para: ${nicho.nombre_producto} — $${nicho.precio}
 Subtítulo: ${nicho.subtitulo}
@@ -211,7 +233,7 @@ IMPORTANTE: El HTML debe estar 100% completo, desde <!DOCTYPE> hasta </html> sin
 Devuelve SOLO HTML desde <!DOCTYPE> hasta </html>.
 `, 'Experto en landing pages de alta conversión para mercado hispano.', 'publisher', 16000);
 
-  // Inyectar Meta Pixel en la landing
+  // Inyectar Meta Pixel
   const metaPixel = `<!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
@@ -234,38 +256,11 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
     .replace(/```html\n?/g, '').replace(/```\n?/g, '').trim()
     .replace('</head>', `${metaPixel}\n</head>`);
 
-  // Guardar preview
-  const previewPath = path.join(process.cwd(), 'products', `preview-${Date.now()}.html`);
-  await fs.mkdir(path.join(process.cwd(), 'products'), { recursive: true });
-  await fs.writeFile(previewPath, htmlLimpio);
-
-  // Pedir aprobación
-  await enviar(
-    `🎨 <b>LANDING LISTA</b>\n\n` +
-    `<b>Producto:</b> ${nicho.nombre_producto}\n` +
-    `<b>Precio:</b> $${nicho.precio}\n` +
-    `<b>Preview:</b> <code>${previewPath}</code>\n\n` +
-    `Escribe <b>PUBLICAR</b> para subir a Vercel\n` +
-    `Escribe <b>CANCELAR</b> para descartar`
-  );
-
-  // Esperar respuesta (timeout 4h → auto-publicar)
-  const decision = await new Promise((resolve) => {
-    aprobacionPendiente = { tipo: 'publicar', resolve };
-    setTimeout(() => {
-      if (aprobacionPendiente) {
-        aprobacionPendiente = null;
-        resolve('PUBLICAR');
-      }
-    }, 4 * 60 * 60 * 1000);
-  });
-
-  if (decision === 'CANCELAR') return null;
-
-  // Publicar landing page en Vercel
+  // Desplegar landing en Vercel
+  await enviar('🚀 Subiendo a Vercel...');
   const url = await deploy.publicarLanding({ nombre: nicho.nombre_producto, html: htmlLimpio, nicho: nicho.nicho });
 
-  // Publicar página del producto (lo que recibe el cliente) en Vercel
+  // Desplegar página del producto en Vercel
   let productoUrl = null;
   try {
     productoUrl = await deploy.publicarLanding({
@@ -273,12 +268,11 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
       html: contenido,
       nicho: `${nicho.nicho}-producto`
     });
-    console.log(`[Publisher] Página del producto: ${productoUrl}`);
   } catch (e) {
-    console.error('[Publisher] Error desplegando página de producto:', e.message);
+    console.error('[Publisher] Error desplegando producto:', e.message);
   }
 
-  // Publicar en Gumroad (en paralelo, no bloquea si falla)
+  // Publicar en Gumroad
   let gumroadUrl = null;
   try {
     const { gumroad } = await import('./core/gumroad.js');
@@ -309,14 +303,15 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
   });
 
   await enviar(
-    `🚀 <b>PUBLICADO</b>\n` +
+    `✅ <b>PUBLICADO Y ACTIVO</b>\n━━━━━━━━━━━━━\n` +
     `🌐 Landing: ${url}\n` +
-    `📦 Producto: ${productoUrl || 'no disponible'}\n` +
+    `📦 Producto: ${productoUrl || 'pendiente'}\n` +
     `💳 Pago: ${stripeData.stripe_payment_link}` +
-    (gumroadUrl ? `\n🛒 Gumroad: ${gumroadUrl}` : '')
+    (gumroadUrl ? `\n🛒 Gumroad: ${gumroadUrl}` : '') +
+    `\n\n⚡ Lanzando campaña Meta Ads...`
   );
 
-  // Lanzar campaña de Meta Ads automáticamente
+  // Lanzar campaña Meta Ads automáticamente
   lanzarCampanaParaProducto(experimento).catch(e =>
     console.error('[AdsManager] Error en background:', e.message)
   );
