@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const API = 'https://graph.facebook.com/v19.0';
-const TOKEN = process.env.META_ACCESS_TOKEN;
+const TOKEN = process.env.META_ACCESS_TOKEN?.trim();
 const AD_ACCOUNT = process.env.META_AD_ACCOUNT_ID; // act_XXXXXXXXX
 const PIXEL_ID = process.env.META_PIXEL_ID;
 const PAGE_ID = process.env.META_PAGE_ID;

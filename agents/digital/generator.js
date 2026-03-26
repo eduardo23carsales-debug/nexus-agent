@@ -299,15 +299,18 @@ Título: ${nicho.nombre_producto}. Cliente: ${nicho.cliente_ideal}
 Incluye: qué van a lograr, cuánto dura el curso, cómo aprovecharlo mejor. Tono motivador y personal.
 Formato: <div class="card"><p>...</p></div> con <div class="highlight"> para el objetivo principal. Sin <html> ni <body>.`);
 
-  const modulos = await Promise.all([1,2,3,4,5].map((n, i) => {
-    const temas = [
-      'Fundamentos — qué necesitas saber primero',
-      'El método — cómo hacerlo paso a paso',
-      'Herramientas y recursos esenciales',
-      'Casos reales del mercado hispano',
-      'Acción — implementa todo hoy'
-    ];
-    return generarSeccion(`
+  const temas = [
+    'Fundamentos — qué necesitas saber primero',
+    'El método — cómo hacerlo paso a paso',
+    'Herramientas y recursos esenciales',
+    'Casos reales del mercado hispano',
+    'Acción — implementa todo hoy'
+  ];
+  const modulos = [];
+  for (let i = 0; i < 5; i++) {
+    const n = i + 1;
+    console.log(`[Generator] Generando módulo ${n}/5...`);
+    const contenido = await generarSeccion(`
 Escribe el Módulo ${n} de un mini curso sobre: ${nicho.nicho}
 Tema: ${temas[i]}. Cliente: ${nicho.cliente_ideal}
 Incluye:
@@ -320,7 +323,8 @@ Usa acordeón para las lecciones:
 <div class="accordion-item"><div class="accordion-header" onclick="toggleAccordion(this)">📝 Lección ${n}.1: [Título] <span class="arrow">▼</span></div><div class="accordion-body"><p>contenido...</p></div></div>
 Y termina con: <div class="tip">✅ Tarea: [ejercicio concreto]</div>
 Sin <html> ni <body>.`);
-  }));
+    modulos.push(contenido);
+  }
 
   const examen = await generarSeccion(`
 Crea el examen final (5 preguntas de opción múltiple) y el certificado de completación para: ${nicho.nombre_producto}
