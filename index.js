@@ -316,10 +316,10 @@ function iniciarCrons() {
     }
   });
 
-  // Cada hora — leer comandos de Telegram
-  cron.schedule('* * * * *', async () => {
+  // Cada 5 segundos — leer comandos de Telegram (respuesta rápida)
+  setInterval(async () => {
     await leerComandosTelegram();
-  });
+  }, 5000);
 
   // Cada día a las 9am — lanzar nuevo experimento
   cron.schedule('0 9 * * *', async () => {
@@ -333,7 +333,7 @@ function iniciarCrons() {
     await brain.generarResumenDiario();
   });
 
-  console.log('✅ Crons activos: pagos (1h), comandos (1min), experimento (9am), reporte (8pm)');
+  console.log('✅ Crons activos: pagos (1h), comandos (5seg), experimento (9am), reporte (8pm)');
 }
 
 // ════════════════════════════════════
