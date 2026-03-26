@@ -1,449 +1,386 @@
 // ════════════════════════════════════
 // NEXUS AGENT — agents/digital/generator.js
-// Crea el producto digital como HTML bonito y profesional
-// Soporta: prompts, plantilla, guia_pdf, mini_curso, toolkit
+// Genera productos como HTML con tabs/acordeón
+// Cada sección se genera por separado para evitar truncado
 // ════════════════════════════════════
 
 import { preguntar } from '../../core/claude.js';
 import { db } from '../../core/database.js';
 
-const SYSTEM = `Eres un diseñador experto en productos digitales premium para el mercado hispano.
-Creas productos en HTML completo con estilos inline — bonitos, profesionales, con colores,
-secciones bien definidas y formato que justifica el precio. El cliente abre el link y ve
-algo que vale lo que pagó. Siempre devuelves HTML completo desde <!DOCTYPE> hasta </html>.`;
+const SYSTEM = `Eres un experto creador de productos digitales premium para el mercado hispano.
+Creas contenido de alta calidad, práctico y accionable. Devuelves SOLO el contenido solicitado,
+sin introducciones ni comentarios extra. Contenido real, específico, sin relleno.`;
 
-const ESTILOS_BASE = `
-  body { margin:0; font-family:'Segoe UI',Arial,sans-serif; background:#0f0f0f; color:#e0e0e0; }
-  .header { background:linear-gradient(135deg,#1a1a2e,#16213e); padding:60px 20px; text-align:center; border-bottom:3px solid #00ff88; }
-  .header h1 { color:#00ff88; font-size:2.2em; margin:0 0 12px; line-height:1.3; }
-  .header p { color:#aaa; font-size:1.1em; margin:0; max-width:600px; margin:0 auto; }
-  .badge { display:inline-block; background:#00ff88; color:#000; padding:6px 16px; border-radius:20px; font-size:0.85em; font-weight:bold; margin-bottom:20px; }
-  .container { max-width:800px; margin:0 auto; padding:40px 20px; }
-  .section { background:#1a1a1a; border-radius:12px; padding:32px; margin-bottom:24px; border-left:4px solid #00ff88; }
-  .section h2 { color:#00ff88; font-size:1.4em; margin:0 0 16px; }
-  .section h3 { color:#fff; font-size:1.1em; margin:20px 0 10px; }
-  .section p { color:#ccc; line-height:1.8; margin:0 0 12px; }
-  .section ul, .section ol { color:#ccc; line-height:2; padding-left:20px; }
-  .section li { margin-bottom:4px; }
-  .highlight { background:#0d2818; border:1px solid #00ff88; border-radius:8px; padding:20px; margin:16px 0; }
-  .highlight p { color:#00ff88; margin:0; font-weight:600; }
-  .tip { background:#1a1500; border:1px solid #ffcc00; border-radius:8px; padding:16px; margin:12px 0; }
-  .tip p { color:#ffcc00; margin:0; font-size:0.95em; }
-  .prompt-box { background:#111; border:1px solid #333; border-radius:8px; padding:20px; margin:16px 0; font-family:monospace; font-size:0.9em; color:#00ff88; white-space:pre-wrap; line-height:1.6; }
-  .module { background:#161616; border:1px solid #222; border-radius:12px; padding:24px; margin-bottom:20px; }
-  .module-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
-  .module-num { background:#00ff88; color:#000; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.1em; flex-shrink:0; }
-  .module h2 { color:#fff; margin:0; font-size:1.2em; }
-  .checklist li { list-style:none; padding:8px 0; border-bottom:1px solid #222; color:#ccc; }
-  .checklist li:before { content:"☐ "; color:#00ff88; font-size:1.2em; }
-  .footer { background:#111; padding:32px 20px; text-align:center; margin-top:40px; border-top:1px solid #222; }
-  .footer p { color:#555; font-size:0.85em; margin:0; }
-  .tag { display:inline-block; background:#1a2a1a; color:#00ff88; border:1px solid #00ff88; padding:3px 10px; border-radius:12px; font-size:0.8em; margin:3px; }
-`;
+// ── Shell HTML con tabs y acordeón ──────────────────────────
+function crearShellHTML(titulo, subtitulo, tipo, secciones) {
+  const tabs = secciones.map((s, i) => `
+    <button class="tab-btn ${i === 0 ? 'active' : ''}" onclick="showTab(${i})" id="btn-${i}">
+      ${s.icono} ${s.titulo}
+    </button>`).join('');
 
+  const panels = secciones.map((s, i) => `
+    <div class="tab-panel ${i === 0 ? 'active' : ''}" id="panel-${i}">
+      <h2 style="color:#00ff88;margin:0 0 24px;">${s.icono} ${s.titulo}</h2>
+      ${s.contenido}
+    </div>`).join('');
+
+  const badges = { prompts: '⚡ PROMPTS PREMIUM', plantilla: '📋 PLANTILLA PREMIUM', guia_pdf: '📘 GUÍA PREMIUM', mini_curso: '🎓 MINI CURSO', toolkit: '🔧 TOOLKIT PREMIUM' };
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${titulo}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f0f0f; color: #e0e0e0; }
+.header { background: linear-gradient(135deg,#1a1a2e,#16213e); padding: 48px 20px; text-align: center; border-bottom: 3px solid #00ff88; }
+.badge { display: inline-block; background: #00ff88; color: #000; padding: 6px 18px; border-radius: 20px; font-size: 0.8em; font-weight: bold; margin-bottom: 16px; letter-spacing: 1px; }
+.header h1 { color: #fff; font-size: clamp(1.4em, 4vw, 2.2em); margin-bottom: 12px; line-height: 1.3; }
+.header p { color: #aaa; font-size: 1em; max-width: 600px; margin: 0 auto; }
+.layout { display: flex; min-height: calc(100vh - 200px); }
+.sidebar { width: 240px; flex-shrink: 0; background: #111; border-right: 1px solid #222; padding: 20px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.tab-btn { display: block; width: 100%; text-align: left; background: none; border: none; color: #aaa; padding: 14px 20px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; border-left: 3px solid transparent; line-height: 1.4; }
+.tab-btn:hover { background: #1a1a1a; color: #fff; }
+.tab-btn.active { background: #1a2a1a; color: #00ff88; border-left-color: #00ff88; font-weight: 600; }
+.content { flex: 1; padding: 40px; max-width: 800px; overflow-y: auto; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.card { background: #1a1a1a; border-radius: 10px; padding: 24px; margin-bottom: 20px; border-left: 4px solid #00ff88; }
+.card h3 { color: #fff; margin-bottom: 12px; font-size: 1.05em; }
+.card p, .card li { color: #ccc; line-height: 1.8; }
+.card ul, .card ol { padding-left: 20px; }
+.card li { margin-bottom: 6px; }
+.prompt-box { background: #0a0a0a; border: 1px solid #333; border-radius: 8px; padding: 20px; margin: 12px 0; font-family: monospace; font-size: 0.88em; color: #00ff88; white-space: pre-wrap; line-height: 1.7; position: relative; }
+.copy-btn { position: absolute; top: 10px; right: 10px; background: #00ff88; color: #000; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-weight: bold; }
+.highlight { background: #0d2818; border: 1px solid #00ff88; border-radius: 8px; padding: 16px; margin: 12px 0; color: #00ff88; font-weight: 600; }
+.tip { background: #1a1500; border: 1px solid #ffcc00; border-radius: 8px; padding: 14px; margin: 12px 0; color: #ffcc00; font-size: 0.9em; }
+.checklist li { list-style: none; padding: 10px 0; border-bottom: 1px solid #1a1a1a; color: #ccc; }
+.checklist li::before { content: "☐ "; color: #00ff88; font-size: 1.1em; }
+.accordion-item { background: #1a1a1a; border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
+.accordion-header { padding: 16px 20px; cursor: pointer; color: #fff; display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
+.accordion-header:hover { background: #222; }
+.accordion-body { padding: 0 20px 20px; color: #ccc; line-height: 1.8; display: none; }
+.accordion-body p { margin-bottom: 12px; }
+.accordion-body ul { padding-left: 20px; }
+.arrow { transition: transform 0.2s; color: #00ff88; }
+.open .arrow { transform: rotate(180deg); }
+.open .accordion-body { display: block; }
+.mobile-menu { display: none; background: #111; padding: 12px 20px; border-bottom: 1px solid #222; }
+.mobile-select { width: 100%; background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; font-size: 0.95em; }
+.footer { background: #111; padding: 24px; text-align: center; border-top: 1px solid #1a1a1a; }
+.footer p { color: #444; font-size: 0.82em; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+th { background: #1a2a1a; color: #00ff88; padding: 10px 12px; text-align: left; font-size: 0.9em; }
+td { padding: 10px 12px; border-bottom: 1px solid #1a1a1a; color: #ccc; font-size: 0.9em; }
+@media (max-width: 640px) {
+  .sidebar { display: none; }
+  .mobile-menu { display: block; }
+  .layout { flex-direction: column; }
+  .content { padding: 24px 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="badge">${badges[tipo] || '⚡ PRODUCTO PREMIUM'}</div>
+  <h1>${titulo}</h1>
+  <p>${subtitulo}</p>
+</div>
+
+<div class="mobile-menu">
+  <select class="mobile-select" onchange="showTab(this.value)">
+    ${secciones.map((s, i) => `<option value="${i}">${s.icono} ${s.titulo}</option>`).join('')}
+  </select>
+</div>
+
+<div class="layout">
+  <nav class="sidebar">${tabs}</nav>
+  <main class="content">${panels}</main>
+</div>
+
+<div class="footer">
+  <p>© 2026 ${titulo} — Todos los derechos reservados · Producto Premium</p>
+</div>
+
+<script>
+function showTab(i) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + i)?.classList.add('active');
+  document.getElementById('btn-' + i)?.classList.add('active');
+}
+function toggleAccordion(el) {
+  el.parentElement.classList.toggle('open');
+}
+document.querySelectorAll('.prompt-box').forEach(box => {
+  const btn = box.querySelector('.copy-btn');
+  if (btn) btn.addEventListener('click', () => {
+    navigator.clipboard.writeText(box.innerText.replace('Copiar','').trim());
+    btn.textContent = '✅ Copiado';
+    setTimeout(() => btn.textContent = 'Copiar', 2000);
+  });
+});
+</script>
+</body>
+</html>`;
+}
+
+// ── Generador principal ──────────────────────────────────────
 export async function generarProducto(nicho) {
   console.log(`[Generator] Creando producto tipo "${nicho.tipo}": "${nicho.nombre_producto}"...`);
 
   let html = '';
 
-  if (nicho.tipo === 'prompts') {
-    html = await generarPackPrompts(nicho);
-  } else if (nicho.tipo === 'plantilla') {
-    html = await generarPlantilla(nicho);
-  } else if (nicho.tipo === 'guia_pdf') {
-    html = await generarGuiaPDF(nicho);
-  } else if (nicho.tipo === 'mini_curso') {
-    html = await generarMiniCurso(nicho);
-  } else if (nicho.tipo === 'toolkit') {
-    html = await generarToolkit(nicho);
-  } else {
-    console.log(`[Generator] Tipo desconocido "${nicho.tipo}" — usando guía PDF`);
-    html = await generarGuiaPDF(nicho);
-  }
+  if (nicho.tipo === 'prompts') html = await generarPackPrompts(nicho);
+  else if (nicho.tipo === 'plantilla') html = await generarPlantilla(nicho);
+  else if (nicho.tipo === 'guia_pdf') html = await generarGuiaPDF(nicho);
+  else if (nicho.tipo === 'mini_curso') html = await generarMiniCurso(nicho);
+  else if (nicho.tipo === 'toolkit') html = await generarToolkit(nicho);
+  else html = await generarGuiaPDF(nicho);
 
-  // Limpiar posibles bloques de código
-  html = html.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
-
-  await db.log('generator', 'producto_generado', {
-    nicho: nicho.nicho,
-    tipo: nicho.tipo,
-    chars: html.length
-  });
-
+  await db.log('generator', 'producto_generado', { nicho: nicho.nicho, tipo: nicho.tipo, chars: html.length });
   console.log(`[Generator] Producto creado — ${html.length} caracteres`);
   return html;
 }
 
-// ── Pack de 30 Prompts ───────────────────────────────────────
-async function generarPackPrompts(nicho) {
-  return preguntar(`
-Crea un pack de 30 prompts profesionales de IA como página HTML completa y bonita.
-
-Producto: ${nicho.nombre_producto}
-Nicho: ${nicho.nicho}
-Cliente ideal: ${nicho.cliente_ideal}
-Problema: ${nicho.problema_que_resuelve}
-
-Estructura HTML EXACTA (usa estos estilos inline):
-
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${nicho.nombre_producto}</title>
-<style>${ESTILOS_BASE}</style>
-</head>
-<body>
-
-<div class="header">
-  <span class="badge">⚡ ${nicho.tipo.toUpperCase()} PREMIUM</span>
-  <h1>${nicho.nombre_producto}</h1>
-  <p>${nicho.subtitulo}</p>
-</div>
-
-<div class="container">
-
-  <!-- INTRODUCCIÓN -->
-  <div class="section">
-    <h2>🎯 Cómo usar este pack</h2>
-    [Instrucciones claras en 3-4 párrafos: cómo copiar los prompts, dónde usarlos, cómo personalizarlos]
-  </div>
-
-  <!-- 30 PROMPTS — uno por sección -->
-  [Para CADA uno de los 30 prompts, usa este formato:]
-  <div class="section">
-    <h2>Prompt #[N]: [Nombre descriptivo]</h2>
-    <p><strong>Para qué sirve:</strong> [1 línea concreta]</p>
-    <div class="prompt-box">[EL PROMPT COMPLETO listo para copiar — con variables en MAYÚSCULAS]</div>
-    <div class="tip"><p>💡 Tip: [Consejo para sacarle más provecho a este prompt]</p></div>
-    <p><strong>Ejemplo de resultado:</strong> [Ejemplo breve y realista]</p>
-  </div>
-
-  <!-- BONUS -->
-  <div class="section">
-    <h2>🎁 Bonus: Cómo combinar estos prompts</h2>
-    [Estrategia para usar varios prompts en secuencia para lograr resultados más potentes]
-  </div>
-
-</div>
-
-<div class="footer">
-  <p>© 2026 ${nicho.nombre_producto} — Todos los derechos reservados</p>
-</div>
-
-</body>
-</html>
-
-IMPORTANTE: Crea los 30 prompts REALES y COMPLETOS. Cada prompt debe ser profesional, específico para el nicho, listo para copiar y pegar. No uses placeholders genéricos.
-Devuelve SOLO el HTML completo.
-`, SYSTEM, 'generator', 12000);
+// ── Helper: genera una sección con Claude ────────────────────
+async function generarSeccion(prompt, agente = 'generator') {
+  const resultado = await preguntar(prompt, SYSTEM, agente, 4000);
+  return resultado.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
 }
 
-// ── Plantilla ────────────────────────────────────────────────
-async function generarPlantilla(nicho) {
-  return preguntar(`
-Crea una plantilla profesional completa como página HTML bonita.
+// ── Pack de 30 Prompts ───────────────────────────────────────
+async function generarPackPrompts(nicho) {
+  console.log('[Generator] Generando prompts por bloques...');
 
-Producto: ${nicho.nombre_producto}
-Nicho: ${nicho.nicho}
-Cliente ideal: ${nicho.cliente_ideal}
-Problema: ${nicho.problema_que_resuelve}
+  const intro = await generarSeccion(`
+Escribe la sección de introducción para un pack de prompts de IA sobre: ${nicho.nicho}
+Cliente: ${nicho.cliente_ideal}. Problema: ${nicho.problema_que_resuelve}
+Incluye: cómo usar los prompts, dónde pegarlos (ChatGPT/Claude), cómo personalizar las variables en MAYÚSCULAS.
+Formato: párrafos HTML con <p> y <div class="tip">. Sin <html> ni <body>. Solo el contenido interior.`);
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${nicho.nombre_producto}</title>
-<style>${ESTILOS_BASE}</style>
-</head>
-<body>
-
-<div class="header">
-  <span class="badge">📋 PLANTILLA PREMIUM</span>
-  <h1>${nicho.nombre_producto}</h1>
-  <p>${nicho.subtitulo}</p>
+  const prompts1 = await generarSeccion(`
+Crea los prompts #1 al #10 para: ${nicho.nicho}. Cliente: ${nicho.cliente_ideal}
+Para cada prompt usa EXACTAMENTE este formato HTML:
+<div class="card">
+  <h3>Prompt #N: [Nombre descriptivo]</h3>
+  <p><strong>Para qué sirve:</strong> [1 línea concreta]</p>
+  <div class="prompt-box"><button class="copy-btn">Copiar</button>[EL PROMPT COMPLETO con variables en MAYÚSCULAS]</div>
+  <div class="tip">💡 Tip: [Consejo específico para este prompt]</div>
+  <p><strong>Resultado esperado:</strong> [Ejemplo realista]</p>
 </div>
+Sin <html> ni <body>. Solo los 10 divs.`);
 
-<div class="container">
+  const prompts2 = await generarSeccion(`
+Crea los prompts #11 al #20 para: ${nicho.nicho}. Cliente: ${nicho.cliente_ideal}
+Misma estructura HTML que antes:
+<div class="card"><h3>Prompt #N...</h3>...prompt-box...tip...</div>
+Sin <html> ni <body>. Solo los 10 divs.`);
 
-  <div class="section">
-    <h2>📖 Cómo usar esta plantilla</h2>
-    [Instrucciones paso a paso — cómo copiarla a Notion, Google Sheets o Excel]
-  </div>
+  const prompts3 = await generarSeccion(`
+Crea los prompts #21 al #30 para: ${nicho.nicho}. Cliente: ${nicho.cliente_ideal}
+Misma estructura HTML:
+<div class="card"><h3>Prompt #N...</h3>...prompt-box...tip...</div>
+Sin <html> ni <body>. Solo los 10 divs.`);
 
-  <div class="section">
-    <h2>📋 La Plantilla Completa</h2>
-    [La plantilla REAL con todas las secciones, usando tablas HTML donde aplique]
-    [Con ejemplos llenados de forma realista]
-  </div>
+  const bonus = await generarSeccion(`
+Crea una sección "Cómo combinar estos prompts" para: ${nicho.nicho}
+Explica 3 flujos de trabajo donde se usan varios prompts en secuencia para lograr resultados potentes.
+Formato HTML con <div class="card"> y <p>. Sin <html> ni <body>.`);
 
-  <div class="section">
-    <h2>✅ Ejemplo Completamente Llenado</h2>
-    [Ejemplo real y completo de cómo se usa — como si fuera un cliente real del nicho]
-  </div>
+  const secciones = [
+    { icono: '📖', titulo: 'Cómo usar este pack', contenido: intro },
+    { icono: '⚡', titulo: 'Prompts #1 — #10', contenido: prompts1 },
+    { icono: '⚡', titulo: 'Prompts #11 — #20', contenido: prompts2 },
+    { icono: '⚡', titulo: 'Prompts #21 — #30', contenido: prompts3 },
+    { icono: '🎁', titulo: 'Bonus: Combinar Prompts', contenido: bonus },
+  ];
 
-  <div class="section">
-    <h2>💡 Tips de Uso Avanzado</h2>
-    [6-8 tips específicos para sacar el máximo provecho]
-  </div>
-
-  <div class="section">
-    <h2>⚠️ Errores Comunes y Cómo Evitarlos</h2>
-    [Los 5 errores más frecuentes con solución concreta]
-  </div>
-
-</div>
-
-<div class="footer">
-  <p>© 2026 ${nicho.nombre_producto} — Todos los derechos reservados</p>
-</div>
-
-</body>
-</html>
-
-Devuelve SOLO el HTML completo con contenido REAL, no placeholders.
-`, SYSTEM, 'generator', 12000);
+  return crearShellHTML(nicho.nombre_producto, nicho.subtitulo, 'prompts', secciones);
 }
 
 // ── Guía PDF ─────────────────────────────────────────────────
 async function generarGuiaPDF(nicho) {
-  return preguntar(`
-Crea una guía profesional completa como página HTML bonita.
+  console.log('[Generator] Generando guía por capítulos...');
 
-Producto: ${nicho.nombre_producto}
-Nicho: ${nicho.nicho}
-Cliente ideal: ${nicho.cliente_ideal}
-Problema: ${nicho.problema_que_resuelve}
+  const intro = await generarSeccion(`
+Escribe la introducción de una guía sobre: ${nicho.nicho}
+Título: ${nicho.nombre_producto}. Cliente: ${nicho.cliente_ideal}. Problema: ${nicho.problema_que_resuelve}
+3 párrafos poderosos que conectan con el dolor del cliente y prometen la solución.
+Formato: <div class="card"><p>...</p></div>. Sin <html> ni <body>.`);
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${nicho.nombre_producto}</title>
-<style>${ESTILOS_BASE}</style>
-</head>
-<body>
+  const cap1 = await generarSeccion(`
+Escribe el Capítulo 1 de una guía sobre: ${nicho.nicho}
+Tema: Fundamentos — qué necesitas saber primero. Mínimo 500 palabras.
+Incluye conceptos clave, una sección destacada con <div class="highlight">, y una lista ordenada de pasos.
+Formato: <div class="card"> y elementos HTML. Sin <html> ni <body>.`);
 
-<div class="header">
-  <span class="badge">📘 GUÍA PREMIUM</span>
-  <h1>${nicho.nombre_producto}</h1>
-  <p>${nicho.subtitulo}</p>
-</div>
+  const cap2 = await generarSeccion(`
+Escribe el Capítulo 2 de una guía sobre: ${nicho.nicho}
+Tema: El método paso a paso. Mínimo 500 palabras.
+Pasos numerados detallados con ejemplos del mercado hispano. Incluye un <div class="tip"> con consejo clave.
+Formato: <div class="card"> y elementos HTML. Sin <html> ni <body>.`);
 
-<div class="container">
+  const cap3 = await generarSeccion(`
+Escribe el Capítulo 3 con 3 casos reales del mercado hispano/latinoamericano sobre: ${nicho.nicho}
+Usa nombres hispanos reales. Incluye situación inicial, qué hicieron, resultado específico con números.
+Formato: <div class="card"> por cada caso. Sin <html> ni <body>.`);
 
-  <div class="section">
-    <h2>Por qué necesitas esto ahora</h2>
-    [Introducción poderosa — 3 párrafos que conectan con el dolor del cliente]
-  </div>
+  const recursos = await generarSeccion(`
+Crea una sección de herramientas y recursos para: ${nicho.nicho}
+Incluye: tabla HTML con herramientas (nombre, para qué sirve, precio, gratuita/pago), y los 10 errores más comunes en lista ordenada.
+Formato: <table><tr><th>...</th></tr></table> y <div class="card"><ol>. Sin <html> ni <body>.`);
 
-  <div class="section">
-    <h2>Capítulo 1: [Fundamentos]</h2>
-    [Contenido detallado con conceptos clave — mínimo 400 palabras]
-    <div class="highlight"><p>[Punto clave que el lector debe recordar]</p></div>
-  </div>
+  const plan = await generarSeccion(`
+Crea el Plan de Acción de 7 días para: ${nicho.nicho}. Cliente: ${nicho.cliente_ideal}
+Día 1 al día 7: qué hacer exactamente cada día, muy específico y accionable.
+Usa acordeón HTML:
+<div class="accordion-item"><div class="accordion-header" onclick="toggleAccordion(this)">📅 Día N: [Título] <span class="arrow">▼</span></div><div class="accordion-body"><p>...</p></div></div>
+Sin <html> ni <body>.`);
 
-  <div class="section">
-    <h2>Capítulo 2: [El Método Paso a Paso]</h2>
-    [Pasos numerados y detallados — mínimo 400 palabras]
-  </div>
+  const secciones = [
+    { icono: '🎯', titulo: 'Introducción', contenido: intro },
+    { icono: '📚', titulo: 'Fundamentos', contenido: cap1 },
+    { icono: '🔧', titulo: 'El Método', contenido: cap2 },
+    { icono: '💡', titulo: 'Casos Reales', contenido: cap3 },
+    { icono: '🛠️', titulo: 'Herramientas y Errores', contenido: recursos },
+    { icono: '📅', titulo: 'Plan 7 Días', contenido: plan },
+  ];
 
-  <div class="section">
-    <h2>Capítulo 3: [Casos Reales del Mercado Hispano]</h2>
-    [3 casos de uso reales con nombres hispanos y resultados específicos]
-  </div>
+  return crearShellHTML(nicho.nombre_producto, nicho.subtitulo, 'guia_pdf', secciones);
+}
 
-  <div class="section">
-    <h2>Capítulo 4: Herramientas y Recursos</h2>
-    [Lista de herramientas gratuitas y de pago con descripción de para qué sirve cada una]
-  </div>
+// ── Plantilla ────────────────────────────────────────────────
+async function generarPlantilla(nicho) {
+  console.log('[Generator] Generando plantilla por secciones...');
 
-  <div class="section">
-    <h2>⚠️ Los 10 Errores Más Comunes</h2>
-    <ol>[10 errores con explicación y cómo corregirlos]</ol>
-  </div>
+  const instrucciones = await generarSeccion(`
+Escribe las instrucciones de uso para una plantilla sobre: ${nicho.nicho}
+Título: ${nicho.nombre_producto}. Cliente: ${nicho.cliente_ideal}
+Incluye: cómo copiarla a Notion/Google Sheets/Excel, cómo personalizarla, tiempo estimado de setup.
+Formato: <div class="card"><p>...</p></div>. Sin <html> ni <body>.`);
 
-  <div class="section">
-    <h2>📅 Tu Plan de Acción — 7 Días</h2>
-    [Día 1 al día 7: qué hacer exactamente cada día, muy específico]
-  </div>
+  const plantilla = await generarSeccion(`
+Crea la plantilla COMPLETA para: ${nicho.nicho}
+Incluye todas las secciones, filas y columnas necesarias. Usa tablas HTML donde aplique.
+Formato: <div class="card"><table>...</table></div> y secciones con <div class="card">. Sin <html> ni <body>.`);
 
-</div>
+  const ejemplo = await generarSeccion(`
+Crea un ejemplo COMPLETAMENTE llenado de la plantilla para: ${nicho.nicho}
+Usa datos realistas de un cliente hispanohablante típico. Muestra la plantilla en uso real.
+Formato: <div class="card"> con tablas HTML llenadas y texto explicativo. Sin <html> ni <body>.`);
 
-<div class="footer">
-  <p>© 2026 ${nicho.nombre_producto} — Todos los derechos reservados</p>
-</div>
+  const tips = await generarSeccion(`
+Crea 2 secciones:
+1. Tips avanzados para usar la plantilla de: ${nicho.nicho} (6-8 tips específicos)
+2. Los 5 errores más comunes al usar este tipo de plantilla (con solución para cada uno)
+Formato: <div class="card"><ul>...</ul></div>. Sin <html> ni <body>.`);
 
-</body>
-</html>
+  const secciones = [
+    { icono: '📖', titulo: 'Cómo usar', contenido: instrucciones },
+    { icono: '📋', titulo: 'La Plantilla', contenido: plantilla },
+    { icono: '✅', titulo: 'Ejemplo Llenado', contenido: ejemplo },
+    { icono: '💡', titulo: 'Tips y Errores', contenido: tips },
+  ];
 
-Devuelve SOLO el HTML completo con mínimo 3,000 palabras de contenido REAL.
-`, SYSTEM, 'generator', 12000);
+  return crearShellHTML(nicho.nombre_producto, nicho.subtitulo, 'plantilla', secciones);
 }
 
 // ── Mini Curso ───────────────────────────────────────────────
 async function generarMiniCurso(nicho) {
-  return preguntar(`
-Crea un mini curso premium completo como página HTML bonita con 5 módulos.
+  console.log('[Generator] Generando mini curso módulo por módulo...');
 
-Producto: ${nicho.nombre_producto}
-Nicho: ${nicho.nicho}
-Cliente ideal: ${nicho.cliente_ideal}
-Problema: ${nicho.problema_que_resuelve}
+  const bienvenida = await generarSeccion(`
+Escribe el mensaje de bienvenida para un mini curso sobre: ${nicho.nicho}
+Título: ${nicho.nombre_producto}. Cliente: ${nicho.cliente_ideal}
+Incluye: qué van a lograr, cuánto dura el curso, cómo aprovecharlo mejor. Tono motivador y personal.
+Formato: <div class="card"><p>...</p></div> con <div class="highlight"> para el objetivo principal. Sin <html> ni <body>.`);
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${nicho.nombre_producto}</title>
-<style>${ESTILOS_BASE}</style>
-</head>
-<body>
+  const modulos = await Promise.all([1,2,3,4,5].map((n, i) => {
+    const temas = [
+      'Fundamentos — qué necesitas saber primero',
+      'El método — cómo hacerlo paso a paso',
+      'Herramientas y recursos esenciales',
+      'Casos reales del mercado hispano',
+      'Acción — implementa todo hoy'
+    ];
+    return generarSeccion(`
+Escribe el Módulo ${n} de un mini curso sobre: ${nicho.nicho}
+Tema: ${temas[i]}. Cliente: ${nicho.cliente_ideal}
+Incluye:
+- Objetivo del módulo (1 línea)
+- Lección ${n}.1: [título] — mínimo 300 palabras de contenido real
+- Lección ${n}.2: [título] — mínimo 300 palabras de contenido real
+- Tarea práctica que el alumno puede hacer HOY
 
-<div class="header">
-  <span class="badge">🎓 MINI CURSO PREMIUM</span>
-  <h1>${nicho.nombre_producto}</h1>
-  <p>${nicho.subtitulo}</p>
-</div>
+Usa acordeón para las lecciones:
+<div class="accordion-item"><div class="accordion-header" onclick="toggleAccordion(this)">📝 Lección ${n}.1: [Título] <span class="arrow">▼</span></div><div class="accordion-body"><p>contenido...</p></div></div>
+Y termina con: <div class="tip">✅ Tarea: [ejercicio concreto]</div>
+Sin <html> ni <body>.`);
+  }));
 
-<div class="container">
+  const examen = await generarSeccion(`
+Crea el examen final (5 preguntas de opción múltiple) y el certificado de completación para: ${nicho.nombre_producto}
+Preguntas con 4 opciones cada una, respuesta correcta marcada con ✅.
+El certificado: div con borde verde, título "Certificado de Completación", nombre del curso, espacio para nombre y fecha.
+Formato HTML con <div class="card">. Sin <html> ni <body>.`);
 
-  <div class="section">
-    <h2>Bienvenida al Curso</h2>
-    [Mensaje motivador personal — qué van a lograr, cuánto tarda, cómo aprovechar el curso]
-  </div>
+  const secciones = [
+    { icono: '👋', titulo: 'Bienvenida', contenido: bienvenida },
+    { icono: '1️⃣', titulo: 'Módulo 1', contenido: modulos[0] },
+    { icono: '2️⃣', titulo: 'Módulo 2', contenido: modulos[1] },
+    { icono: '3️⃣', titulo: 'Módulo 3', contenido: modulos[2] },
+    { icono: '4️⃣', titulo: 'Módulo 4', contenido: modulos[3] },
+    { icono: '5️⃣', titulo: 'Módulo 5', contenido: modulos[4] },
+    { icono: '🎓', titulo: 'Examen y Certificado', contenido: examen },
+  ];
 
-  [5 MÓDULOS — usa este formato para cada uno:]
-  <div class="module">
-    <div class="module-header">
-      <div class="module-num">[N]</div>
-      <h2>Módulo [N]: [Nombre del Módulo]</h2>
-    </div>
-    <p style="color:#888;font-size:0.9em;">⏱️ Tiempo estimado: [X] minutos</p>
-
-    <div class="section">
-      <h3>Lección [N].1: [Título]</h3>
-      [Contenido completo de la lección — mínimo 350 palabras, práctico y específico]
-      <div class="highlight"><p>[Punto clave de esta lección]</p></div>
-    </div>
-
-    <div class="section">
-      <h3>Lección [N].2: [Título]</h3>
-      [Contenido completo — mínimo 350 palabras]
-    </div>
-
-    <div class="tip">
-      <p>✅ Tarea del Módulo [N]: [Ejercicio concreto que el alumno puede hacer hoy mismo]</p>
-    </div>
-  </div>
-
-  <div class="section">
-    <h2>🎯 Examen Final</h2>
-    [5 preguntas con 4 opciones cada una y respuestas marcadas]
-  </div>
-
-  <div class="section">
-    <h2>📜 Certificado de Completación</h2>
-    <div style="border:2px solid #00ff88;padding:32px;text-align:center;border-radius:12px;">
-      <h3 style="color:#00ff88;">Certificado de Completación</h3>
-      <p style="color:#ccc;">Este documento certifica que has completado exitosamente</p>
-      <h2 style="color:#fff;">${nicho.nombre_producto}</h2>
-      <p style="color:#888;">Fecha: _______________</p>
-      <p style="color:#888;">Nombre: _______________</p>
-    </div>
-  </div>
-
-</div>
-
-<div class="footer">
-  <p>© 2026 ${nicho.nombre_producto} — Todos los derechos reservados</p>
-</div>
-
-</body>
-</html>
-
-Devuelve SOLO el HTML completo con mínimo 4,000 palabras de contenido REAL en los módulos.
-`, SYSTEM, 'generator', 12000);
+  return crearShellHTML(nicho.nombre_producto, nicho.subtitulo, 'mini_curso', secciones);
 }
 
 // ── Toolkit ──────────────────────────────────────────────────
 async function generarToolkit(nicho) {
-  return preguntar(`
-Crea un toolkit profesional completo como página HTML bonita.
+  console.log('[Generator] Generando toolkit por secciones...');
 
-Producto: ${nicho.nombre_producto}
-Nicho: ${nicho.nicho}
-Cliente ideal: ${nicho.cliente_ideal}
-Problema: ${nicho.problema_que_resuelve}
+  const intro = await generarSeccion(`
+Escribe la introducción y checklist maestro para un toolkit sobre: ${nicho.nicho}
+Incluye: cómo usar el toolkit, y un checklist de 40 ítems organizados por fase/etapa.
+Checklist: <ul class="checklist"><li>acción concreta</li>...</ul>
+Formato: <div class="card">. Sin <html> ni <body>.`);
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${nicho.nombre_producto}</title>
-<style>${ESTILOS_BASE}</style>
-</head>
-<body>
+  const plantillas = await generarSeccion(`
+Crea 3 plantillas prácticas listas para usar sobre: ${nicho.nicho}
+Cada plantilla con: nombre, instrucciones de uso, la plantilla con tabla HTML y ejemplo llenado.
+Formato: <div class="card"> por cada plantilla. Sin <html> ni <body>.`);
 
-<div class="header">
-  <span class="badge">🔧 TOOLKIT PREMIUM</span>
-  <h1>${nicho.nombre_producto}</h1>
-  <p>${nicho.subtitulo}</p>
-</div>
+  const herramientas = await generarSeccion(`
+Crea el stack de herramientas recomendadas para: ${nicho.nicho}
+Tabla HTML con columnas: Herramienta | Para qué sirve | Precio | Categoría
+Agrupa por categorías. Mínimo 15 herramientas.
+Formato: <div class="card"><table>...</table></div>. Sin <html> ni <body>.`);
 
-<div class="container">
+  const metricas = await generarSeccion(`
+Crea 2 secciones para: ${nicho.nicho}
+1. Métricas clave a monitorear (tabla: métrica, valor referencia, cómo medirla)
+2. Las 10 señales de alerta con solución inmediata para cada una
+Formato: <div class="card"> con tablas y listas HTML. Sin <html> ni <body>.`);
 
-  <div class="section">
-    <h2>📖 Cómo usar este toolkit</h2>
-    [Instrucciones rápidas — empieza a usarlo en 5 minutos]
-  </div>
+  const calendario = await generarSeccion(`
+Crea el calendario de implementación de 30 días para: ${nicho.nicho}
+Organizado en 4 semanas. Usa acordeón por semana:
+<div class="accordion-item"><div class="accordion-header" onclick="toggleAccordion(this)">📅 Semana N: [Objetivo] <span class="arrow">▼</span></div><div class="accordion-body">acciones día a día...</div></div>
+Sin <html> ni <body>.`);
 
-  <div class="section">
-    <h2>✅ Checklist Maestro</h2>
-    <ul class="checklist">
-      [40-50 ítems de acción concretos organizados por etapa/fase]
-    </ul>
-  </div>
+  const secciones = [
+    { icono: '✅', titulo: 'Checklist Maestro', contenido: intro },
+    { icono: '📋', titulo: 'Plantillas', contenido: plantillas },
+    { icono: '🔧', titulo: 'Herramientas', contenido: herramientas },
+    { icono: '📊', titulo: 'Métricas y Alertas', contenido: metricas },
+    { icono: '📅', titulo: 'Calendario 30 días', contenido: calendario },
+  ];
 
-  <div class="section">
-    <h2>📋 Plantillas Incluidas</h2>
-    [3 plantillas reales con ejemplos llenados usando tablas HTML]
-  </div>
-
-  <div class="section">
-    <h2>🔧 Stack de Herramientas Recomendadas</h2>
-    [Herramientas por categoría: nombre, para qué sirve, precio, link como texto]
-  </div>
-
-  <div class="section">
-    <h2>📊 Métricas Clave a Monitorear</h2>
-    [KPIs específicos del nicho con valores de referencia y cómo medirlos]
-  </div>
-
-  <div class="section">
-    <h2>🚨 Señales de Alerta</h2>
-    [10 señales de que algo está mal — con solución inmediata para cada una]
-  </div>
-
-  <div class="section">
-    <h2>📅 Calendario de Implementación — 30 Días</h2>
-    [Semana 1, 2, 3 y 4 con acciones específicas cada día]
-  </div>
-
-</div>
-
-<div class="footer">
-  <p>© 2026 ${nicho.nombre_producto} — Todos los derechos reservados</p>
-</div>
-
-</body>
-</html>
-
-Devuelve SOLO el HTML completo con contenido REAL y específico para el nicho.
-`, SYSTEM, 'generator', 12000);
+  return crearShellHTML(nicho.nombre_producto, nicho.subtitulo, 'toolkit', secciones);
 }
