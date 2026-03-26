@@ -78,14 +78,22 @@ async function leerComandosTelegram() {
       console.log(`[Telegram] Comando: ${texto}`);
 
       // Si hay una aprobación pendiente, responderla primero
-      if (aprobacionPendiente && (texto === 'PUBLICAR' || texto === '1')) {
-        aprobacionPendiente.resolve('PUBLICAR');
-        aprobacionPendiente = null;
+      if (texto === 'PUBLICAR' || texto === '1') {
+        if (aprobacionPendiente && typeof aprobacionPendiente.resolve === 'function') {
+          aprobacionPendiente.resolve('PUBLICAR');
+          aprobacionPendiente = null;
+        } else {
+          await enviar('⏳ No hay producto pendiente de publicación.\nUsa <b>LANZAR</b> para generar uno.');
+        }
         continue;
       }
-      if (aprobacionPendiente && (texto === 'CANCELAR' || texto === '2')) {
-        aprobacionPendiente.resolve('CANCELAR');
-        aprobacionPendiente = null;
+      if (texto === 'CANCELAR' || texto === '2') {
+        if (aprobacionPendiente && typeof aprobacionPendiente.resolve === 'function') {
+          aprobacionPendiente.resolve('CANCELAR');
+          aprobacionPendiente = null;
+        } else {
+          await enviar('ℹ️ No hay publicación pendiente que cancelar.');
+        }
         continue;
       }
 
@@ -158,7 +166,6 @@ async function lanzarExperimento() {
     const contenido = await generarProducto(nicho);
 
     // 3. Publicar (con aprobación vía Telegram)
-    aprobacionPendiente = { tipo: 'publicar', nicho };
     const resultado = await publicarConAprobacion(nicho, contenido);
 
     if (resultado) {
