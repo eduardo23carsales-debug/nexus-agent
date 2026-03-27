@@ -51,18 +51,29 @@ Tipos de productos posibles:
 - Mini curso de texto ($47-97)
 - Checklist/toolkit profesional ($17-37)
 
-Devuelve JSON:
+Devuelve JSON con TODOS estos campos — son críticos para generar contenido específico y de alta calidad:
 {
   "nicho": "nombre del nicho específico",
   "tipo": "prompts|plantilla|guia_pdf|mini_curso|toolkit",
   "nombre_producto": "nombre atractivo del producto",
-  "subtitulo": "subtítulo que explica el beneficio",
+  "subtitulo": "subtítulo que explica el beneficio concreto",
   "precio": 27,
-  "problema_que_resuelve": "descripción del dolor del cliente",
-  "cliente_ideal": "quién lo compra y por qué",
-  "puntos_de_venta": ["beneficio 1", "beneficio 2", "beneficio 3"],
+  "problema_que_resuelve": "descripción detallada del dolor del cliente",
+  "cliente_ideal": "perfil detallado: edad, situación, por qué lo necesita YA",
+  "puntos_de_venta": ["beneficio concreto 1 con número o resultado", "beneficio 2", "beneficio 3", "beneficio 4"],
+  "quick_win": "resultado específico y concreto que el cliente logra en los primeros 30 minutos de aplicar el producto (ej: 'Tener su primera lista de productos para vender en Amazon con margen >40%')",
+  "herramientas_clave": ["Herramienta1 (gratis/precio)", "Herramienta2", "Herramienta3", "Herramienta4", "Herramienta5"],
+  "modulos_temas": [
+    "Tema específico 1 relevante al nicho (NO genérico como 'Fundamentos')",
+    "Tema específico 2",
+    "Tema específico 3",
+    "Tema específico 4",
+    "Tema específico 5",
+    "Tema específico 6"
+  ],
+  "ejemplo_exito": "caso real o tipo de persona del mercado hispano que logró resultados con esto, con números específicos",
   "score": 85,
-  "razon": "por qué este nicho ahora"
+  "razon": "por qué este nicho ahora mismo"
 }
 `, SYSTEM, 'researcher');
 
