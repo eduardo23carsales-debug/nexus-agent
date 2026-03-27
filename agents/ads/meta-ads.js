@@ -52,6 +52,7 @@ export const metaAds = {
       daily_budget: presupuestoDiario, // en centavos: 500 = $5
       billing_event: 'IMPRESSIONS',
       optimization_goal: 'LINK_CLICKS',
+      destination_type: 'WEBSITE',
       targeting,
       status: 'ACTIVE',
       start_time: new Date().toISOString()
@@ -96,18 +97,17 @@ export const metaAds = {
 
   // ── Construir targeting por nicho ────────────────────────
   construirTargeting(nicho, audiencia) {
+    // Nota: flexible_spec con intereses requiere IDs de Meta, no strings.
+    // Usamos targeting demográfico + geográfico amplio para máximo alcance.
     return {
       age_min: audiencia.edad_min || 25,
-      age_max: audiencia.edad_max || 50,
+      age_max: audiencia.edad_max || 55,
       genders: [1, 2],
-      locales: [236], // español
+      locales: [236], // español (All)
       geo_locations: {
         countries: ['US', 'MX', 'CO', 'AR', 'CL', 'PE', 'ES'],
         location_types: ['home', 'recent']
-      },
-      flexible_spec: [{
-        interests: (audiencia.intereses || []).map(i => ({ name: i }))
-      }]
+      }
     };
   },
 
