@@ -116,7 +116,7 @@ export const metaAds = {
       age_min: audiencia.edad_min || 25,
       age_max: audiencia.edad_max || 55,
       genders: [1, 2],
-      locales: [236], // español (All)
+      locales: [23, 25], // español: 23=España, 25=Latinoamérica
       geo_locations: {
         countries: ['US', 'MX', 'CO', 'AR', 'CL', 'PE', 'ES'],
         location_types: ['home', 'recent']

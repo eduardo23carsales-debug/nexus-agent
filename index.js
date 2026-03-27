@@ -18,6 +18,7 @@ import { email } from './core/email.js';
 import { memory } from './core/memory.js';
 
 import { investigarNicho } from './agents/digital/researcher.js';
+import { cargarCostoHoy, resetCostoHoy } from './core/claude.js';
 import { generarProducto } from './agents/digital/generator.js';
 import { publicarProducto } from './agents/digital/publisher.js';
 import { calificarLeadManual } from './agents/leadgen/lead-qualifier.js';
@@ -46,6 +47,9 @@ async function iniciar() {
 
   // Migraciones automáticas
   await runMigrations();
+
+  // Cargar costo Claude acumulado hoy (sobrevive reinicios de Railway)
+  await cargarCostoHoy();
 
   // Limpiar offset de Telegram para solo leer mensajes nuevos
   try {
@@ -212,6 +216,11 @@ async function publicarAutomatico(nicho) {
   await enviar('📝 Generando contenido del producto...');
   const contenido = await generarProducto(nicho);
 
+  // Validar que el producto se generó completo
+  if (!contenido || contenido.length < 5000) {
+    throw new Error(`Producto generado incompleto (${contenido?.length || 0} chars). Abortando para no publicar contenido roto.`);
+  }
+
   // Crear producto en Stripe
   await enviar('💳 Creando producto en Stripe...');
   const stripeData = await stripeCore.crearProductoCompleto({
@@ -258,20 +267,25 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
     .replace(/```html\n?/g, '').replace(/```\n?/g, '').trim()
     .replace('</head>', `${metaPixel}\n</head>`);
 
-  // Desplegar landing en Vercel
-  await enviar('🚀 Subiendo a Vercel...');
-  const url = await deploy.publicarLanding({ nombre: nicho.nombre_producto, html: htmlLimpio, nicho: nicho.nicho });
+  // Validar que la landing page se generó completa
+  if (!htmlLimpio || htmlLimpio.length < 3000) {
+    throw new Error(`Landing page incompleta (${htmlLimpio?.length || 0} chars). Abortando para no publicar página rota.`);
+  }
 
-  // Desplegar página del producto en Vercel
-  let productoUrl = null;
-  try {
-    productoUrl = await deploy.publicarLanding({
-      nombre: `${nicho.nombre_producto} — Producto`,
-      html: contenido,
-      nicho: `${nicho.nicho}-producto`
-    });
-  } catch (e) {
-    console.error('[Publisher] Error desplegando producto:', e.message);
+  // Desplegar landing y producto en Vercel en paralelo
+  await enviar('🚀 Subiendo a Vercel...');
+  const [landingResult, productoResult] = await Promise.allSettled([
+    deploy.publicarLanding({ nombre: nicho.nombre_producto, html: htmlLimpio, nicho: nicho.nicho }),
+    deploy.publicarLanding({ nombre: `${nicho.nombre_producto} — Producto`, html: contenido, nicho: `${nicho.nicho}-producto` })
+  ]);
+
+  if (landingResult.status === 'rejected') {
+    throw new Error(`Error desplegando landing: ${landingResult.reason?.message}`);
+  }
+  const url = landingResult.value;
+  const productoUrl = productoResult.status === 'fulfilled' ? productoResult.value : null;
+  if (productoResult.status === 'rejected') {
+    console.error('[Publisher] Error desplegando producto:', productoResult.reason?.message);
   }
 
   // Publicar en Gumroad
@@ -384,6 +398,12 @@ function iniciarCrons() {
   cron.schedule('0 20 * * *', async () => {
     console.log('[Cron] Generando reporte diario...');
     await brain.generarResumenDiario();
+  });
+
+  // Cada día a medianoche — resetear contador de gasto Claude
+  cron.schedule('0 0 * * *', () => {
+    resetCostoHoy();
+    console.log('[Cron] Contador de gasto Claude reseteado para nuevo día.');
   });
 
   console.log('✅ Crons activos: pagos (1h), comandos (5seg), experimento (9am), reporte (8pm)');

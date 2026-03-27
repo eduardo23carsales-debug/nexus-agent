@@ -5,7 +5,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import dotenv from 'dotenv';
-import { db } from './database.js';
+import { db, supabase } from './database.js';
 dotenv.config();
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -14,8 +14,29 @@ const MODEL = 'claude-opus-4-6';
 const MAX_TOKENS = 8000;
 const MAX_DAILY_SPEND = Number(process.env.MAX_DAILY_API_SPEND) || 5;
 
-// ── Rastreador de costo diario (en memoria, persiste en DB) ──
+// ── Rastreador de costo diario (cargado desde DB al iniciar) ──
 let costoHoy = 0;
+
+/**
+ * Carga el costo acumulado de hoy desde agent_logs.
+ * Llamar en iniciar() para sobrevivir reinicios de Railway.
+ */
+export async function cargarCostoHoy() {
+  try {
+    const hoy = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+    const { data } = await supabase
+      .from('agent_logs')
+      .select('costo_api')
+      .gte('created_at', `${hoy}T00:00:00.000Z`)
+      .lt('created_at',  `${hoy}T23:59:59.999Z`);
+    if (data?.length) {
+      costoHoy = data.reduce((sum, row) => sum + (Number(row.costo_api) || 0), 0);
+    }
+    console.log(`[Claude] Costo acumulado hoy cargado desde DB: $${costoHoy.toFixed(4)}`);
+  } catch (err) {
+    console.error('[Claude] No se pudo cargar costo de hoy:', err.message);
+  }
+}
 
 // Precio por token en USD (claude-opus-4-6)
 const PRECIO_INPUT  = 15   / 1_000_000; // $15 por millón input
