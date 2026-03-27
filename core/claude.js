@@ -8,10 +8,13 @@ import dotenv from 'dotenv';
 import { db, supabase } from './database.js';
 dotenv.config();
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  timeout: 60 * 1000, // 60 segundos máximo por llamada — evita colgar indefinidamente
+});
 
 const MODEL = 'claude-opus-4-6';
-const MAX_TOKENS = 8000;
+const MAX_TOKENS = 6000; // Reducido de 8000 — respuestas más rápidas, igual de completas
 const MAX_DAILY_SPEND = Number(process.env.MAX_DAILY_API_SPEND) || 5;
 
 // ── Rastreador de costo diario (cargado desde DB al iniciar) ──

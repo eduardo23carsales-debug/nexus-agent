@@ -6,10 +6,11 @@
 
 import { preguntarCompleto } from '../../core/claude.js';
 import { db } from '../../core/database.js';
+import { enviar } from '../../core/telegram.js';
 
 // Pausa entre secciones para evitar rate limit de Anthropic
 const delay = ms => new Promise(r => setTimeout(r, ms));
-const DELAY_SECCIONES = 4000; // 4 segundos entre llamadas
+const DELAY_SECCIONES = 2000; // 2 segundos entre llamadas (era 4s)
 
 const SYSTEM = `Eres un experto creador de productos digitales premium para el mercado hispano.
 Tu misión: crear contenido que haga que el cliente diga "wow, pagué muy poco por esto".
@@ -299,6 +300,8 @@ async function generarGuiaPDF(nicho) {
   const ctx = []; // historial de contexto acumulado
   const temas = nicho.modulos_temas?.length >= 4 ? nicho.modulos_temas : null;
 
+  await enviar('📝 Generando sección 1/7 — Quick Win...').catch(() => {});
+
   // ── QUICK WIN — primera sección, resultado en 30 min ────────
   const quickWin = await generarSeccion(`
 ${bloqueNicho(nicho)}
@@ -316,6 +319,8 @@ Formato: <div class="card"> con pasos y highlight. Sin <html> ni <body>.`);
   ctx.push(resumirParaContexto('Quick Win', quickWin));
   await delay(DELAY_SECCIONES);
 
+  await enviar('📝 Generando sección 2/7 — Introducción...').catch(() => {});
+
   // ── INTRODUCCIÓN ─────────────────────────────────────────────
   const intro = await generarSeccion(`
 ${bloqueNicho(nicho)}
@@ -329,6 +334,8 @@ Escribe la introducción profunda de la guía "${nicho.nombre_producto}".
 Formato: <div class="card"><p>...</p></div>. Sin <html> ni <body>.`);
   ctx.push(resumirParaContexto('Introducción', intro));
   await delay(DELAY_SECCIONES);
+
+  await enviar('📝 Generando sección 3/7 — Capítulo 1...').catch(() => {});
 
   // ── CAP 1 ────────────────────────────────────────────────────
   const tema1 = temas?.[0] || `Fundamentos de ${nicho.nicho}`;
@@ -347,6 +354,8 @@ Formato: <div class="card"> y elementos HTML. Sin <html> ni <body>.`);
   ctx.push(resumirParaContexto(tema1, cap1));
   await delay(DELAY_SECCIONES);
 
+  await enviar('📝 Generando sección 4/7 — Capítulo 2...').catch(() => {});
+
   // ── CAP 2 ────────────────────────────────────────────────────
   const tema2 = temas?.[1] || `El Método Paso a Paso`;
   const cap2 = await generarSeccion(`
@@ -363,6 +372,8 @@ Escribe el Capítulo 2: "${tema2}" para la guía "${nicho.nombre_producto}".
 Formato: <div class="card"> y elementos HTML. Sin <html> ni <body>.`);
   ctx.push(resumirParaContexto(tema2, cap2));
   await delay(DELAY_SECCIONES);
+
+  await enviar('📝 Generando sección 5/7 — Casos Reales...').catch(() => {});
 
   // ── CAP 3 — CASOS REALES ──────────────────────────────────────
   const tema3 = temas?.[2] || 'Casos Reales del Mercado Hispano';
@@ -383,6 +394,8 @@ Formato: <div class="card"> separado por cada caso, con <div class="highlight"> 
   ctx.push(resumirParaContexto('Casos Reales', cap3));
   await delay(DELAY_SECCIONES);
 
+  await enviar('📝 Generando sección 6/7 — Herramientas...').catch(() => {});
+
   // ── HERRAMIENTAS Y ERRORES ────────────────────────────────────
   const tema4 = temas?.[3] || 'Herramientas y Errores Críticos';
   const recursos = await generarSeccion(`
@@ -402,6 +415,8 @@ Lista ordenada de los 10 errores más comunes en ${nicho.nicho}:
 Formato: <table> para herramientas + <div class="card"><ol> para errores. Sin <html> ni <body>.`);
   ctx.push(resumirParaContexto('Herramientas y Errores', recursos));
   await delay(DELAY_SECCIONES);
+
+  await enviar('📝 Generando sección 7/7 — Plan de Acción...').catch(() => {});
 
   // ── PLAN 7 DÍAS ───────────────────────────────────────────────
   const plan = await generarSeccion(`
