@@ -187,10 +187,12 @@ function resumirParaContexto(titulo, html) {
   return `[${titulo}]: ${texto}...`;
 }
 
-// ── Construye el bloque de contexto acumulado ─────────────────
+// ── Construye el bloque de contexto — solo las últimas 2 secciones ──
+// (evita acumular tokens innecesarios en prompts tardíos)
 function bloqueContexto(historial) {
   if (!historial.length) return '';
-  return `\nCONTEXTO DE SECCIONES YA ESCRITAS (mantén coherencia, no repitas, construye sobre esto):\n${historial.join('\n')}\n`;
+  const reciente = historial.slice(-2);
+  return `\nCONTEXTO RECIENTE (últimas ${reciente.length} secciones — mantén coherencia, no repitas, construye sobre esto):\n${reciente.join('\n')}\n`;
 }
 
 // ── Bloque de especificidad del nicho para cada prompt ────────

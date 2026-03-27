@@ -173,13 +173,20 @@ async function lanzarExperimento() {
       `Escribe <b>CANCELAR</b> para descartar`
     );
 
-    // 3. Esperar decisión (timeout 4h → auto-publicar)
+    // 3. Esperar decisión (timeout 4h → cancelar automáticamente)
     const decision = await new Promise((resolve) => {
       aprobacionPendiente = { tipo: 'publicar', resolve };
-      setTimeout(() => {
+      setTimeout(async () => {
         if (aprobacionPendiente) {
           aprobacionPendiente = null;
-          resolve('PUBLICAR');
+          try {
+            await enviar(
+              '⏰ Han pasado 4 horas sin respuesta.\n' +
+              'El nicho fue <b>cancelado</b> automáticamente — no se publicó nada.\n\n' +
+              'Usa <b>LANZAR</b> cuando estés listo para buscar un nuevo nicho.'
+            );
+          } catch {}
+          resolve('CANCELAR');
         }
       }, 4 * 60 * 60 * 1000);
     });

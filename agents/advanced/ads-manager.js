@@ -8,7 +8,7 @@ import { construirAudiencia } from '../ads/audience-builder.js';
 import { db, supabase } from '../../core/database.js';
 import { enviar } from '../../core/telegram.js';
 
-const PRESUPUESTO_DIARIO = parseInt(process.env.ADS_PER_PRODUCT_DAILY || '5') * 100; // en centavos
+const PRESUPUESTO_DIARIO = parseInt(process.env.ADS_PER_PRODUCT_DAILY || '20') * 100; // en centavos (mínimo $20 para que Meta aprenda)
 
 export async function lanzarCampanaParaProducto(experimento) {
   console.log(`[AdsManager] Lanzando campaña para: ${experimento.nombre}`);

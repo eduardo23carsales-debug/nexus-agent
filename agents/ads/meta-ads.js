@@ -145,8 +145,8 @@ export const metaAds = {
         ctr: parseFloat(m.ctr || 0)
       };
     } catch (err) {
-      console.error('[MetaAds] Error obteniendo métricas:', err.response?.data?.error?.message || err.message);
-      return { spend: 0, clicks: 0, impressions: 0, conversiones: 0, ctr: 0 };
+      console.warn(`[MetaAds] ⚠️ getMetricas falló para campaña ${campaignId} — los datos del dashboard mostrarán ceros. Error: ${err.response?.data?.error?.message || err.message}`);
+      return { spend: 0, clicks: 0, impressions: 0, conversiones: 0, ctr: 0, error: true };
     }
   },
 

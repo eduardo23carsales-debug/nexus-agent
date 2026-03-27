@@ -7,6 +7,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { db, supabase } from './database.js';
+import { email } from './email.js';
 import axios from 'axios';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -166,6 +167,41 @@ app.get('/api/logs', auth, async (req, res) => {
     res.json(data || []);
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// ══════════════════════════════════════
+// /webhook/stripe — Entrega inmediata al comprar
+// Stripe llama este endpoint en cada pago exitoso
+// ══════════════════════════════════════
+app.post('/webhook/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  let event;
+  try {
+    if (webhookSecret && sig) {
+      const Stripe = (await import('stripe')).default;
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } else {
+      // Sin secreto configurado: acepta sin verificar (modo prueba)
+      console.warn('[Webhook] STRIPE_WEBHOOK_SECRET no configurado — procesando sin verificar firma');
+      event = JSON.parse(req.body.toString());
+    }
+  } catch (err) {
+    console.error('[Webhook] Error verificando firma de Stripe:', err.message);
+    return res.status(400).send(`Webhook error: ${err.message}`);
+  }
+
+  // Responder a Stripe inmediatamente (< 5s requerido)
+  res.status(200).json({ received: true });
+
+  if (event.type === 'checkout.session.completed') {
+    console.log('[Webhook] Pago confirmado — procesando entrega inmediata...');
+    email.procesarPagosNuevos().catch(err =>
+      console.error('[Webhook] Error procesando entrega:', err.message)
+    );
   }
 });
 
