@@ -4,8 +4,12 @@
 // Cada sección se genera por separado para evitar truncado
 // ════════════════════════════════════
 
-import { preguntar } from '../../core/claude.js';
+import { preguntarCompleto } from '../../core/claude.js';
 import { db } from '../../core/database.js';
+
+// Pausa entre secciones para evitar rate limit de Anthropic
+const delay = ms => new Promise(r => setTimeout(r, ms));
+const DELAY_SECCIONES = 4000; // 4 segundos entre llamadas
 
 const SYSTEM = `Eres un experto creador de productos digitales premium para el mercado hispano.
 Creas contenido de alta calidad, práctico y accionable. Devuelves SOLO el contenido solicitado,
@@ -146,10 +150,25 @@ export async function generarProducto(nicho) {
   return html;
 }
 
-// ── Helper: genera una sección con Claude ────────────────────
+// ── Helper: genera una sección con Claude — siempre completa ─
 async function generarSeccion(prompt, agente = 'generator') {
-  const resultado = await preguntar(prompt, SYSTEM, agente, 4000);
-  return resultado.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
+  const MAX_INTENTOS = 2;
+  for (let intento = 0; intento < MAX_INTENTOS; intento++) {
+    try {
+      const resultado = await preguntarCompleto(prompt, SYSTEM, agente, 8000);
+      const limpio = resultado.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
+      if (limpio.length > 100) return limpio; // válido
+      throw new Error('Respuesta demasiado corta');
+    } catch (err) {
+      if (intento < MAX_INTENTOS - 1) {
+        console.log(`[Generator] Sección falló (intento ${intento + 1}): ${err.message} — reintentando en 10s...`);
+        await delay(10000);
+      } else {
+        console.error(`[Generator] Sección falló tras ${MAX_INTENTOS} intentos: ${err.message}`);
+        return `<div class="card"><p style="color:#ff6b6b;">⚠️ Esta sección no pudo generarse. Por favor regenera el producto.</p></div>`;
+      }
+    }
+  }
 }
 
 // ── Pack de 30 Prompts ───────────────────────────────────────
@@ -161,6 +180,7 @@ Escribe la sección de introducción para un pack de prompts de IA sobre: ${nich
 Cliente: ${nicho.cliente_ideal}. Problema: ${nicho.problema_que_resuelve}
 Incluye: cómo usar los prompts, dónde pegarlos (ChatGPT/Claude), cómo personalizar las variables en MAYÚSCULAS.
 Formato: párrafos HTML con <p> y <div class="tip">. Sin <html> ni <body>. Solo el contenido interior.`);
+  await delay(DELAY_SECCIONES);
 
   const prompts1 = await generarSeccion(`
 Crea los prompts #1 al #10 para: ${nicho.nicho}. Cliente: ${nicho.cliente_ideal}
@@ -173,18 +193,21 @@ Para cada prompt usa EXACTAMENTE este formato HTML:
   <p><strong>Resultado esperado:</strong> [Ejemplo realista]</p>
 </div>
 Sin <html> ni <body>. Solo los 10 divs.`);
+  await delay(DELAY_SECCIONES);
 
   const prompts2 = await generarSeccion(`
 Crea los prompts #11 al #20 para: ${nicho.nicho}. Cliente: ${nicho.cliente_ideal}
 Misma estructura HTML que antes:
 <div class="card"><h3>Prompt #N...</h3>...prompt-box...tip...</div>
 Sin <html> ni <body>. Solo los 10 divs.`);
+  await delay(DELAY_SECCIONES);
 
   const prompts3 = await generarSeccion(`
 Crea los prompts #21 al #30 para: ${nicho.nicho}. Cliente: ${nicho.cliente_ideal}
 Misma estructura HTML:
 <div class="card"><h3>Prompt #N...</h3>...prompt-box...tip...</div>
 Sin <html> ni <body>. Solo los 10 divs.`);
+  await delay(DELAY_SECCIONES);
 
   const bonus = await generarSeccion(`
 Crea una sección "Cómo combinar estos prompts" para: ${nicho.nicho}
@@ -211,28 +234,33 @@ Escribe la introducción de una guía sobre: ${nicho.nicho}
 Título: ${nicho.nombre_producto}. Cliente: ${nicho.cliente_ideal}. Problema: ${nicho.problema_que_resuelve}
 3 párrafos poderosos que conectan con el dolor del cliente y prometen la solución.
 Formato: <div class="card"><p>...</p></div>. Sin <html> ni <body>.`);
+  await delay(DELAY_SECCIONES);
 
   const cap1 = await generarSeccion(`
 Escribe el Capítulo 1 de una guía sobre: ${nicho.nicho}
 Tema: Fundamentos — qué necesitas saber primero. Mínimo 500 palabras.
 Incluye conceptos clave, una sección destacada con <div class="highlight">, y una lista ordenada de pasos.
 Formato: <div class="card"> y elementos HTML. Sin <html> ni <body>.`);
+  await delay(DELAY_SECCIONES);
 
   const cap2 = await generarSeccion(`
 Escribe el Capítulo 2 de una guía sobre: ${nicho.nicho}
 Tema: El método paso a paso. Mínimo 500 palabras.
 Pasos numerados detallados con ejemplos del mercado hispano. Incluye un <div class="tip"> con consejo clave.
 Formato: <div class="card"> y elementos HTML. Sin <html> ni <body>.`);
+  await delay(DELAY_SECCIONES);
 
   const cap3 = await generarSeccion(`
 Escribe el Capítulo 3 con 3 casos reales del mercado hispano/latinoamericano sobre: ${nicho.nicho}
 Usa nombres hispanos reales. Incluye situación inicial, qué hicieron, resultado específico con números.
 Formato: <div class="card"> por cada caso. Sin <html> ni <body>.`);
+  await delay(DELAY_SECCIONES);
 
   const recursos = await generarSeccion(`
 Crea una sección de herramientas y recursos para: ${nicho.nicho}
 Incluye: tabla HTML con herramientas (nombre, para qué sirve, precio, gratuita/pago), y los 10 errores más comunes en lista ordenada.
 Formato: <table><tr><th>...</th></tr></table> y <div class="card"><ol>. Sin <html> ni <body>.`);
+  await delay(DELAY_SECCIONES);
 
   const plan = await generarSeccion(`
 Crea el Plan de Acción de 7 días para: ${nicho.nicho}. Cliente: ${nicho.cliente_ideal}
@@ -262,16 +290,19 @@ Escribe las instrucciones de uso para una plantilla sobre: ${nicho.nicho}
 Título: ${nicho.nombre_producto}. Cliente: ${nicho.cliente_ideal}
 Incluye: cómo copiarla a Notion/Google Sheets/Excel, cómo personalizarla, tiempo estimado de setup.
 Formato: <div class="card"><p>...</p></div>. Sin <html> ni <body>.`);
+  await delay(DELAY_SECCIONES);
 
   const plantilla = await generarSeccion(`
 Crea la plantilla COMPLETA para: ${nicho.nicho}
 Incluye todas las secciones, filas y columnas necesarias. Usa tablas HTML donde aplique.
 Formato: <div class="card"><table>...</table></div> y secciones con <div class="card">. Sin <html> ni <body>.`);
+  await delay(DELAY_SECCIONES);
 
   const ejemplo = await generarSeccion(`
 Crea un ejemplo COMPLETAMENTE llenado de la plantilla para: ${nicho.nicho}
 Usa datos realistas de un cliente hispanohablante típico. Muestra la plantilla en uso real.
 Formato: <div class="card"> con tablas HTML llenadas y texto explicativo. Sin <html> ni <body>.`);
+  await delay(DELAY_SECCIONES);
 
   const tips = await generarSeccion(`
 Crea 2 secciones:
@@ -298,6 +329,7 @@ Escribe el mensaje de bienvenida para un mini curso sobre: ${nicho.nicho}
 Título: ${nicho.nombre_producto}. Cliente: ${nicho.cliente_ideal}
 Incluye: qué van a lograr, cuánto dura el curso, cómo aprovecharlo mejor. Tono motivador y personal.
 Formato: <div class="card"><p>...</p></div> con <div class="highlight"> para el objetivo principal. Sin <html> ni <body>.`);
+  await delay(DELAY_SECCIONES);
 
   const temas = [
     'Fundamentos — qué necesitas saber primero',
@@ -324,7 +356,9 @@ Usa acordeón para las lecciones:
 Y termina con: <div class="tip">✅ Tarea: [ejercicio concreto]</div>
 Sin <html> ni <body>.`);
     modulos.push(contenido);
+    if (i < 4) await delay(DELAY_SECCIONES); // pausa entre módulos (excepto el último)
   }
+  await delay(DELAY_SECCIONES);
 
   const examen = await generarSeccion(`
 Crea el examen final (5 preguntas de opción múltiple) y el certificado de completación para: ${nicho.nombre_producto}
@@ -354,23 +388,27 @@ Escribe la introducción y checklist maestro para un toolkit sobre: ${nicho.nich
 Incluye: cómo usar el toolkit, y un checklist de 40 ítems organizados por fase/etapa.
 Checklist: <ul class="checklist"><li>acción concreta</li>...</ul>
 Formato: <div class="card">. Sin <html> ni <body>.`);
+  await delay(DELAY_SECCIONES);
 
   const plantillas = await generarSeccion(`
 Crea 3 plantillas prácticas listas para usar sobre: ${nicho.nicho}
 Cada plantilla con: nombre, instrucciones de uso, la plantilla con tabla HTML y ejemplo llenado.
 Formato: <div class="card"> por cada plantilla. Sin <html> ni <body>.`);
+  await delay(DELAY_SECCIONES);
 
   const herramientas = await generarSeccion(`
 Crea el stack de herramientas recomendadas para: ${nicho.nicho}
 Tabla HTML con columnas: Herramienta | Para qué sirve | Precio | Categoría
 Agrupa por categorías. Mínimo 15 herramientas.
 Formato: <div class="card"><table>...</table></div>. Sin <html> ni <body>.`);
+  await delay(DELAY_SECCIONES);
 
   const metricas = await generarSeccion(`
 Crea 2 secciones para: ${nicho.nicho}
 1. Métricas clave a monitorear (tabla: métrica, valor referencia, cómo medirla)
 2. Las 10 señales de alerta con solución inmediata para cada una
 Formato: <div class="card"> con tablas y listas HTML. Sin <html> ni <body>.`);
+  await delay(DELAY_SECCIONES);
 
   const calendario = await generarSeccion(`
 Crea el calendario de implementación de 30 días para: ${nicho.nicho}

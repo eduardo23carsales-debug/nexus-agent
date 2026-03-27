@@ -37,7 +37,7 @@ function calcularCosto(inputTokens, outputTokens) {
  * @param {number} maxTokens    - Límite de tokens en respuesta
  * @returns {string}            - Respuesta de Claude
  */
-export async function preguntar(prompt, system = '', agente = 'sistema', maxTokens = MAX_TOKENS) {
+export async function preguntar(prompt, system = '', agente = 'sistema', maxTokens = MAX_TOKENS, model = MODEL) {
   const inicio = Date.now();
 
   // Verificar límite de gasto diario
@@ -52,7 +52,7 @@ export async function preguntar(prompt, system = '', agente = 'sistema', maxToke
 
   try {
     const response = await client.messages.create({
-      model: MODEL,
+      model,
       max_tokens: maxTokens,
       system: system || 'Eres NEXUS AGENT, un sistema autónomo de ingresos digitales. Responde siempre en español. Sé directo y accionable.',
       messages: [{ role: 'user', content: prompt }]
@@ -77,6 +77,99 @@ export async function preguntar(prompt, system = '', agente = 'sistema', maxToke
     await db.log(agente, 'claude_error', { error: err.message }, false, Date.now() - inicio);
     throw err;
   }
+}
+
+// ════════════════════════════════════
+// FUNCIÓN CON CONTINUACIÓN AUTOMÁTICA
+// ════════════════════════════════════
+
+/**
+ * Llama a Claude garantizando respuesta COMPLETA.
+ * - Retry automático en rate limit (429) con backoff
+ * - Si Claude se corta por max_tokens, continúa automáticamente
+ *   hasta que stop_reason sea 'end_turn'
+ * @param {string} prompt
+ * @param {string} system
+ * @param {string} agente
+ * @param {number} maxTokens  - por cada llamada parcial
+ * @param {number} maxIter    - máximo de continuaciones (seguridad)
+ * @returns {string}          - texto completo, sin cortes
+ */
+export async function preguntarCompleto(prompt, system = '', agente = 'sistema', maxTokens = MAX_TOKENS, maxIter = 5) {
+  const SYSTEM = system || 'Eres NEXUS AGENT, un sistema autónomo de ingresos digitales. Responde siempre en español. Sé directo y accionable.';
+  const SYSTEM_DEFINITIVO = SYSTEM;
+
+  const messages = [{ role: 'user', content: prompt }];
+  let textoTotal = '';
+  let iteracion = 0;
+
+  while (iteracion < maxIter) {
+    iteracion++;
+
+    // Verificar límite diario antes de cada llamada
+    if (costoHoy >= MAX_DAILY_SPEND) {
+      await db.log(agente, 'claude_bloqueado', { razon: 'limite_diario_alcanzado', costo_hoy: costoHoy }, false);
+      throw new Error(`Límite diario de API alcanzado ($${costoHoy.toFixed(4)}/$${MAX_DAILY_SPEND}).`);
+    }
+
+    // Retry con backoff en rate limit
+    let response;
+    const MAX_REINTENTOS = 3;
+    for (let intento = 0; intento < MAX_REINTENTOS; intento++) {
+      try {
+        const inicio = Date.now();
+        response = await client.messages.create({
+          model: MODEL,
+          max_tokens: maxTokens,
+          system: SYSTEM_DEFINITIVO,
+          messages
+        });
+
+        const costo = calcularCosto(response.usage.input_tokens, response.usage.output_tokens);
+        costoHoy += costo;
+        await db.log(agente, 'claude_llamada', {
+          tokens_input: response.usage.input_tokens,
+          tokens_output: response.usage.output_tokens,
+          costo_usd: costo,
+          costo_acumulado_hoy: costoHoy,
+          iteracion,
+          stop_reason: response.stop_reason
+        }, true, Date.now() - inicio, costo);
+        break; // éxito — salir del loop de reintentos
+
+      } catch (err) {
+        const esRateLimit = err.status === 429 || err.message?.includes('rate_limit') || err.message?.includes('overloaded');
+        if (esRateLimit && intento < MAX_REINTENTOS - 1) {
+          const espera = 8000 * (intento + 1); // 8s, 16s, 24s
+          console.log(`[Claude] Rate limit (intento ${intento + 1}) — esperando ${espera / 1000}s...`);
+          await new Promise(r => setTimeout(r, espera));
+        } else {
+          await db.log(agente, 'claude_error', { error: err.message, intento }, false);
+          throw err;
+        }
+      }
+    }
+
+    const fragmento = response.content[0]?.text || '';
+    textoTotal += fragmento;
+
+    if (response.stop_reason === 'end_turn') {
+      // Respuesta completa — terminamos
+      break;
+    }
+
+    if (response.stop_reason === 'max_tokens') {
+      // Claude se cortó — pedirle que continúe desde donde quedó
+      console.log(`[Claude] Respuesta cortada (iter ${iteracion}) — continuando...`);
+      messages.push({ role: 'assistant', content: fragmento });
+      messages.push({ role: 'user', content: 'Continúa exactamente desde donde te cortaste. NO repitas nada de lo anterior. Solo continúa el contenido HTML.' });
+    } else {
+      // Otro stop_reason (ej: stop_sequence) — aceptar como completo
+      break;
+    }
+  }
+
+  return textoTotal;
 }
 
 // ════════════════════════════════════
