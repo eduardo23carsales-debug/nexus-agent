@@ -61,13 +61,13 @@ app.get('/api/estado', auth, async (req, res) => {
     try {
       const { data } = await axios.get(`https://graph.facebook.com/v19.0/${process.env.META_AD_ACCOUNT_ID}`, {
         params: {
-          fields: 'amount_spent,currency,spend_cap,daily_spend_limit',
+          fields: 'amount_spent,currency,name',
           access_token: process.env.META_ACCESS_TOKEN?.trim()
         },
         timeout: 8000
       });
       metaBalance = {
-        balance: data.spend_cap != null ? (parseFloat(data.spend_cap) / 100).toFixed(2) : null,
+        balance: null,
         gasto_mes: data.amount_spent != null ? (parseFloat(data.amount_spent) / 100).toFixed(2) : null,
         moneda: data.currency || 'USD',
         error: null
