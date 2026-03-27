@@ -10,7 +10,7 @@ dotenv.config();
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
-  timeout: 60 * 1000, // 60 segundos máximo por llamada — evita colgar indefinidamente
+  timeout: 300 * 1000, // 5 minutos máximo por llamada (6000 tokens ~3-4 min de generación)
 });
 
 const MODEL = 'claude-opus-4-6';
