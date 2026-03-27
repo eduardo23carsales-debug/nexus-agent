@@ -122,7 +122,8 @@ tailwind.config = {
             <span id="meta-balance-label" class="text-gray-500 text-sm">límite</span>
           </div>
           <div class="text-xs text-gray-600 mt-1">
-            Gasto mes: <span id="meta-gasto" class="text-gray-400">—</span>
+            Gastado total: <span id="meta-gasto" class="text-gray-400">—</span>
+            · <span id="meta-activas" class="text-gray-400">—</span> activas
           </div>
         </div>
         <div id="meta-error" class="text-xs text-red-400 hidden"></div>
@@ -339,14 +340,10 @@ async function cargarEstado() {
       document.getElementById('meta-error').textContent = m.error.slice(0, 60);
       document.getElementById('meta-error').classList.remove('hidden');
     } else {
-      if (m.balance != null) {
-        document.getElementById('meta-balance').textContent = `$${m.balance}`;
-        document.getElementById('meta-balance-label').textContent = 'límite';
-      } else {
-        document.getElementById('meta-balance').textContent = m.gasto_mes != null ? `$${m.gasto_mes}` : '$0';
-        document.getElementById('meta-balance-label').textContent = 'gastado';
-      }
-      document.getElementById('meta-gasto').textContent = m.gasto_mes != null ? `$${m.gasto_mes}` : '$0';
+      document.getElementById('meta-balance').textContent = `$${m.gasto_mes ?? '0.00'}`;
+      document.getElementById('meta-balance-label').textContent = 'gastado';
+      document.getElementById('meta-gasto').textContent = `$${m.gasto_mes ?? '0.00'}`;
+      document.getElementById('meta-activas').textContent = m.campanas_activas ?? 0;
       document.getElementById('meta-error').classList.add('hidden');
     }
 

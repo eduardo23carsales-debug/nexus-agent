@@ -56,24 +56,24 @@ app.get('/api/estado', auth, async (req, res) => {
     const gastoClaudeHoy = logsHoy?.reduce((s, l) => s + (l.costo_api || 0), 0) || 0;
     const limiteClaudeHoy = Number(process.env.MAX_DAILY_API_SPEND) || 5;
 
-    // Meta Ads — gasto de la cuenta (balance solo existe en cuentas prepago)
+    // Meta Ads — gasto total desde nuestra BD (no depende de permisos del token)
     let metaBalance = { balance: null, gasto_mes: null, moneda: 'USD', error: null };
     try {
-      const { data } = await axios.get(`https://graph.facebook.com/v19.0/${process.env.META_AD_ACCOUNT_ID}`, {
-        params: {
-          fields: 'amount_spent,currency,name',
-          access_token: process.env.META_ACCESS_TOKEN?.trim()
-        },
-        timeout: 8000
-      });
+      const { data: camps } = await supabase
+        .from('campaigns')
+        .select('gasto_total, estado')
+        .eq('plataforma', 'meta');
+      const gastoTotal = (camps || []).reduce((s, c) => s + (parseFloat(c.gasto_total) || 0), 0);
+      const activas = (camps || []).filter(c => c.estado === 'activo' || c.estado === 'escalando').length;
       metaBalance = {
         balance: null,
-        gasto_mes: data.amount_spent != null ? (parseFloat(data.amount_spent) / 100).toFixed(2) : null,
-        moneda: data.currency || 'USD',
+        gasto_mes: gastoTotal.toFixed(2),
+        moneda: 'USD',
+        campanas_activas: activas,
         error: null
       };
     } catch (e) {
-      metaBalance.error = e.response?.data?.error?.message || e.message;
+      metaBalance.error = e.message;
     }
 
     // Stripe — saldo disponible y pendiente
