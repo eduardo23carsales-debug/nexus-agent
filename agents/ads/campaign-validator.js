@@ -4,7 +4,7 @@
 // ════════════════════════════════════
 
 import { metaAds } from './meta-ads.js';
-import { db } from '../../core/database.js';
+import { db, supabase } from '../../core/database.js';
 import { enviar } from '../../core/telegram.js';
 
 const MIN_ROAS_ESCALAR = 1.5;
@@ -15,7 +15,7 @@ const HORAS_DECISION = 72;
 export async function validarCampanas() {
   console.log('[CampaignValidator] Revisando campañas activas...');
 
-  const { data: campanas } = await db.supabase
+  const { data: campanas } = await supabase
     .from('campaigns')
     .select('*, experiments(nombre, precio)')
     .eq('estado', 'activo')
@@ -45,7 +45,7 @@ async function evaluarCampana(campana) {
   const horasActiva = (Date.now() - new Date(campana.fecha_inicio).getTime()) / (1000 * 60 * 60);
 
   // Actualizar métricas en DB
-  await db.supabase.from('campaigns').update({
+  await supabase.from('campaigns').update({
     gasto_total: metricas.spend,
     impresiones: metricas.impressions,
     clicks: metricas.clicks,
@@ -82,7 +82,7 @@ async function evaluarCampana(campana) {
   if (gasto_sin_ventas) {
     // Matar — gastó $15+ sin ninguna venta
     await metaAds.pausarCampana(campana.campaign_id_externo);
-    await db.supabase.from('campaigns').update({
+    await supabase.from('campaigns').update({
       estado: 'muerto',
       decision: 'matar',
       razon_decision: `Gastó $${metricas.spend} sin ninguna venta`,
@@ -101,7 +101,7 @@ async function evaluarCampana(campana) {
     // Escalar — ROAS positivo
     const nuevoPresupuesto = Math.min(campana.presupuesto_diario * 2, 5000); // máx $50/día
     await metaAds.escalarPresupuesto(campana.adset_id, nuevoPresupuesto);
-    await db.supabase.from('campaigns').update({
+    await supabase.from('campaigns').update({
       estado: 'escalando',
       presupuesto_diario: nuevoPresupuesto,
       decision: 'escalar',
@@ -120,7 +120,7 @@ async function evaluarCampana(campana) {
   } else if (roas < MAX_ROAS_MATAR) {
     // Matar — ROAS muy bajo
     await metaAds.pausarCampana(campana.campaign_id_externo);
-    await db.supabase.from('campaigns').update({
+    await supabase.from('campaigns').update({
       estado: 'muerto',
       decision: 'matar',
       razon_decision: `ROAS ${roas.toFixed(2)}x < ${MAX_ROAS_MATAR}x mínimo`,

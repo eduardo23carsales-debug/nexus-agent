@@ -5,7 +5,7 @@
 
 import { metaAds } from '../ads/meta-ads.js';
 import { construirAudiencia } from '../ads/audience-builder.js';
-import { db } from '../../core/database.js';
+import { db, supabase } from '../../core/database.js';
 import { enviar } from '../../core/telegram.js';
 
 const PRESUPUESTO_DIARIO = parseInt(process.env.ADS_PER_PRODUCT_DAILY || '5') * 100; // en centavos
@@ -36,7 +36,7 @@ export async function lanzarCampanaParaProducto(experimento) {
     });
 
     // 4. Guardar en DB
-    await db.supabase.from('campaigns').insert({
+    await supabase.from('campaigns').insert({
       experiment_id: experimento.id,
       plataforma: 'meta',
       campaign_id_externo: campanaData.campaign_id,

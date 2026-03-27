@@ -15,18 +15,31 @@ const PAGE_ID = process.env.META_PAGE_ID;
 
 // ── Helper para llamadas a la API ────────────────────────────
 async function metaPost(endpoint, params) {
-  const { data } = await axios.post(`${API}${endpoint}`, {
-    ...params,
-    access_token: TOKEN
-  });
-  return data;
+  try {
+    const { data } = await axios.post(`${API}${endpoint}`, {
+      ...params,
+      access_token: TOKEN
+    }, { timeout: 15000 });
+    return data;
+  } catch (err) {
+    const msg = err.response?.data?.error?.message || err.message;
+    const code = err.response?.data?.error?.code || err.response?.status;
+    throw new Error(`Meta API error ${code}: ${msg}`);
+  }
 }
 
 async function metaGet(endpoint, params = {}) {
-  const { data } = await axios.get(`${API}${endpoint}`, {
-    params: { ...params, access_token: TOKEN }
-  });
-  return data;
+  try {
+    const { data } = await axios.get(`${API}${endpoint}`, {
+      params: { ...params, access_token: TOKEN },
+      timeout: 15000
+    });
+    return data;
+  } catch (err) {
+    const msg = err.response?.data?.error?.message || err.message;
+    const code = err.response?.data?.error?.code || err.response?.status;
+    throw new Error(`Meta API error ${code}: ${msg}`);
+  }
 }
 
 export const metaAds = {
