@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS AGENT — Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        neon: '#00ff88',
+        dark: '#0a0a0f',
+        card: '#0f0f1a',
+        border: '#1a1a2e'
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { background: #0a0a0f; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
+  .card { background: #0f0f1a; border: 1px solid #1a1a2e; border-radius: 12px; }
+  .neon { color: #00ff88; }
+  .neon-border { border-color: #00ff88; }
+  .badge-green  { background: rgba(0,255,136,0.15); color: #00ff88; border: 1px solid rgba(0,255,136,0.3); }
+  .badge-yellow { background: rgba(255,200,0,0.15); color: #ffc800; border: 1px solid rgba(255,200,0,0.3); }
+  .badge-red    { background: rgba(255,50,50,0.15);  color: #ff4444; border: 1px solid rgba(255,50,50,0.3); }
+  .badge-gray   { background: rgba(150,150,150,0.15);color: #999;    border: 1px solid rgba(150,150,150,0.3); }
+  .badge-blue   { background: rgba(50,100,255,0.15); color: #6699ff; border: 1px solid rgba(50,100,255,0.3); }
+  .progress-bg  { background: #1a1a2e; border-radius: 99px; }
+  .progress-bar { background: linear-gradient(90deg, #00ff88, #00cc66); border-radius: 99px; transition: width 0.6s ease; }
+  .progress-warn { background: linear-gradient(90deg, #ffc800, #ff8800); }
+  .progress-danger { background: linear-gradient(90deg, #ff4444, #cc0000); }
+  .pulse { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .table-row:hover { background: rgba(0,255,136,0.04); }
+  .glow { box-shadow: 0 0 20px rgba(0,255,136,0.15); }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #0a0a0f; }
+  ::-webkit-scrollbar-thumb { background: #1a1a2e; border-radius: 2px; }
+  .spinner { border: 2px solid #1a1a2e; border-top: 2px solid #00ff88; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #login-screen { background: #0a0a0f; }
+</style>
+</head>
+<body class="min-h-screen text-white">
+
+<!-- ════════════════ LOGIN SCREEN ════════════════ -->
+<div id="login-screen" class="fixed inset-0 flex items-center justify-center z-50">
+  <div class="card p-8 w-full max-w-sm glow">
+    <div class="text-center mb-6">
+      <div class="text-3xl font-black neon mb-1">⚡ NEXUS</div>
+      <div class="text-gray-400 text-sm">Dashboard de Administración</div>
+    </div>
+    <input id="secret-input" type="password" placeholder="Clave de acceso..."
+      class="w-full bg-dark border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-neon mb-4 focus:neon-border"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()" class="w-full bg-neon text-black font-bold py-3 rounded-lg hover:bg-green-400 transition">
+      Entrar
+    </button>
+    <div id="login-error" class="text-red-400 text-sm text-center mt-3 hidden">Clave incorrecta</div>
+  </div>
+</div>
+
+<!-- ════════════════ MAIN DASHBOARD ════════════════ -->
+<div id="dashboard" class="hidden min-h-screen">
+
+  <!-- HEADER -->
+  <header class="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl font-black neon">⚡ NEXUS</span>
+      <span class="text-gray-500 text-sm">Agent Dashboard v4.0</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <div id="sistema-status" class="flex items-center gap-2 text-sm">
+        <span id="status-dot" class="w-2 h-2 rounded-full bg-gray-500"></span>
+        <span id="status-text" class="text-gray-500">Conectando...</span>
+      </div>
+      <div id="last-update" class="text-gray-600 text-xs"></div>
+      <div id="refresh-spinner" class="spinner hidden"></div>
+      <button onclick="cargarTodo()" class="text-xs text-gray-500 hover:text-neon transition px-3 py-1 border border-gray-800 rounded-md hover:border-green-800">
+        ↻ Refresh
+      </button>
+    </div>
+  </header>
+
+  <div class="p-6 max-w-screen-2xl mx-auto space-y-6">
+
+    <!-- ── FILA 1: TARJETAS DE CRÉDITOS ── -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+
+      <!-- Claude API -->
+      <div class="card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="text-xs text-gray-500 uppercase tracking-wider">Claude API</div>
+          <div class="text-lg">🤖</div>
+        </div>
+        <div class="flex items-end gap-2">
+          <span id="claude-gasto" class="text-2xl font-bold text-white">—</span>
+          <span id="claude-limite" class="text-gray-500 text-sm mb-0.5">/ $—</span>
+        </div>
+        <div class="progress-bg h-2">
+          <div id="claude-bar" class="progress-bar h-2" style="width:0%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-600">
+          <span>Gasto hoy</span>
+          <span id="claude-pct" class="text-gray-400">0%</span>
+        </div>
+      </div>
+
+      <!-- Meta Ads -->
+      <div class="card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="text-xs text-gray-500 uppercase tracking-wider">Meta Ads</div>
+          <div class="text-lg">📢</div>
+        </div>
+        <div>
+          <div class="flex items-baseline gap-2">
+            <span id="meta-balance" class="text-2xl font-bold text-white">—</span>
+            <span class="text-gray-500 text-sm">saldo</span>
+          </div>
+          <div class="text-xs text-gray-600 mt-1">
+            Gasto mes: <span id="meta-gasto" class="text-gray-400">—</span>
+          </div>
+        </div>
+        <div id="meta-error" class="text-xs text-red-400 hidden"></div>
+      </div>
+
+      <!-- Stripe -->
+      <div class="card p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="text-xs text-gray-500 uppercase tracking-wider">Stripe</div>
+          <div class="text-lg">💳</div>
+        </div>
+        <div>
+          <div class="flex items-baseline gap-2">
+            <span id="stripe-disponible" class="text-2xl font-bold text-white">—</span>
+            <span class="text-gray-500 text-sm">disponible</span>
+          </div>
+          <div class="text-xs text-gray-600 mt-1">
+            Pendiente: <span id="stripe-pendiente" class="text-gray-400">—</span>
+          </div>
+        </div>
+        <div id="stripe-error" class="text-xs text-red-400 hidden"></div>
+      </div>
+
+      <!-- Revenue Total -->
+      <div class="card p-5 space-y-3 border-green-900">
+        <div class="flex items-center justify-between">
+          <div class="text-xs text-gray-500 uppercase tracking-wider">Revenue Total</div>
+          <div class="text-lg">💰</div>
+        </div>
+        <div>
+          <div class="flex items-baseline gap-2">
+            <span id="revenue-total" class="text-2xl font-bold neon">—</span>
+            <span class="text-gray-500 text-sm">neto</span>
+          </div>
+          <div class="text-xs text-gray-600 mt-1 space-x-3">
+            <span>Digital: <span id="revenue-digital" class="text-gray-400">—</span></span>
+            <span>Leads: <span id="revenue-leads" class="text-gray-400">—</span></span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-600">Activos:</span>
+          <span id="exp-activos" class="text-xs badge-green px-2 py-0.5 rounded-full font-bold">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FILA 2: CAMPAÑAS RANKING ── -->
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-bold text-gray-200">📊 Campañas — Ranking por ROAS</h2>
+        <span id="campanias-count" class="text-xs text-gray-600"></span>
+      </div>
+      <div id="campanias-empty" class="text-center py-10 text-gray-600 hidden">
+        <div class="text-3xl mb-2">📭</div>
+        <div>No hay campañas activas todavía</div>
+        <div class="text-xs mt-1">Las campañas aparecen aquí cuando publicas un producto</div>
+      </div>
+      <div id="campanias-loading" class="text-center py-8 text-gray-600">
+        <div class="spinner mx-auto mb-2"></div>
+        <div class="text-sm">Cargando campañas...</div>
+      </div>
+      <div id="campanias-table" class="hidden overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-gray-600 border-b border-gray-800">
+              <th class="pb-3 pr-4 font-medium">#</th>
+              <th class="pb-3 pr-4 font-medium">Producto</th>
+              <th class="pb-3 pr-4 font-medium">Estado</th>
+              <th class="pb-3 pr-4 font-medium text-right">ROAS</th>
+              <th class="pb-3 pr-4 font-medium text-right">Gasto</th>
+              <th class="pb-3 pr-4 font-medium text-right">Revenue</th>
+              <th class="pb-3 pr-4 font-medium text-right">Clicks</th>
+              <th class="pb-3 font-medium text-right">CTR</th>
+            </tr>
+          </thead>
+          <tbody id="campanias-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── FILA 3: PRODUCTOS + LOGS ── -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+
+      <!-- Productos Ranking -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-bold text-gray-200">🚀 Productos — Ranking por Revenue</h2>
+          <span id="productos-count" class="text-xs text-gray-600"></span>
+        </div>
+        <div id="productos-loading" class="text-center py-8 text-gray-600">
+          <div class="spinner mx-auto mb-2"></div>
+          <div class="text-sm">Cargando productos...</div>
+        </div>
+        <div id="productos-empty" class="text-center py-10 text-gray-600 hidden">
+          <div class="text-3xl mb-2">📦</div>
+          <div>Sin productos todavía</div>
+        </div>
+        <div id="productos-list" class="hidden space-y-2 max-h-96 overflow-y-auto pr-1"></div>
+      </div>
+
+      <!-- Activity Log -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="font-bold text-gray-200">📋 Actividad Reciente</h2>
+          <span class="text-xs text-gray-600">últimas 30 acciones</span>
+        </div>
+        <div id="logs-loading" class="text-center py-8 text-gray-600">
+          <div class="spinner mx-auto mb-2"></div>
+          <div class="text-sm">Cargando logs...</div>
+        </div>
+        <div id="logs-list" class="hidden space-y-1 max-h-96 overflow-y-auto pr-1"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="text-center py-4 text-gray-700 text-xs border-t border-gray-900">
+    NEXUS AGENT v4.0 — Auto-refresh cada 30s
+  </footer>
+</div>
+
+<script>
+// ════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════
+let SECRET = '';
+const REFRESH_INTERVAL = 30000;
+let refreshTimer = null;
+
+// ── Leer secret de URL (si viene guardado) ──
+const urlParams = new URLSearchParams(window.location.search);
+const urlSecret = urlParams.get('secret');
+if (urlSecret) {
+  SECRET = urlSecret;
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  cargarTodo();
+  iniciarAutoRefresh();
+}
+
+function doLogin() {
+  const input = document.getElementById('secret-input').value.trim();
+  if (!input) return;
+  SECRET = input;
+  // Probar autenticación
+  fetch(`/api/estado?secret=${SECRET}`)
+    .then(r => {
+      if (r.status === 401) {
+        document.getElementById('login-error').classList.remove('hidden');
+        SECRET = '';
+      } else {
+        // Guardar en URL para bookmarking
+        history.replaceState(null, '', `?secret=${SECRET}`);
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        cargarTodo();
+        iniciarAutoRefresh();
+      }
+    })
+    .catch(() => {
+      document.getElementById('login-error').classList.remove('hidden');
+    });
+}
+
+// ════════════════════════════════════
+// AUTO REFRESH
+// ════════════════════════════════════
+function iniciarAutoRefresh() {
+  clearInterval(refreshTimer);
+  refreshTimer = setInterval(cargarTodo, REFRESH_INTERVAL);
+}
+
+// ════════════════════════════════════
+// CARGA PRINCIPAL
+// ════════════════════════════════════
+async function cargarTodo() {
+  document.getElementById('refresh-spinner').classList.remove('hidden');
+  try {
+    await Promise.all([cargarEstado(), cargarCampanias(), cargarProductos(), cargarLogs()]);
+  } finally {
+    document.getElementById('refresh-spinner').classList.add('hidden');
+  }
+}
+
+// ── Estado general ───────────────────────────────────────────
+async function cargarEstado() {
+  try {
+    const r = await fetch(`/api/estado?secret=${SECRET}`);
+    if (!r.ok) throw new Error('Error ' + r.status);
+    const d = await r.json();
+
+    // Sistema status
+    document.getElementById('status-dot').className = 'w-2 h-2 rounded-full bg-green-400 pulse';
+    document.getElementById('status-text').textContent = 'Online';
+    document.getElementById('status-text').className = 'text-green-400 text-sm';
+    document.getElementById('last-update').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es');
+
+    // Claude API
+    const c = d.claude;
+    document.getElementById('claude-gasto').textContent = `$${c.gasto_hoy}`;
+    document.getElementById('claude-limite').textContent = `/ $${c.limite}`;
+    document.getElementById('claude-pct').textContent = `${c.porcentaje}%`;
+    const bar = document.getElementById('claude-bar');
+    bar.style.width = `${c.porcentaje}%`;
+    bar.className = 'progress-bar h-2';
+    if (c.porcentaje >= 90) bar.classList.add('progress-danger');
+    else if (c.porcentaje >= 70) bar.classList.add('progress-warn');
+
+    // Meta Ads
+    const m = d.meta;
+    if (m.error) {
+      document.getElementById('meta-balance').textContent = 'Error';
+      document.getElementById('meta-error').textContent = m.error.slice(0, 60);
+      document.getElementById('meta-error').classList.remove('hidden');
+    } else {
+      document.getElementById('meta-balance').textContent = m.balance != null ? `$${m.balance}` : '—';
+      document.getElementById('meta-gasto').textContent = m.gasto_mes != null ? `$${m.gasto_mes}` : '—';
+      document.getElementById('meta-error').classList.add('hidden');
+    }
+
+    // Stripe
+    const s = d.stripe;
+    if (s.error) {
+      document.getElementById('stripe-disponible').textContent = 'Error';
+      document.getElementById('stripe-error').textContent = s.error.slice(0, 60);
+      document.getElementById('stripe-error').classList.remove('hidden');
+    } else {
+      document.getElementById('stripe-disponible').textContent = s.disponible != null ? `$${s.disponible}` : '—';
+      document.getElementById('stripe-pendiente').textContent = s.pendiente != null ? `$${s.pendiente}` : '—';
+      document.getElementById('stripe-error').classList.add('hidden');
+    }
+
+    // Revenue
+    const sis = d.sistema;
+    document.getElementById('revenue-total').textContent = `$${sis.revenue_total}`;
+    document.getElementById('revenue-digital').textContent = `$${sis.revenue_digital}`;
+    document.getElementById('revenue-leads').textContent = `$${sis.revenue_leads}`;
+    document.getElementById('exp-activos').textContent = `${sis.experimentos_activos} activos`;
+
+  } catch (e) {
+    document.getElementById('status-dot').className = 'w-2 h-2 rounded-full bg-red-500';
+    document.getElementById('status-text').textContent = 'Sin conexión';
+    document.getElementById('status-text').className = 'text-red-400 text-sm';
+    console.error('Error cargando estado:', e);
+  }
+}
+
+// ── Campañas ─────────────────────────────────────────────────
+async function cargarCampanias() {
+  try {
+    const r = await fetch(`/api/campanias?secret=${SECRET}`);
+    const data = await r.json();
+
+    document.getElementById('campanias-loading').classList.add('hidden');
+
+    if (!data.length) {
+      document.getElementById('campanias-empty').classList.remove('hidden');
+      document.getElementById('campanias-table').classList.add('hidden');
+      return;
+    }
+
+    document.getElementById('campanias-empty').classList.add('hidden');
+    document.getElementById('campanias-table').classList.remove('hidden');
+    document.getElementById('campanias-count').textContent = `${data.length} campañas`;
+
+    const tbody = document.getElementById('campanias-tbody');
+    tbody.innerHTML = data.map((c, i) => {
+      const roas = parseFloat(c.roas || 0);
+      const roasBadge = roas >= 1.5 ? 'badge-green' : roas >= 0.5 ? 'badge-yellow' : 'badge-red';
+      const roasText = roas > 0 ? `${roas.toFixed(2)}x` : '—';
+      const estadoBadge = {
+        activa: 'badge-green', escalando: 'badge-blue',
+        pausada: 'badge-yellow', muerta: 'badge-red'
+      }[c.estado] || 'badge-gray';
+      const revenue = parseFloat(c.revenue || c.ventas || 0);
+      const gasto = parseFloat(c.gasto_total || 0);
+      return `
+        <tr class="table-row border-b border-gray-900">
+          <td class="py-3 pr-4 text-gray-600">${i+1}</td>
+          <td class="py-3 pr-4">
+            <div class="font-medium text-white text-sm">${c.nombre_producto || c.nombre || 'Sin nombre'}</div>
+            <div class="text-xs text-gray-600">${c.nicho || ''}</div>
+          </td>
+          <td class="py-3 pr-4">
+            <span class="${estadoBadge} text-xs px-2 py-1 rounded-full font-medium">${c.estado || '—'}</span>
+          </td>
+          <td class="py-3 pr-4 text-right">
+            <span class="${roasBadge} text-xs px-2 py-1 rounded-full font-bold">${roasText}</span>
+          </td>
+          <td class="py-3 pr-4 text-right text-gray-300">$${gasto.toFixed(2)}</td>
+          <td class="py-3 pr-4 text-right ${revenue > 0 ? 'text-green-400 font-medium' : 'text-gray-600'}">$${revenue.toFixed(2)}</td>
+          <td class="py-3 pr-4 text-right text-gray-400">${(c.clicks || 0).toLocaleString()}</td>
+          <td class="py-3 text-right text-gray-500">${c.ctr ? c.ctr.toFixed(2)+'%' : '—'}</td>
+        </tr>`;
+    }).join('');
+  } catch (e) {
+    console.error('Error cargando campañas:', e);
+  }
+}
+
+// ── Productos ────────────────────────────────────────────────
+async function cargarProductos() {
+  try {
+    const r = await fetch(`/api/productos?secret=${SECRET}`);
+    const data = await r.json();
+
+    document.getElementById('productos-loading').classList.add('hidden');
+
+    if (!data.length) {
+      document.getElementById('productos-empty').classList.remove('hidden');
+      document.getElementById('productos-list').classList.add('hidden');
+      return;
+    }
+
+    document.getElementById('productos-empty').classList.add('hidden');
+    document.getElementById('productos-list').classList.remove('hidden');
+    document.getElementById('productos-count').textContent = `${data.length} productos`;
+
+    const list = document.getElementById('productos-list');
+    list.innerHTML = data.map((p, i) => {
+      const revenue = p.metricas?.revenue || 0;
+      const ventas = p.metricas?.ventas || p.metricas?.conversiones || 0;
+      const estadoBadge = {
+        corriendo: 'badge-green', vivo: 'badge-green', escalando: 'badge-blue',
+        muerto: 'badge-red', pausado: 'badge-yellow'
+      }[p.estado] || 'badge-gray';
+      const tipoBadge = {
+        guia_pdf: '📄', mini_curso: '🎓', prompts: '💬', toolkit: '🛠️', plantilla: '📋'
+      }[p.tipo] || '📦';
+      const rankColor = i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-amber-600' : 'text-gray-700';
+      return `
+        <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-900/40 transition group">
+          <span class="${rankColor} font-bold text-sm w-5 text-center">${i < 3 ? ['🥇','🥈','🥉'][i] : `${i+1}`}</span>
+          <span class="text-base">${tipoBadge}</span>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-white truncate">${p.nombre}</div>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="text-xs text-gray-600">${p.nicho || ''}</span>
+              <span class="${estadoBadge} text-xs px-1.5 py-0.5 rounded-full">${p.estado}</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="${revenue > 0 ? 'text-green-400 font-bold' : 'text-gray-600'} text-sm">$${revenue.toFixed(2)}</div>
+            <div class="text-xs text-gray-600">${ventas} ventas</div>
+          </div>
+          ${p.url ? `<a href="${p.url}" target="_blank" class="text-gray-700 hover:text-neon transition text-xs opacity-0 group-hover:opacity-100">↗</a>` : ''}
+        </div>`;
+    }).join('');
+  } catch (e) {
+    console.error('Error cargando productos:', e);
+  }
+}
+
+// ── Logs ─────────────────────────────────────────────────────
+async function cargarLogs() {
+  try {
+    const r = await fetch(`/api/logs?secret=${SECRET}`);
+    const data = await r.json();
+
+    document.getElementById('logs-loading').classList.add('hidden');
+    document.getElementById('logs-list').classList.remove('hidden');
+
+    const list = document.getElementById('logs-list');
+    list.innerHTML = data.map(log => {
+      const ts = new Date(log.created_at);
+      const hora = ts.toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' });
+      const fecha = ts.toLocaleDateString('es', { month:'short', day:'numeric' });
+      const iconos = {
+        researcher: '🔍', generator: '⚙️', publisher: '🚀', 'campaign-validator': '📊',
+        'ads-manager': '📢', sistema: '⚡', claude: '🤖', brain: '🧠', email: '📧'
+      };
+      const icono = iconos[log.agente] || '📋';
+      const statusColor = log.exito ? 'text-green-500' : 'text-red-500';
+      const statusIcon = log.exito ? '✓' : '✗';
+      const costo = log.costo_api ? ` · $${parseFloat(log.costo_api).toFixed(4)}` : '';
+      const dur = log.duracion_ms ? ` · ${(log.duracion_ms/1000).toFixed(1)}s` : '';
+      return `
+        <div class="flex items-start gap-2 py-1.5 px-2 rounded hover:bg-gray-900/30 transition">
+          <span class="text-base mt-0.5">${icono}</span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-medium text-gray-300">${log.agente}</span>
+              <span class="text-gray-700">·</span>
+              <span class="text-xs text-gray-500 truncate">${log.accion}</span>
+              <span class="${statusColor} text-xs font-bold">${statusIcon}</span>
+            </div>
+            <div class="text-xs text-gray-700">${hora} ${fecha}${dur}${costo}</div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    console.error('Error cargando logs:', e);
+  }
+}
+</script>
+</body>
+</html>

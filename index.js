@@ -8,6 +8,8 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 dotenv.config();
 
+import { iniciarAPIServer } from './core/api-server.js';
+
 import { db } from './core/database.js';
 import { runMigrations } from './core/migrate.js';
 import { alerta, enviar } from './core/telegram.js';
@@ -392,6 +394,7 @@ function iniciarCrons() {
 // ════════════════════════════════════
 
 await iniciar();
+iniciarAPIServer();
 iniciarCrons();
 
 console.log('\n🚀 NEXUS AGENT corriendo. Escribe AYUDA en Telegram para ver comandos.\n');
