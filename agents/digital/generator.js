@@ -521,6 +521,7 @@ Formato: <div class="card"><ul> para tips + <div class="card"><ol> para errores.
 async function generarMiniCurso(nicho) {
   console.log('[Generator] Generando mini curso módulo por módulo...');
   const ctx = [];
+  await enviar('📝 Generando sección 1/7 — Bienvenida + Quick Win...').catch(() => {});
 
   // Temas específicos del nicho (del researcher) o genéricos como fallback
   const temas = nicho.modulos_temas?.length >= 5
@@ -557,6 +558,7 @@ Formato: <div class="card"> con highlight y tip. Sin <html> ni <body>.`);
   for (let i = 0; i < 5; i++) {
     const n = i + 1;
     console.log(`[Generator] Generando módulo ${n}/5: "${temas[i]}"...`);
+    await enviar(`📝 Generando sección ${n + 1}/7 — Módulo ${n}...`).catch(() => {});
     const contenido = await generarSeccion(`
 ${bloqueNicho(nicho)}
 ${bloqueContexto(ctx)}
@@ -590,6 +592,7 @@ Sin <html> ni <body>.`);
   await delay(DELAY_SECCIONES);
 
   // ── EXAMEN + CERTIFICADO ──────────────────────────────────────
+  await enviar('📝 Generando sección 7/7 — Examen + Certificado...').catch(() => {});
   const examen = await generarSeccion(`
 ${bloqueNicho(nicho)}
 ${bloqueContexto(ctx)}
