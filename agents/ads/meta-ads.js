@@ -60,27 +60,28 @@ export const metaAds = {
       name: `NEXUS | ${nombre} | ${new Date().toISOString().slice(0,10)}`,
       objective: 'OUTCOME_TRAFFIC',
       status: 'PAUSED',
-      special_ad_categories: [],
-      is_adset_budget_sharing_enabled: false
+      special_ad_categories: []
     });
     console.log(`[MetaAds] Campaña creada: ${campana.id}`);
 
     // 2. Crear conjunto de anuncios
-    console.log(`[MetaAds] Paso 2: creando adset... PIXEL_ID="${PIXEL_ID_CLEAN}" TOKEN=${TOKEN?.slice(0,15)}...`);
+    console.log(`[MetaAds] Paso 2: creando adset... PAGE_ID="${PAGE_ID}" PIXEL_ID="${PIXEL_ID_CLEAN}" presupuesto=${presupuestoDiario}`);
     const targeting = this.construirTargeting(nicho, audiencia);
+    const adsetPayload = {
+      name: `Audiencia Principal | ${nicho}`,
+      campaign_id: campana.id,
+      daily_budget: presupuestoDiario,
+      billing_event: 'IMPRESSIONS',
+      optimization_goal: 'LINK_CLICKS',
+      bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
+      promoted_object: { page_id: PAGE_ID },
+      targeting,
+      status: 'PAUSED'
+    };
+    console.log(`[MetaAds] Adset payload:`, JSON.stringify(adsetPayload));
     let adSet;
     try {
-      adSet = await metaPost(`/${AD_ACCOUNT}/adsets`, {
-        name: `Audiencia Principal | ${nicho}`,
-        campaign_id: campana.id,
-        daily_budget: presupuestoDiario,
-        billing_event: 'IMPRESSIONS',
-        optimization_goal: 'LINK_CLICKS',
-        bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
-        promoted_object: { pixel_id: PIXEL_ID_CLEAN, custom_event_type: 'PURCHASE' },
-        targeting,
-        status: 'PAUSED'
-      });
+      adSet = await metaPost(`/${AD_ACCOUNT}/adsets`, adsetPayload);
       console.log(`[MetaAds] Paso 2 OK: Ad set creado: ${adSet.id}`);
     } catch (e) {
       console.error(`[MetaAds] Paso 2 FALLÓ: ${e.message}`);
