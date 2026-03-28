@@ -74,7 +74,7 @@ export const metaAds = {
         billing_event: 'IMPRESSIONS',
         optimization_goal: 'LINK_CLICKS',
         bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
-        promoted_object: { page_id: PAGE_ID },
+        promoted_object: { pixel_id: PIXEL_ID, custom_event_type: 'PURCHASE' },
         targeting,
         status: 'ACTIVE'
       });
