@@ -63,47 +63,68 @@ export const metaAds = {
     console.log(`[MetaAds] Campaña creada: ${campana.id}`);
 
     // 2. Crear conjunto de anuncios
+    console.log(`[MetaAds] Paso 2: creando adset...`);
     const targeting = this.construirTargeting(nicho, audiencia);
-    const adSet = await metaPost(`/${AD_ACCOUNT}/adsets`, {
-      name: `Audiencia Principal | ${nicho}`,
-      campaign_id: campana.id,
-      daily_budget: presupuestoDiario,
-      billing_event: 'IMPRESSIONS',
-      optimization_goal: 'LINK_CLICKS',
-      bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
-      promoted_object: { page_id: PAGE_ID },
-      targeting,
-      status: 'ACTIVE'
-    });
-    console.log(`[MetaAds] Ad set creado: ${adSet.id}`);
+    let adSet;
+    try {
+      adSet = await metaPost(`/${AD_ACCOUNT}/adsets`, {
+        name: `Audiencia Principal | ${nicho}`,
+        campaign_id: campana.id,
+        daily_budget: presupuestoDiario,
+        billing_event: 'IMPRESSIONS',
+        optimization_goal: 'LINK_CLICKS',
+        bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
+        promoted_object: { page_id: PAGE_ID },
+        targeting,
+        status: 'ACTIVE'
+      });
+      console.log(`[MetaAds] Paso 2 OK: Ad set creado: ${adSet.id}`);
+    } catch (e) {
+      console.error(`[MetaAds] Paso 2 FALLÓ: ${e.message}`);
+      throw e;
+    }
 
     // 3. Crear creative
-    const creative = await metaPost(`/${AD_ACCOUNT}/adcreatives`, {
-      name: `Creative | ${nombre}`,
-      object_story_spec: {
-        page_id: PAGE_ID,
-        link_data: {
-          link: landingUrl,
-          message: audiencia.copy,
-          name: nombre,
-          description: audiencia.descripcion,
-          call_to_action: {
-            type: 'LEARN_MORE',
-            value: { link: landingUrl }
+    console.log(`[MetaAds] Paso 3: creando creative...`);
+    let creative;
+    try {
+      creative = await metaPost(`/${AD_ACCOUNT}/adcreatives`, {
+        name: `Creative | ${nombre}`,
+        object_story_spec: {
+          page_id: PAGE_ID,
+          link_data: {
+            link: landingUrl,
+            message: audiencia.copy,
+            name: nombre,
+            description: audiencia.descripcion,
+            call_to_action: {
+              type: 'LEARN_MORE',
+              value: { link: landingUrl }
+            }
           }
         }
-      }
-    });
-    console.log(`[MetaAds] Creative creado: ${creative.id}`);
+      });
+      console.log(`[MetaAds] Paso 3 OK: Creative creado: ${creative.id}`);
+    } catch (e) {
+      console.error(`[MetaAds] Paso 3 FALLÓ: ${e.message}`);
+      throw e;
+    }
 
     // 4. Crear anuncio
-    const ad = await metaPost(`/${AD_ACCOUNT}/ads`, {
-      name: `Anuncio | ${nombre}`,
-      adset_id: adSet.id,
-      creative: { creative_id: creative.id },
-      status: 'ACTIVE'
-    });
-    console.log(`[MetaAds] Anuncio creado: ${ad.id}`);
+    console.log(`[MetaAds] Paso 4: creando ad...`);
+    let ad;
+    try {
+      ad = await metaPost(`/${AD_ACCOUNT}/ads`, {
+        name: `Anuncio | ${nombre}`,
+        adset_id: adSet.id,
+        creative: { creative_id: creative.id },
+        status: 'ACTIVE'
+      });
+      console.log(`[MetaAds] Paso 4 OK: Anuncio creado: ${ad.id}`);
+    } catch (e) {
+      console.error(`[MetaAds] Paso 4 FALLÓ: ${e.message}`);
+      throw e;
+    }
 
     return {
       campaign_id: campana.id,
