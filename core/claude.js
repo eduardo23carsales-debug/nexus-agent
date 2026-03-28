@@ -119,7 +119,7 @@ export async function preguntar(prompt, system = '', agente = 'sistema', maxToke
  * @param {number} maxIter    - máximo de continuaciones (seguridad)
  * @returns {string}          - texto completo, sin cortes
  */
-export async function preguntarCompleto(prompt, system = '', agente = 'sistema', maxTokens = MAX_TOKENS, maxIter = 5) {
+export async function preguntarCompleto(prompt, system = '', agente = 'sistema', maxTokens = MAX_TOKENS, maxIter = 5, onCorte = null) {
   const SYSTEM = system || 'Eres NEXUS AGENT, un sistema autónomo de ingresos digitales. Responde siempre en español. Sé directo y accionable.';
   const SYSTEM_DEFINITIVO = SYSTEM;
 
@@ -185,6 +185,7 @@ export async function preguntarCompleto(prompt, system = '', agente = 'sistema',
     if (response.stop_reason === 'max_tokens') {
       // Claude se cortó — pedirle que continúe desde donde quedó
       console.log(`[Claude] Respuesta cortada (iter ${iteracion}) — continuando...`);
+      if (onCorte) await onCorte(iteracion, costoHoy);
       messages.push({ role: 'assistant', content: fragmento });
       messages.push({ role: 'user', content: 'Continúa exactamente desde donde te cortaste. NO repitas nada de lo anterior. Solo continúa el contenido HTML.' });
     } else {

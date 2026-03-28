@@ -37,6 +37,38 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../dashboard/index.html'));
 });
 
+// ── Página de gracias post-pago (Stripe redirige aquí) ───────
+app.get('/gracias', (req, res) => {
+  res.send(`<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¡Compra exitosa!</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0f0f0f; color: #fff; font-family: Arial, sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .card { background: #1a1a1a; border: 1px solid #222; border-top: 3px solid #00ff88; border-radius: 12px; padding: 48px 40px; max-width: 560px; width: 90%; text-align: center; }
+    .icon { font-size: 3em; margin-bottom: 16px; }
+    h1 { color: #00ff88; font-size: 1.8em; margin-bottom: 12px; }
+    p { color: #aaa; line-height: 1.8; margin-bottom: 16px; }
+    .highlight { background: #0d1f0d; border: 1px solid #00ff88; border-radius: 8px; padding: 16px; color: #00ff88; font-size: 0.95em; margin-top: 24px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">✅</div>
+    <h1>¡Pago confirmado!</h1>
+    <p>Tu compra fue procesada correctamente.</p>
+    <p>Revisa tu correo electrónico — en los próximos minutos recibirás el link de acceso a tu producto.</p>
+    <div class="highlight">
+      📧 Si no ves el email, revisa tu carpeta de spam o correo no deseado.
+    </div>
+  </div>
+</body>
+</html>`);
+});
+
 // ══════════════════════════════════════
 // /api/estado — Estado general del sistema
 // ══════════════════════════════════════

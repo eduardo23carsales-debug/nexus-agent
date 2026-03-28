@@ -47,53 +47,219 @@ function crearShellHTML(titulo, subtitulo, tipo, secciones) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${titulo}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f0f0f; color: #e0e0e0; }
-.header { background: linear-gradient(135deg,#1a1a2e,#16213e); padding: 48px 20px; text-align: center; border-bottom: 3px solid #00ff88; }
-.badge { display: inline-block; background: #00ff88; color: #000; padding: 6px 18px; border-radius: 20px; font-size: 0.8em; font-weight: bold; margin-bottom: 16px; letter-spacing: 1px; }
-.header h1 { color: #fff; font-size: clamp(1.4em, 4vw, 2.2em); margin-bottom: 12px; line-height: 1.3; }
-.header p { color: #aaa; font-size: 1em; max-width: 600px; margin: 0 auto; }
-.layout { display: flex; min-height: calc(100vh - 200px); }
-.sidebar { width: 240px; flex-shrink: 0; background: #111; border-right: 1px solid #222; padding: 20px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
-.tab-btn { display: block; width: 100%; text-align: left; background: none; border: none; color: #aaa; padding: 14px 20px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; border-left: 3px solid transparent; line-height: 1.4; }
-.tab-btn:hover { background: #1a1a1a; color: #fff; }
-.tab-btn.active { background: #1a2a1a; color: #00ff88; border-left-color: #00ff88; font-weight: 600; }
-.content { flex: 1; padding: 40px; max-width: 800px; overflow-y: auto; }
-.tab-panel { display: none; }
+:root {
+  --bg: #0a0a0f;
+  --surface: #13131a;
+  --surface2: #1c1c26;
+  --border: #2a2a3a;
+  --accent: #00e87a;
+  --accent-dim: rgba(0,232,122,0.1);
+  --accent-dim2: rgba(0,232,122,0.06);
+  --blue: #4f8ef7;
+  --blue-dim: rgba(79,142,247,0.1);
+  --yellow: #ffd166;
+  --yellow-dim: rgba(255,209,102,0.1);
+  --red: #ff6b6b;
+  --text: #e2e2ef;
+  --text-muted: #8888aa;
+  --text-faint: #444460;
+  --radius: 10px;
+}
+body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── HEADER ── */
+.header {
+  background: linear-gradient(135deg, #0d0d1a 0%, #111128 50%, #0a1628 100%);
+  padding: 52px 24px 44px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+.header::before {
+  content: '';
+  position: absolute;
+  top: -60px; left: 50%; transform: translateX(-50%);
+  width: 500px; height: 200px;
+  background: radial-gradient(ellipse, rgba(0,232,122,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--accent-dim); color: var(--accent);
+  border: 1px solid rgba(0,232,122,0.25);
+  padding: 5px 16px; border-radius: 20px;
+  font-size: 0.72em; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; margin-bottom: 20px;
+}
+.header h1 {
+  color: #fff; font-size: clamp(1.5em, 4vw, 2.4em);
+  font-weight: 700; line-height: 1.25; margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+.header p { color: var(--text-muted); font-size: 1.05em; max-width: 580px; margin: 0 auto; line-height: 1.6; }
+
+/* ── LAYOUT ── */
+.layout { display: flex; min-height: calc(100vh - 180px); }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 256px; flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 16px 0;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+.sidebar-label {
+  font-size: 0.68em; font-weight: 700; letter-spacing: 2px;
+  color: var(--text-faint); text-transform: uppercase;
+  padding: 8px 20px 12px; display: block;
+}
+.tab-btn {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; text-align: left; background: none; border: none;
+  color: var(--text-muted); padding: 11px 20px;
+  cursor: pointer; font-size: 0.88em; font-family: inherit;
+  transition: all 0.15s; border-left: 3px solid transparent;
+  line-height: 1.4; font-weight: 500;
+}
+.tab-btn:hover { background: var(--surface2); color: var(--text); }
+.tab-btn.active {
+  background: var(--accent-dim2);
+  color: var(--accent);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+.tab-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--surface2); color: var(--text-faint);
+  font-size: 0.75em; font-weight: 700; flex-shrink: 0;
+  transition: all 0.15s;
+}
+.tab-btn.active .tab-num { background: var(--accent); color: #000; }
+
+/* ── CONTENT ── */
+.content { flex: 1; padding: 40px 44px; max-width: 860px; }
+.tab-panel { display: none; animation: fadeIn 0.2s ease; }
 .tab-panel.active { display: block; }
-.card { background: #1a1a1a; border-radius: 10px; padding: 24px; margin-bottom: 20px; border-left: 4px solid #00ff88; }
-.card h3 { color: #fff; margin-bottom: 12px; font-size: 1.05em; }
-.card p, .card li { color: #ccc; line-height: 1.8; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+.section-title {
+  font-size: 1.5em; font-weight: 700; color: #fff;
+  margin-bottom: 6px; letter-spacing: -0.02em;
+}
+.section-sub { color: var(--text-muted); font-size: 0.95em; margin-bottom: 32px; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px; margin-bottom: 16px;
+}
+.card h3 { color: #fff; margin-bottom: 10px; font-size: 1em; font-weight: 600; }
+.card h4 { color: var(--accent); margin: 16px 0 8px; font-size: 0.9em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.card p { color: #b0b0c8; line-height: 1.75; margin-bottom: 10px; }
 .card ul, .card ol { padding-left: 20px; }
-.card li { margin-bottom: 6px; }
-.prompt-box { background: #0a0a0a; border: 1px solid #333; border-radius: 8px; padding: 20px; margin: 12px 0; font-family: monospace; font-size: 0.88em; color: #00ff88; white-space: pre-wrap; line-height: 1.7; position: relative; }
-.copy-btn { position: absolute; top: 10px; right: 10px; background: #00ff88; color: #000; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-weight: bold; }
-.highlight { background: #0d2818; border: 1px solid #00ff88; border-radius: 8px; padding: 16px; margin: 12px 0; color: #00ff88; font-weight: 600; }
-.tip { background: #1a1500; border: 1px solid #ffcc00; border-radius: 8px; padding: 14px; margin: 12px 0; color: #ffcc00; font-size: 0.9em; }
-.checklist li { list-style: none; padding: 10px 0; border-bottom: 1px solid #1a1a1a; color: #ccc; }
-.checklist li::before { content: "☐ "; color: #00ff88; font-size: 1.1em; }
-.accordion-item { background: #1a1a1a; border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
-.accordion-header { padding: 16px 20px; cursor: pointer; color: #fff; display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
-.accordion-header:hover { background: #222; }
-.accordion-body { padding: 0 20px 20px; color: #ccc; line-height: 1.8; display: none; }
-.accordion-body p { margin-bottom: 12px; }
+.card li { color: #b0b0c8; line-height: 1.75; margin-bottom: 6px; }
+.card strong { color: var(--text); }
+
+/* ── HIGHLIGHT / TIP / WARNING ── */
+.highlight {
+  background: var(--accent-dim);
+  border: 1px solid rgba(0,232,122,0.2);
+  border-radius: var(--radius); padding: 16px 20px; margin: 14px 0;
+  color: var(--accent); font-weight: 600; line-height: 1.6;
+}
+.tip {
+  background: var(--yellow-dim);
+  border: 1px solid rgba(255,209,102,0.2);
+  border-radius: var(--radius); padding: 14px 20px; margin: 14px 0;
+  color: var(--yellow); font-size: 0.92em; line-height: 1.6;
+}
+.info {
+  background: var(--blue-dim);
+  border: 1px solid rgba(79,142,247,0.2);
+  border-radius: var(--radius); padding: 14px 20px; margin: 14px 0;
+  color: var(--blue); font-size: 0.92em; line-height: 1.6;
+}
+
+/* ── PROMPT BOX ── */
+.prompt-box {
+  background: #07070f;
+  border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 20px 20px 20px;
+  margin: 14px 0; font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.87em; color: #a8ffcc; white-space: pre-wrap;
+  line-height: 1.8; position: relative;
+}
+.copy-btn {
+  position: absolute; top: 12px; right: 12px;
+  background: var(--accent); color: #000;
+  border: none; padding: 5px 14px; border-radius: 6px;
+  cursor: pointer; font-size: 0.78em; font-weight: 700;
+  transition: opacity 0.15s;
+}
+.copy-btn:hover { opacity: 0.85; }
+
+/* ── CHECKLIST ── */
+.checklist { list-style: none; padding: 0; }
+.checklist li {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+  color: #b0b0c8; line-height: 1.6; font-size: 0.95em;
+}
+.checklist li::before {
+  content: "○"; color: var(--accent);
+  font-size: 1em; flex-shrink: 0; margin-top: 1px;
+}
+
+/* ── ACCORDION ── */
+.accordion-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 8px; overflow: hidden;
+}
+.accordion-header {
+  padding: 16px 20px; cursor: pointer; color: #fff;
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 600; font-size: 0.95em; transition: background 0.15s;
+}
+.accordion-header:hover { background: var(--surface2); }
+.accordion-body { padding: 0 20px 20px; color: #b0b0c8; line-height: 1.8; display: none; }
+.accordion-body p { margin-bottom: 10px; }
 .accordion-body ul { padding-left: 20px; }
-.arrow { transition: transform 0.2s; color: #00ff88; }
+.arrow { transition: transform 0.2s; color: var(--accent); font-size: 0.85em; }
 .open .arrow { transform: rotate(180deg); }
 .open .accordion-body { display: block; }
-.mobile-menu { display: none; background: #111; padding: 12px 20px; border-bottom: 1px solid #222; }
-.mobile-select { width: 100%; background: #1a1a1a; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; font-size: 0.95em; }
-.footer { background: #111; padding: 24px; text-align: center; border-top: 1px solid #1a1a1a; }
-.footer p { color: #444; font-size: 0.82em; }
-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
-th { background: #1a2a1a; color: #00ff88; padding: 10px 12px; text-align: left; font-size: 0.9em; }
-td { padding: 10px 12px; border-bottom: 1px solid #1a1a1a; color: #ccc; font-size: 0.9em; }
-@media (max-width: 640px) {
+
+/* ── TABLES ── */
+.table-wrap { overflow-x: auto; margin: 14px 0; border-radius: var(--radius); border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; }
+thead { background: var(--surface2); }
+th { color: var(--accent); padding: 12px 16px; text-align: left; font-size: 0.82em; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; }
+td { padding: 11px 16px; border-top: 1px solid var(--border); color: #b0b0c8; font-size: 0.9em; vertical-align: top; }
+tbody tr:hover { background: var(--surface2); }
+
+/* ── MOBILE ── */
+.mobile-menu { display: none; background: var(--surface); padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.mobile-select { width: 100%; background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 10px 12px; border-radius: var(--radius); font-size: 0.95em; font-family: inherit; }
+
+/* ── FOOTER ── */
+.footer { background: var(--surface); padding: 24px; text-align: center; border-top: 1px solid var(--border); margin-top: 40px; }
+.footer p { color: var(--text-faint); font-size: 0.8em; }
+
+@media (max-width: 768px) {
   .sidebar { display: none; }
   .mobile-menu { display: block; }
   .layout { flex-direction: column; }
   .content { padding: 24px 16px; }
+  .section-title { font-size: 1.3em; }
 }
 </style>
 </head>
@@ -112,12 +278,26 @@ td { padding: 10px 12px; border-bottom: 1px solid #1a1a1a; color: #ccc; font-siz
 </div>
 
 <div class="layout">
-  <nav class="sidebar">${tabs}</nav>
-  <main class="content">${panels}</main>
+  <nav class="sidebar">
+    <span class="sidebar-label">Contenido</span>
+    ${secciones.map((s, i) => `
+    <button class="tab-btn ${i === 0 ? 'active' : ''}" onclick="showTab(${i})" id="btn-${i}">
+      <span class="tab-num">${i + 1}</span>
+      ${s.icono} ${s.titulo}
+    </button>`).join('')}
+  </nav>
+  <main class="content">
+    ${secciones.map((s, i) => `
+    <div class="tab-panel ${i === 0 ? 'active' : ''}" id="panel-${i}">
+      <div class="section-title">${s.icono} ${s.titulo}</div>
+      <div class="section-sub">Sección ${i + 1} de ${secciones.length}</div>
+      ${s.contenido}
+    </div>`).join('')}
+  </main>
 </div>
 
 <div class="footer">
-  <p>© 2026 ${titulo} — Todos los derechos reservados · Producto Premium</p>
+  <p>© 2026 ${titulo} · Producto Premium · Todos los derechos reservados</p>
 </div>
 
 <script>
@@ -166,11 +346,35 @@ async function generarSeccion(prompt, agente = 'generator') {
   const MAX_INTENTOS = 2;
   for (let intento = 0; intento < MAX_INTENTOS; intento++) {
     try {
-      const resultado = await preguntarCompleto(prompt, SYSTEM, agente, 8000);
+      const onCorte = async (iteracion, costoHoy) => {
+        if (iteracion === 2) {
+          // 2do corte — aviso en Telegram
+          await enviar(
+            `⚠️ <b>Claude cortando secciones repetidamente</b>\n` +
+            `Corte #${iteracion} en generación de producto\n` +
+            `💸 Costo acumulado hoy: $${costoHoy.toFixed(4)}\n` +
+            `El sistema continúa — si quieres detenerlo escribe <b>CANCELAR</b>`
+          ).catch(() => {});
+        }
+        if (iteracion >= 3) {
+          // 3er corte — abortar para no seguir gastando tokens
+          throw new Error(`CORTE_EXCESIVO: Claude cortó ${iteracion} veces en una sección — generación abortada para evitar gasto innecesario`);
+        }
+      };
+      const resultado = await preguntarCompleto(prompt, SYSTEM, agente, 8000, 5, onCorte);
       const limpio = resultado.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
       if (limpio.length > 100) return limpio; // válido
       throw new Error('Respuesta demasiado corta');
     } catch (err) {
+      if (err.message?.startsWith('CORTE_EXCESIVO')) {
+        // Abortar toda la generación — no reintentar
+        await enviar(
+          `🛑 <b>Generación detenida</b>\n` +
+          `Claude cortó demasiadas veces la misma sección sin completarla.\n` +
+          `Tokens ahorrados al detener. Usa <b>LANZAR</b> para intentar con otro nicho.`
+        ).catch(() => {});
+        throw err;
+      }
       if (intento < MAX_INTENTOS - 1) {
         console.log(`[Generator] Sección falló (intento ${intento + 1}): ${err.message} — reintentando en 10s...`);
         await delay(10000);
@@ -455,6 +659,7 @@ Sin <html> ni <body>.`);
 async function generarPlantilla(nicho) {
   console.log('[Generator] Generando plantilla por secciones...');
 
+  await enviar('📝 Generando sección 1/4 — Cómo usar...').catch(() => {});
   const instrucciones = await generarSeccion(`
 ${bloqueNicho(nicho)}
 Escribe la guía de inicio rápido para la plantilla "${nicho.nombre_producto}".
@@ -468,6 +673,7 @@ Escribe la guía de inicio rápido para la plantilla "${nicho.nombre_producto}".
 Formato: <div class="card"> con highlight. Sin <html> ni <body>.`);
   await delay(DELAY_SECCIONES);
 
+  await enviar('📝 Generando sección 2/4 — La Plantilla Principal...').catch(() => {});
   const plantilla = await generarSeccion(`
 ${bloqueNicho(nicho)}
 Crea la plantilla PRINCIPAL COMPLETA para "${nicho.nombre_producto}".
@@ -482,6 +688,7 @@ La plantilla debe incluir:
 Formato: múltiples <div class="card"><table>...</table></div>. Sin <html> ni <body>.`);
   await delay(DELAY_SECCIONES);
 
+  await enviar('📝 Generando sección 3/4 — Ejemplo Llenado...').catch(() => {});
   const ejemplo = await generarSeccion(`
 ${bloqueNicho(nicho)}
 Crea el ejemplo COMPLETAMENTE LLENADO de la plantilla para "${nicho.nombre_producto}".
@@ -495,6 +702,7 @@ Usa datos de: Ana García, 32 años, de Ciudad de México, lleva 2 meses en ${ni
 Formato: <div class="card"> con tablas llenadas. Sin <html> ni <body>.`);
   await delay(DELAY_SECCIONES);
 
+  await enviar('📝 Generando sección 4/4 — Tips y Errores...').catch(() => {});
   const tips = await generarSeccion(`
 ${bloqueNicho(nicho)}
 Crea la sección de Tips Avanzados y Errores para "${nicho.nombre_producto}".
@@ -630,6 +838,7 @@ async function generarToolkit(nicho) {
   console.log('[Generator] Generando toolkit por secciones...');
   const ctx = [];
 
+  await enviar('📝 Generando sección 1/5 — Checklist Maestro...').catch(() => {});
   const intro = await generarSeccion(`
 ${bloqueNicho(nicho)}
 Escribe la introducción y Checklist Maestro para el toolkit "${nicho.nombre_producto}".
@@ -648,6 +857,7 @@ Formato: <div class="card"> con highlight y checklist. Sin <html> ni <body>.`);
   ctx.push(resumirParaContexto('Checklist Maestro', intro));
   await delay(DELAY_SECCIONES);
 
+  await enviar('📝 Generando sección 2/5 — Plantillas listas...').catch(() => {});
   const plantillas = await generarSeccion(`
 ${bloqueNicho(nicho)}
 ${bloqueContexto(ctx)}
@@ -667,6 +877,7 @@ Formato: <div class="card"> por cada plantilla. Sin <html> ni <body>.`);
   ctx.push(resumirParaContexto('Plantillas', plantillas));
   await delay(DELAY_SECCIONES);
 
+  await enviar('📝 Generando sección 3/5 — Stack de Herramientas...').catch(() => {});
   const herramientas = await generarSeccion(`
 ${bloqueNicho(nicho)}
 ${bloqueContexto(ctx)}
@@ -681,6 +892,7 @@ Formato: <div class="card"><table>...</table></div> con tips al pie. Sin <html> 
   ctx.push(resumirParaContexto('Herramientas', herramientas));
   await delay(DELAY_SECCIONES);
 
+  await enviar('📝 Generando sección 4/5 — Métricas y Alertas...').catch(() => {});
   const metricas = await generarSeccion(`
 ${bloqueNicho(nicho)}
 ${bloqueContexto(ctx)}
@@ -696,6 +908,7 @@ Formato: tablas HTML y <div class="card">. Sin <html> ni <body>.`);
   ctx.push(resumirParaContexto('Métricas', metricas));
   await delay(DELAY_SECCIONES);
 
+  await enviar('📝 Generando sección 5/5 — Plan 30 Días...').catch(() => {});
   const calendario = await generarSeccion(`
 ${bloqueNicho(nicho)}
 ${bloqueContexto(ctx)}

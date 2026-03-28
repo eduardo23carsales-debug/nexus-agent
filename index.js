@@ -164,8 +164,17 @@ async function lanzarExperimento() {
     const nicho = await investigarNicho();
 
     // 2. Mostrar nicho y pedir aprobación ANTES de generar
+    const tipoLabel = {
+      'mini_curso': '🎓 Mini Curso',
+      'guia_pdf': '📘 Guía PDF',
+      'plantilla': '📋 Plantilla',
+      'toolkit': '🔧 Toolkit',
+      'prompts': '⚡ Pack de Prompts'
+    }[nicho.tipo] || `📦 ${nicho.tipo}`;
+
     await enviar(
       `🔍 <b>Nicho encontrado:</b> ${nicho.nombre_producto}\n` +
+      `📦 <b>Tipo:</b> ${tipoLabel}\n` +
       `📊 Score: ${nicho.score}/100 | 💵 Precio: $${nicho.precio}\n` +
       `🎯 <i>${nicho.subtitulo}</i>\n` +
       `💡 ${nicho.problema_que_resuelve}\n\n` +
@@ -247,6 +256,7 @@ Problema: ${nicho.problema_que_resuelve}
 
 Usa SOLO estilos inline. Fondo #0f0f0f, acento #00ff88, texto blanco.
 Incluye: hero, beneficios, precio con botón de compra, 2 testimonios, garantía, CTA final.
+PROHIBIDO: No incluyas módulos, temario, curriculum, índice ni secciones de "lo que aprenderás" — eso es parte del producto entregable, no de la landing de venta.
 IMPORTANTE: El HTML debe estar 100% completo, desde <!DOCTYPE> hasta </html> sin cortar nada.
 Devuelve SOLO HTML desde <!DOCTYPE> hasta </html>.
 `, 'Experto en landing pages de alta conversión para mercado hispano.', 'publisher', 16000);
@@ -279,21 +289,14 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
     throw new Error(`Landing page incompleta (${htmlLimpio?.length || 0} chars). Abortando para no publicar página rota.`);
   }
 
-  // Desplegar landing y producto en Vercel en paralelo
+  // Desplegar landing y producto en un solo proyecto Vercel
   await enviar('🚀 Subiendo a Vercel...');
-  const [landingResult, productoResult] = await Promise.allSettled([
-    deploy.publicarLanding({ nombre: nicho.nombre_producto, html: htmlLimpio, nicho: nicho.nicho }),
-    deploy.publicarLanding({ nombre: `${nicho.nombre_producto} — Producto`, html: contenido, nicho: `${nicho.nicho}-producto` })
-  ]);
-
-  if (landingResult.status === 'rejected') {
-    throw new Error(`Error desplegando landing: ${landingResult.reason?.message}`);
-  }
-  const url = landingResult.value;
-  const productoUrl = productoResult.status === 'fulfilled' ? productoResult.value : null;
-  if (productoResult.status === 'rejected') {
-    console.error('[Publisher] Error desplegando producto:', productoResult.reason?.message);
-  }
+  const { landingUrl: url, productoUrl } = await deploy.publicarCompleto({
+    nombre: nicho.nombre_producto,
+    htmlLanding: htmlLimpio,
+    htmlProducto: contenido,
+    nicho: nicho.nicho
+  });
 
   // Publicar en Gumroad
   let gumroadUrl = null;

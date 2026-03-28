@@ -53,7 +53,8 @@ export const metaAds = {
       name: `NEXUS | ${nombre} | ${new Date().toISOString().slice(0,10)}`,
       objective: 'OUTCOME_TRAFFIC',
       status: 'ACTIVE',
-      special_ad_categories: []
+      special_ad_categories: [],
+      is_adset_budget_sharing_enabled: false
     });
     console.log(`[MetaAds] Campaña creada: ${campana.id}`);
 
@@ -167,5 +168,49 @@ export const metaAds = {
     if (!TOKEN) throw new Error('META_ACCESS_TOKEN no configurado');
     const data = await metaGet('/me', { fields: 'id,name' });
     return { ok: true, user: data.name };
+  },
+
+  // ── Preflight completo antes de lanzar campaña ───────────
+  async preflight() {
+    const errores = [];
+
+    // 1. Token válido
+    if (!TOKEN) {
+      errores.push('META_ACCESS_TOKEN no configurado');
+    } else {
+      try {
+        await metaGet('/me', { fields: 'id,name' });
+      } catch (err) {
+        errores.push(`Token inválido o expirado (${err.message}) — regenera en developers.facebook.com/tools/explorer`);
+      }
+    }
+
+    // 2. Ad Account accesible
+    if (!AD_ACCOUNT) {
+      errores.push('META_AD_ACCOUNT_ID no configurado');
+    } else {
+      try {
+        await metaGet(`/${AD_ACCOUNT}`, { fields: 'id,name,account_status' });
+      } catch (err) {
+        errores.push(`Ad Account ${AD_ACCOUNT} inaccesible — verifica permisos en Business Manager`);
+      }
+    }
+
+    // 3. Page accesible
+    if (!PAGE_ID) {
+      errores.push('META_PAGE_ID no configurado');
+    } else {
+      try {
+        await metaGet(`/${PAGE_ID}`, { fields: 'id,name' });
+      } catch (err) {
+        errores.push(`Page ${PAGE_ID} inaccesible — verifica que la page esté asignada al token`);
+      }
+    }
+
+    if (errores.length > 0) {
+      throw new Error(`Preflight Meta fallido:\n${errores.map(e => `• ${e}`).join('\n')}`);
+    }
+
+    return { ok: true };
   }
 };

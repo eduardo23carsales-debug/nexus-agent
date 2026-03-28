@@ -95,6 +95,75 @@ export const deploy = {
     }
   },
 
+  // ── Publica landing + producto en un solo proyecto Vercel ──
+  async publicarCompleto({ nombre, htmlLanding, htmlProducto, nicho }) {
+    const slug = nombre
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 40);
+
+    const projectName = `nexus-${slug}`;
+
+    try {
+      // Crear proyecto
+      try {
+        await axios.post(`${VERCEL_API}/v9/projects${params()}`, {
+          name: projectName,
+          framework: null,
+          publicSource: true
+        }, { headers });
+      } catch {}
+
+      // Deshabilitar protección
+      try {
+        await axios.patch(`${VERCEL_API}/v9/projects/${projectName}${params()}`, {
+          ssoProtection: null,
+          passwordProtection: null
+        }, { headers });
+      } catch {}
+
+      // Un solo deployment con ambos archivos
+      const response = await axios.post(
+        `${VERCEL_API}/v13/deployments${params()}`,
+        {
+          name: projectName,
+          files: [
+            { file: 'index.html', data: htmlLanding, encoding: 'utf-8' },
+            { file: 'producto/index.html', data: htmlProducto, encoding: 'utf-8' }
+          ],
+          projectSettings: { framework: null },
+          target: 'production'
+        },
+        { headers }
+      );
+
+      const deployment = response.data;
+      const baseUrl = deployment.alias?.[0]
+        ? `https://${deployment.alias[0]}`
+        : `https://${deployment.url}`;
+
+      const landingUrl = baseUrl;
+      const productoUrl = `${baseUrl}/producto/`;
+
+      await db.log('deploy', 'completo_publicado', {
+        nombre, nicho,
+        landing_url: landingUrl,
+        producto_url: productoUrl,
+        deployment_id: deployment.id
+      });
+
+      console.log(`[Deploy] Landing: ${landingUrl}`);
+      console.log(`[Deploy] Producto: ${productoUrl}`);
+      return { landingUrl, productoUrl };
+
+    } catch (err) {
+      const msg = err.response?.data?.error?.message || err.message;
+      await db.log('deploy', 'error_deploy', { nombre, error: msg }, false);
+      throw new Error(`Error publicando en Vercel: ${msg}`);
+    }
+  },
+
   // ── Lista deployments activos ──
   async listarDeployments() {
     const response = await axios.get(

@@ -14,8 +14,8 @@ export async function lanzarCampanaParaProducto(experimento) {
   console.log(`[AdsManager] Lanzando campaña para: ${experimento.nombre}`);
 
   try {
-    // 1. Verificar que Meta Ads esté configurado
-    await metaAds.ping();
+    // 1. Preflight — verifica token, Ad Account y Page antes de intentar publicar
+    await metaAds.preflight();
 
     // 2. Construir audiencia con IA
     const audiencia = await construirAudiencia({
