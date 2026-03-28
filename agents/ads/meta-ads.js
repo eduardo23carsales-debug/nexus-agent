@@ -59,7 +59,7 @@ export const metaAds = {
     const campana = await metaPost(`/${AD_ACCOUNT}/campaigns`, {
       name: `NEXUS | ${nombre} | ${new Date().toISOString().slice(0,10)}`,
       objective: 'OUTCOME_TRAFFIC',
-      status: 'PAUSED',
+      status: 'ACTIVE',
       special_ad_categories: [],
       is_adset_budget_sharing_enabled: false
     });
@@ -80,7 +80,7 @@ export const metaAds = {
       dsa_beneficiary: 'Aprende Gana y Crece IA',
       dsa_payor: 'Aprende Gana y Crece IA',
       targeting,
-      status: 'PAUSED'
+      status: 'ACTIVE'
     };
     console.log(`[MetaAds] Adset payload:`, JSON.stringify(adsetPayload));
     let adSet;
