@@ -104,7 +104,28 @@ async function leerComandosTelegram() {
       }
 
       // Comandos principales
-      if (texto === 'TESTMETA') {
+      if (texto === 'RELANZMETA') {
+        await enviar('🔄 Buscando último producto publicado...');
+        try {
+          const { supabase } = await import('./core/database.js');
+          const { data: exps } = await supabase
+            .from('experiments')
+            .select('id, nombre, nicho, url, precio, descripcion')
+            .order('fecha_inicio', { ascending: false })
+            .limit(1);
+          if (!exps?.length) {
+            await enviar('❌ No hay productos publicados todavía.');
+          } else {
+            const exp = exps[0];
+            await enviar(`🚀 Relanzando campaña Meta Ads para:\n<b>${exp.nombre}</b>`);
+            const { lanzarCampanaParaProducto } = await import('./agents/advanced/ads-manager.js');
+            await lanzarCampanaParaProducto(exp);
+          }
+        } catch (e) {
+          await enviar(`❌ Error: ${e.message}`);
+        }
+
+      } else if (texto === 'TESTMETA') {
         await enviar('🔍 Verificando conexión con Meta Ads...');
         try {
           const { metaAds } = await import('./agents/ads/meta-ads.js');
@@ -132,7 +153,8 @@ async function leerComandosTelegram() {
           `<b>REPORTE</b> — Reporte financiero\n` +
           `<b>PUBLICAR</b> — Aprueba landing pendiente\n` +
           `<b>CANCELAR</b> — Cancela publicación pendiente\n` +
-          `<b>TESTMETA</b> — Verifica conexión Meta Ads\n\n` +
+          `<b>TESTMETA</b> — Verifica conexión Meta Ads\n` +
+          `<b>RELANZMETA</b> — Relanza campaña del último producto\n\n` +
           `<i>El sistema también acepta texto libre para calificar leads de carros.</i>`
         );
 
