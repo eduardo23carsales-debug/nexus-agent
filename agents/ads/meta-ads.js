@@ -66,10 +66,8 @@ export const metaAds = {
       daily_budget: presupuestoDiario,
       billing_event: 'IMPRESSIONS',
       optimization_goal: 'LINK_CLICKS',
-      destination_type: 'WEBSITE',
       targeting,
-      status: 'ACTIVE',
-      start_time: Math.floor(Date.now() / 1000) // Unix timestamp — Meta no acepta ISO con milisegundos
+      status: 'ACTIVE'
     });
     console.log(`[MetaAds] Ad set creado: ${adSet.id}`);
 
@@ -118,8 +116,7 @@ export const metaAds = {
       age_max: audiencia.edad_max || 55,
       genders: [1, 2],
       geo_locations: {
-        countries: ['US', 'MX', 'CO', 'AR', 'CL', 'PE', 'ES'],
-        location_types: ['home', 'recent']
+        countries: ['US', 'MX', 'CO', 'AR', 'CL', 'PE', 'ES']
       }
     };
   },
