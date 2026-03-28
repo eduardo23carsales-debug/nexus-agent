@@ -7,7 +7,7 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const API = 'https://graph.facebook.com/v21.0'; // v25 en Graph API Explorer
+const API = 'https://graph.facebook.com/v25.0';
 const TOKEN = process.env.META_ACCESS_TOKEN?.trim();
 const AD_ACCOUNT = process.env.META_AD_ACCOUNT_ID; // act_XXXXXXXXX
 const PIXEL_ID = process.env.META_PIXEL_ID;
@@ -81,6 +81,7 @@ export const metaAds = {
         billing_event: 'IMPRESSIONS',
         optimization_goal: 'LINK_CLICKS',
         bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
+        promoted_object: { pixel_id: PIXEL_ID, custom_event_type: 'PURCHASE' },
         targeting,
         status: 'PAUSED'
       });
