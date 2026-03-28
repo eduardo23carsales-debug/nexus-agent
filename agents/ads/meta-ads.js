@@ -50,7 +50,7 @@ export const metaAds = {
 
   // ── Crear campaña completa para un producto ──────────────
   async crearCampana({ nombre, landingUrl, presupuestoDiario = 500, nicho, audiencia }) {
-    console.log(`[MetaAds] Creando campaña para: ${nombre}`);
+    console.log(`[MetaAds] v2 — Creando campaña para: ${nombre}`);
 
     // 1. Crear campaña
     const campana = await metaPost(`/${AD_ACCOUNT}/campaigns`, {
