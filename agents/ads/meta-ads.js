@@ -66,6 +66,7 @@ export const metaAds = {
       daily_budget: presupuestoDiario,
       billing_event: 'IMPRESSIONS',
       optimization_goal: 'LINK_CLICKS',
+      bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
       targeting,
       status: 'ACTIVE'
     });
