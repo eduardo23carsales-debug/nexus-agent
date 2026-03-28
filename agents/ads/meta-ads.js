@@ -10,9 +10,10 @@ dotenv.config();
 const API = 'https://graph.facebook.com/v25.0';
 const TOKEN = process.env.META_ACCESS_TOKEN?.trim();
 const PIXEL_ID_CLEAN = process.env.META_PIXEL_ID?.trim();
-const AD_ACCOUNT = process.env.META_AD_ACCOUNT_ID; // act_XXXXXXXXX
+const AD_ACCOUNT = process.env.META_AD_ACCOUNT_ID;
 const PIXEL_ID = process.env.META_PIXEL_ID;
 const PAGE_ID = process.env.META_PAGE_ID;
+const OPENAI_KEY = process.env.OPENAI_API_KEY;
 
 // ── Helper para llamadas a la API ────────────────────────────
 async function metaPost(endpoint, params) {
@@ -46,6 +47,37 @@ async function metaGet(endpoint, params = {}) {
     const msg = err.response?.data?.error?.message || err.message;
     const code = err.response?.data?.error?.code || err.response?.status;
     throw new Error(`Meta API error ${code}: ${msg}`);
+  }
+}
+
+// ── Generar imagen con DALL-E 3 y subirla a Meta ─────────────
+async function generarYSubirImagen(nombre, nicho) {
+  if (!OPENAI_KEY) {
+    console.warn('[MetaAds] OPENAI_API_KEY no configurado — sin imagen');
+    return null;
+  }
+  try {
+    console.log('[MetaAds] Generando imagen con DALL-E 3...');
+    const prompt = `Professional Facebook ad image for a Spanish-language digital product. Product: "${nombre}". Niche: ${nicho}. Bold vibrant colors, modern design, motivational feeling. No text in the image. High quality, suitable for Hispanic audience on social media.`;
+
+    const dalleRes = await axios.post(
+      'https://api.openai.com/v1/images/generations',
+      { model: 'dall-e-3', prompt, n: 1, size: '1024x1024', response_format: 'b64_json' },
+      { headers: { Authorization: `Bearer ${OPENAI_KEY}` }, timeout: 90000 }
+    );
+
+    const b64 = dalleRes.data.data[0].b64_json;
+    console.log('[MetaAds] Imagen generada — subiendo a Meta...');
+
+    // Subir imagen a Meta Ad Account
+    const uploadRes = await metaPost(`/${AD_ACCOUNT}/adimages`, { bytes: b64 });
+    const imageHash = Object.values(uploadRes.images || {})[0]?.hash;
+    if (!imageHash) throw new Error('No se obtuvo hash de imagen');
+    console.log(`[MetaAds] Imagen subida OK — hash: ${imageHash}`);
+    return imageHash;
+  } catch (e) {
+    console.warn(`[MetaAds] ⚠️ Imagen falló (${e.message}) — continuando sin imagen`);
+    return null;
   }
 }
 
@@ -92,25 +124,23 @@ export const metaAds = {
       throw e;
     }
 
-    // 3. Crear creative
-    console.log(`[MetaAds] Paso 3: creando creative...`);
+    // 3. Generar imagen + crear creative
+    const imageHash = await generarYSubirImagen(nombre, nicho);
+    console.log(`[MetaAds] Paso 3: creando creative... imagen=${imageHash ? 'OK' : 'sin imagen'}`);
     let creative;
     try {
+      const linkData = {
+        link: landingUrl,
+        message: audiencia.copy,
+        name: nombre,
+        description: audiencia.descripcion,
+        call_to_action: { type: 'LEARN_MORE', value: { link: landingUrl } }
+      };
+      if (imageHash) linkData.image_hash = imageHash;
+
       creative = await metaPost(`/${AD_ACCOUNT}/adcreatives`, {
         name: `Creative | ${nombre}`,
-        object_story_spec: {
-          page_id: PAGE_ID,
-          link_data: {
-            link: landingUrl,
-            message: audiencia.copy,
-            name: nombre,
-            description: audiencia.descripcion,
-            call_to_action: {
-              type: 'LEARN_MORE',
-              value: { link: landingUrl }
-            }
-          }
-        }
+        object_story_spec: { page_id: PAGE_ID, link_data: linkData }
       });
       console.log(`[MetaAds] Paso 3 OK: Creative creado: ${creative.id}`);
     } catch (e) {
