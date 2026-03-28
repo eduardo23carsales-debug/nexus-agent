@@ -9,6 +9,7 @@ dotenv.config();
 
 const API = 'https://graph.facebook.com/v25.0';
 const TOKEN = process.env.META_ACCESS_TOKEN?.trim();
+const PIXEL_ID_CLEAN = process.env.META_PIXEL_ID?.trim();
 const AD_ACCOUNT = process.env.META_AD_ACCOUNT_ID; // act_XXXXXXXXX
 const PIXEL_ID = process.env.META_PIXEL_ID;
 const PAGE_ID = process.env.META_PAGE_ID;
@@ -16,16 +17,11 @@ const PAGE_ID = process.env.META_PAGE_ID;
 // ── Helper para llamadas a la API ────────────────────────────
 async function metaPost(endpoint, params) {
   try {
-    // Meta API espera form-encoded; objetos complejos van como JSON strings
-    const form = new URLSearchParams();
-    form.append('access_token', TOKEN);
-    for (const [key, value] of Object.entries(params)) {
-      if (value === null || value === undefined) continue;
-      form.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
-    }
-    const { data } = await axios.post(`${API}${endpoint}`, form, {
+    // JSON body + access_token como query param (igual que Graph API Explorer)
+    const url = `${API}${endpoint}?access_token=${TOKEN}`;
+    const { data } = await axios.post(url, params, {
       timeout: 15000,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      headers: { 'Content-Type': 'application/json' }
     });
     return data;
   } catch (err) {
@@ -70,7 +66,7 @@ export const metaAds = {
     console.log(`[MetaAds] Campaña creada: ${campana.id}`);
 
     // 2. Crear conjunto de anuncios
-    console.log(`[MetaAds] Paso 2: creando adset... PIXEL_ID=${PIXEL_ID} TOKEN=${TOKEN?.slice(0,15)}...`);
+    console.log(`[MetaAds] Paso 2: creando adset... PIXEL_ID="${PIXEL_ID_CLEAN}" TOKEN=${TOKEN?.slice(0,15)}...`);
     const targeting = this.construirTargeting(nicho, audiencia);
     let adSet;
     try {
@@ -81,7 +77,7 @@ export const metaAds = {
         billing_event: 'IMPRESSIONS',
         optimization_goal: 'LINK_CLICKS',
         bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
-        promoted_object: { pixel_id: PIXEL_ID, custom_event_type: 'PURCHASE' },
+        promoted_object: { pixel_id: PIXEL_ID_CLEAN, custom_event_type: 'PURCHASE' },
         targeting,
         status: 'PAUSED'
       });
