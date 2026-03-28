@@ -63,7 +63,7 @@ export const metaAds = {
     console.log(`[MetaAds] Campaña creada: ${campana.id}`);
 
     // 2. Crear conjunto de anuncios
-    console.log(`[MetaAds] Paso 2: creando adset...`);
+    console.log(`[MetaAds] Paso 2: creando adset... PIXEL_ID=${PIXEL_ID}`);
     const targeting = this.construirTargeting(nicho, audiencia);
     let adSet;
     try {
