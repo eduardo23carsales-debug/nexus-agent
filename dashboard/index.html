@@ -94,20 +94,21 @@ tailwind.config = {
       <!-- Claude API -->
       <div class="card p-5 space-y-3">
         <div class="flex items-center justify-between">
-          <div class="text-xs text-gray-500 uppercase tracking-wider">Claude API</div>
+          <div class="text-xs text-gray-500 uppercase tracking-wider">Claude API (Anthropic)</div>
           <div class="text-lg">🤖</div>
         </div>
         <div class="flex items-end gap-2">
-          <span id="claude-gasto" class="text-2xl font-bold text-white">—</span>
-          <span id="claude-limite" class="text-gray-500 text-sm mb-0.5">/ $—</span>
+          <span id="claude-restante" class="text-2xl font-bold text-white">—</span>
+          <span class="text-gray-500 text-sm mb-0.5">restante hoy</span>
         </div>
         <div class="progress-bg h-2">
           <div id="claude-bar" class="progress-bar h-2" style="width:0%"></div>
         </div>
         <div class="flex justify-between text-xs text-gray-600">
-          <span>Gasto hoy</span>
+          <span>Gastado hoy: <span id="claude-gasto" class="text-gray-400">—</span> <span id="claude-limite" class="text-gray-600"></span></span>
           <span id="claude-pct" class="text-gray-400">0%</span>
         </div>
+        <div class="text-xs text-gray-600">Este mes: <span id="claude-mes" class="text-gray-400">—</span></div>
       </div>
 
       <!-- Meta Ads -->
@@ -324,9 +325,11 @@ async function cargarEstado() {
 
     // Claude API
     const c = d.claude;
+    document.getElementById('claude-restante').textContent = `$${c.restante_hoy}`;
     document.getElementById('claude-gasto').textContent = `$${c.gasto_hoy}`;
     document.getElementById('claude-limite').textContent = `/ $${c.limite}`;
     document.getElementById('claude-pct').textContent = `${c.porcentaje}%`;
+    document.getElementById('claude-mes').textContent = `$${c.gasto_mes}`;
     const bar = document.getElementById('claude-bar');
     bar.style.width = `${c.porcentaje}%`;
     bar.className = 'progress-bar h-2';

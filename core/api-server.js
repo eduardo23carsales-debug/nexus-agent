@@ -79,14 +79,21 @@ app.get('/api/estado', auth, async (req, res) => {
       db.getResumenFinanciero()
     ]);
 
-    // Gasto Claude API del día (suma de costo_api en agent_logs)
+    // Gasto Claude API del día y del mes
     const hoy = new Date().toISOString().slice(0, 10);
+    const primerDiaMes = new Date().toISOString().slice(0, 7) + '-01';
     const { data: logsHoy } = await supabase
       .from('agent_logs')
       .select('costo_api')
       .gte('created_at', `${hoy}T00:00:00`)
       .not('costo_api', 'is', null);
+    const { data: logsMes } = await supabase
+      .from('agent_logs')
+      .select('costo_api')
+      .gte('created_at', `${primerDiaMes}T00:00:00`)
+      .not('costo_api', 'is', null);
     const gastoClaudeHoy = logsHoy?.reduce((s, l) => s + (l.costo_api || 0), 0) || 0;
+    const gastoClaudeMes = logsMes?.reduce((s, l) => s + (l.costo_api || 0), 0) || 0;
     const limiteClaudeHoy = Number(process.env.MAX_DAILY_API_SPEND) || 5;
 
     // Meta Ads — gasto total desde nuestra BD (no depende de permisos del token)
@@ -127,7 +134,9 @@ app.get('/api/estado', auth, async (req, res) => {
     res.json({
       claude: {
         gasto_hoy: parseFloat(gastoClaudeHoy.toFixed(4)),
+        restante_hoy: parseFloat(Math.max(0, limiteClaudeHoy - gastoClaudeHoy).toFixed(4)),
         limite: limiteClaudeHoy,
+        gasto_mes: parseFloat(gastoClaudeMes.toFixed(4)),
         porcentaje: parseFloat(Math.min(100, (gastoClaudeHoy / limiteClaudeHoy) * 100).toFixed(1))
       },
       meta: metaBalance,
