@@ -118,7 +118,8 @@ export const metaAds = {
       genders: [1, 2],
       geo_locations: {
         countries: ['US', 'MX', 'CO', 'AR', 'CL', 'PE', 'ES']
-      }
+      },
+      targeting_automation: { advantage_audience: 0 }
     };
   },
 
