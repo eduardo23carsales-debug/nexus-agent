@@ -7,7 +7,7 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const API = 'https://graph.facebook.com/v21.0';
+const API = 'https://graph.facebook.com/v21.0'; // v25 en Graph API Explorer
 const TOKEN = process.env.META_ACCESS_TOKEN?.trim();
 const AD_ACCOUNT = process.env.META_AD_ACCOUNT_ID; // act_XXXXXXXXX
 const PIXEL_ID = process.env.META_PIXEL_ID;
@@ -63,7 +63,7 @@ export const metaAds = {
     console.log(`[MetaAds] Campaña creada: ${campana.id}`);
 
     // 2. Crear conjunto de anuncios
-    console.log(`[MetaAds] Paso 2: creando adset... PIXEL_ID=${PIXEL_ID}`);
+    console.log(`[MetaAds] Paso 2: creando adset... PIXEL_ID=${PIXEL_ID} TOKEN=${TOKEN?.slice(0,15)}...`);
     const targeting = this.construirTargeting(nicho, audiencia);
     let adSet;
     try {
