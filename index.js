@@ -104,7 +104,17 @@ async function leerComandosTelegram() {
       }
 
       // Comandos principales
-      if (texto === 'LANZAR') {
+      if (texto === 'TESTMETA') {
+        await enviar('🔍 Verificando conexión con Meta Ads...');
+        try {
+          const { metaAds } = await import('./agents/ads/meta-ads.js');
+          await metaAds.preflight();
+          await enviar('✅ <b>Meta Ads OK</b>\n\nToken válido, Ad Account accesible y Page accesible.\nListo para lanzar campañas.');
+        } catch (e) {
+          await enviar(`❌ <b>Meta Ads FALLÓ</b>\n\n${e.message}`);
+        }
+
+      } else if (texto === 'LANZAR') {
         await enviar('🚀 Lanzando nuevo experimento ahora...');
         lanzarExperimento().catch(e => enviar(`❌ Error: ${e.message}`));
 
@@ -121,7 +131,8 @@ async function leerComandosTelegram() {
           `<b>ESTADO</b> — Ver experimentos activos\n` +
           `<b>REPORTE</b> — Reporte financiero\n` +
           `<b>PUBLICAR</b> — Aprueba landing pendiente\n` +
-          `<b>CANCELAR</b> — Cancela publicación pendiente\n\n` +
+          `<b>CANCELAR</b> — Cancela publicación pendiente\n` +
+          `<b>TESTMETA</b> — Verifica conexión Meta Ads\n\n` +
           `<i>El sistema también acepta texto libre para calificar leads de carros.</i>`
         );
 
