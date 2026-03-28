@@ -22,8 +22,12 @@ async function metaPost(endpoint, params) {
     }, { timeout: 15000 });
     return data;
   } catch (err) {
-    const msg = err.response?.data?.error?.message || err.message;
-    const code = err.response?.data?.error?.code || err.response?.status;
+    const error = err.response?.data?.error;
+    const msg = error?.message || err.message;
+    const code = error?.code || err.response?.status;
+    const subcode = error?.error_subcode || '';
+    const userMsg = error?.error_user_msg || '';
+    console.error(`[MetaAds] Error en ${endpoint}: code=${code} subcode=${subcode} msg=${msg} detail=${userMsg}`);
     throw new Error(`Meta API error ${code}: ${msg}`);
   }
 }
