@@ -77,6 +77,8 @@ export const metaAds = {
       optimization_goal: 'LINK_CLICKS',
       bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
       promoted_object: { page_id: PAGE_ID },
+      dsa_beneficiary: 'Aprende Gana y Crece IA',
+      dsa_payor: 'Aprende Gana y Crece IA',
       targeting,
       status: 'PAUSED'
     };
@@ -149,7 +151,7 @@ export const metaAds = {
       age_max: audiencia.edad_max || 55,
       genders: [1, 2],
       geo_locations: {
-        countries: ['US', 'MX', 'CO', 'AR', 'CL', 'PE', 'ES']
+        countries: ['US', 'MX', 'CO', 'AR', 'CL', 'PE']
       },
       targeting_automation: { advantage_audience: 0 }
     };
