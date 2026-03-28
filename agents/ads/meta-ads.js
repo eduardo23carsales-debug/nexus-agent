@@ -64,6 +64,7 @@ export const metaAds = {
       is_adset_budget_sharing_enabled: false
     });
     console.log(`[MetaAds] Campaña creada: ${campana.id}`);
+    await new Promise(r => setTimeout(r, 3000)); // Meta necesita propagar la campaña
 
     // 2. Crear conjunto de anuncios
     console.log(`[MetaAds] Paso 2: creando adset... PAGE_ID="${PAGE_ID}" PIXEL_ID="${PIXEL_ID_CLEAN}" presupuesto=${presupuestoDiario}`);
