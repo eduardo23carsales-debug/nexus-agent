@@ -1,6 +1,6 @@
 FROM node:20-alpine
 WORKDIR /app
-# cache-bust: 2026-03-28-v5
+# cache-bust: 2026-03-28-v6
 COPY package*.json ./
 RUN npm ci
 COPY . .

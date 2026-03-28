@@ -60,7 +60,8 @@ export const metaAds = {
       name: `NEXUS | ${nombre} | ${new Date().toISOString().slice(0,10)}`,
       objective: 'OUTCOME_TRAFFIC',
       status: 'PAUSED',
-      special_ad_categories: []
+      special_ad_categories: [],
+      is_adset_budget_sharing_enabled: false
     });
     console.log(`[MetaAds] Campaña creada: ${campana.id}`);
 
