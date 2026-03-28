@@ -56,7 +56,7 @@ export const metaAds = {
     const campana = await metaPost(`/${AD_ACCOUNT}/campaigns`, {
       name: `NEXUS | ${nombre} | ${new Date().toISOString().slice(0,10)}`,
       objective: 'OUTCOME_TRAFFIC',
-      status: 'ACTIVE',
+      status: 'PAUSED',
       special_ad_categories: [],
       is_adset_budget_sharing_enabled: false
     });
@@ -76,7 +76,7 @@ export const metaAds = {
         bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
         promoted_object: { pixel_id: PIXEL_ID, custom_event_type: 'PURCHASE' },
         targeting,
-        status: 'ACTIVE'
+        status: 'PAUSED'
       });
       console.log(`[MetaAds] Paso 2 OK: Ad set creado: ${adSet.id}`);
     } catch (e) {
