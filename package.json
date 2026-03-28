@@ -1,6 +1,6 @@
 {
   "name": "nexus-agent",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "NEXUS AGENT — Organismo digital autónomo de ingresos",
   "type": "module",
   "main": "index.js",
