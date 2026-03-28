@@ -16,10 +16,17 @@ const PAGE_ID = process.env.META_PAGE_ID;
 // ── Helper para llamadas a la API ────────────────────────────
 async function metaPost(endpoint, params) {
   try {
-    const { data } = await axios.post(`${API}${endpoint}`, {
-      ...params,
-      access_token: TOKEN
-    }, { timeout: 15000 });
+    // Meta API espera form-encoded; objetos complejos van como JSON strings
+    const form = new URLSearchParams();
+    form.append('access_token', TOKEN);
+    for (const [key, value] of Object.entries(params)) {
+      if (value === null || value === undefined) continue;
+      form.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+    }
+    const { data } = await axios.post(`${API}${endpoint}`, form, {
+      timeout: 15000,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
     return data;
   } catch (err) {
     const error = err.response?.data?.error;
