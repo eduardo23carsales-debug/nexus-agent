@@ -286,6 +286,12 @@ export const metaAds = {
     console.log(`[MetaAds] Campaña pausada: ${campaignId}`);
   },
 
+  // ── Activar campaña ──────────────────────────────────────
+  async activarCampana(campaignId) {
+    await metaPost(`/${campaignId}`, { status: 'ACTIVE' });
+    console.log(`[MetaAds] Campaña activada: ${campaignId}`);
+  },
+
   // ── Escalar presupuesto ──────────────────────────────────
   async escalarPresupuesto(adSetId, nuevoPresupuesto) {
     await metaPost(`/${adSetId}`, { daily_budget: nuevoPresupuesto });

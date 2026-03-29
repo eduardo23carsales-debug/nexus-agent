@@ -1,12 +1,17 @@
 // ════════════════════════════════════
 // NEXUS AGENT — agents/digital/researcher.js
 // Encuentra el nicho digital más rentable ahora mismo
+// v2: busca 5 candidatos, filtra score >= 82, enriquece el ganador
 // ════════════════════════════════════
 
 import { preguntarJSON } from '../../core/claude.js';
 import { memory } from '../../core/memory.js';
 import { db } from '../../core/database.js';
 import { enviar } from '../../core/telegram.js';
+
+const SCORE_MINIMO = 82;
+const MAX_RONDAS = 3;     // intentos para encontrar >= 82
+const CANDIDATOS_POR_RONDA = 5;
 
 const SYSTEM = `Eres el agente investigador de NEXUS AGENT. Tu trabajo es encontrar
 nichos de productos digitales rentables en el mercado latino/hispano de USA (Miami,
@@ -31,10 +36,106 @@ SUBGRUPOS LATINOS EN USA — sé específico (no digas solo "hispanos"):
 - Puertorriqueños (NY, FL): educación, tecnología, carrera profesional
 - Latinos establecidos (todos): inversión, bienes raíces, impuestos, retiro`;
 
-export async function investigarNicho() {
-  console.log('[Researcher] Buscando nicho rentable...');
+// ── Paso 1: Buscar 5 candidatos (campos mínimos, barato y rápido) ──
+async function buscarCandidatos(ganadoresTexto, blacklistTexto, nichosYaVistos = []) {
+  const evitar = nichosYaVistos.length
+    ? `\nNICHOS YA EVALUADOS ESTA RONDA — NO REPETIR:\n${nichosYaVistos.join('\n')}`
+    : '';
 
-  // Cargar memoria — qué ya funcionó y qué falló
+  const candidatos = await preguntarJSON(`
+Necesito ${CANDIDATOS_POR_RONDA} nichos DISTINTOS para productos digitales para el mercado hispano.
+Fecha actual: ${new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}.
+
+NICHOS QUE YA FUNCIONARON (replicar/mejorar):
+${ganadoresTexto}
+
+NICHOS A EVITAR (ya fallaron o fueron rechazados):
+${blacklistTexto}
+${evitar}
+
+Para cada candidato evalúa honestamente: urgencia del problema, búsqueda activa en español,
+precio validado, competencia baja en español, subgrupo latino específico.
+
+Solo incluye nichos con score real >= 75. Si no encuentras 5, devuelve los que pasen ese umbral.
+
+Devuelve un JSON array con exactamente este formato:
+[
+  {
+    "nicho": "nombre específico y concreto",
+    "subgrupo_latino": "grupo específico",
+    "tipo": "prompts|plantilla|guia_pdf|mini_curso|toolkit",
+    "precio": 37,
+    "score": 85,
+    "razon_score": "justificación honesta en 1-2 líneas",
+    "problema_que_resuelve": "el dolor en palabras del cliente",
+    "formato_ad_recomendado": "stories|feed"
+  }
+]
+Solo el array JSON, sin texto adicional.
+`, SYSTEM, 'researcher');
+
+  // Normalizar — puede venir como array directo o dentro de una clave
+  if (Array.isArray(candidatos)) return candidatos;
+  if (Array.isArray(candidatos?.candidatos)) return candidatos.candidatos;
+  if (Array.isArray(candidatos?.nichos)) return candidatos.nichos;
+  return [];
+}
+
+// ── Paso 2: Enriquecer el candidato ganador con todos los detalles ──
+async function enriquecerNicho(candidato, ganadoresTexto, blacklistTexto) {
+  console.log(`[Researcher] Enriqueciendo ganador: "${candidato.nicho}" (score ${candidato.score})`);
+
+  const resultado = await preguntarJSON(`
+Necesito los detalles COMPLETOS para crear y vender este producto digital:
+
+NICHO SELECCIONADO: ${candidato.nicho}
+Subgrupo: ${candidato.subgrupo_latino}
+Tipo: ${candidato.tipo}
+Precio: $${candidato.precio}
+Problema: ${candidato.problema_que_resuelve}
+Score preliminar: ${candidato.score}
+Formato ad: ${candidato.formato_ad_recomendado}
+
+Contexto ganadores previos: ${ganadoresTexto}
+
+Completa todos los campos para este nicho específico.
+Para formato_ad_recomendado usa:
+- "stories": urgencia/supervivencia (documentos, inmigración, trabajo, licencias, crédito, $17-$47) — CPC $1.83
+- "feed": transformación/aspiración (negocios, inversión, tecnología, cursos premium, $47-$97)
+
+Devuelve JSON con TODOS estos campos:
+{
+  "nicho": "${candidato.nicho}",
+  "subgrupo_latino": "${candidato.subgrupo_latino}",
+  "tipo": "${candidato.tipo}",
+  "nombre_producto": "nombre que el cliente ideal entiende en 3 segundos y quiere comprar",
+  "subtitulo": "subtítulo con el resultado concreto: qué logra, en cuánto tiempo, sin qué requisito",
+  "precio": ${candidato.precio},
+  "problema_que_resuelve": "el dolor específico en palabras que usaría el cliente, no un marketero",
+  "cliente_ideal": "nombre ficticio + edad + ciudad + situación exacta + por qué necesita esto HOY",
+  "puntos_de_venta": ["resultado concreto con número", "resultado 2", "resultado 3", "resultado 4"],
+  "quick_win": "acción exacta que hace en los primeros 30 minutos y resultado que tiene al terminar",
+  "herramientas_clave": ["Herramienta real (gratis/$X/mes)", "Herramienta2", "Herramienta3"],
+  "modulos_temas": [
+    "Tema específico del nicho — NO 'Introducción' ni 'Fundamentos'",
+    "Tema 2", "Tema 3", "Tema 4", "Tema 5", "Tema 6"
+  ],
+  "ejemplo_exito": "historia de 2-3 líneas: nombre latino + ciudad + situación inicial + resultado con números",
+  "score": ${candidato.score},
+  "razon_score": "${candidato.razon_score}",
+  "razon": "por qué este nicho AHORA — tendencia, evento, temporada o necesidad urgente actual",
+  "formato_ad_recomendado": "${candidato.formato_ad_recomendado}",
+  "razon_formato": "por qué este formato para este subgrupo específico"
+}
+`, SYSTEM, 'researcher');
+
+  return resultado;
+}
+
+// ── Función principal exportada ──────────────────────────────
+export async function investigarNicho() {
+  console.log('[Researcher] Iniciando búsqueda multi-candidato...');
+
   const [ganadores, blacklist] = await Promise.all([
     memory.getGanadores('digital'),
     memory.getBlacklist('digital')
@@ -43,69 +144,58 @@ export async function investigarNicho() {
   const ganadoresTexto = ganadores.map(g => g.contenido).join('\n') || 'Ninguno aún';
   const blacklistTexto = blacklist.map(b => b.contenido).join('\n') || 'Ninguno aún';
 
-  const resultado = await preguntarJSON(`
-Necesito el MEJOR nicho para crear y vender un producto digital HOY.
+  let mejorCandidato = null;
+  const nichosYaVistos = [];
 
-Mercado objetivo: hispanos en USA (Miami, Houston, LA, NY) y América Latina.
-Fecha actual: ${new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}.
+  for (let ronda = 1; ronda <= MAX_RONDAS; ronda++) {
+    if (ronda > 1) {
+      await enviar(`🔍 Buscando nichos de mayor calidad... (ronda ${ronda}/${MAX_RONDAS})`).catch(() => {});
+      await new Promise(r => setTimeout(r, 2000));
+    }
 
-NICHOS QUE YA FUNCIONARON (replicar/mejorar):
-${ganadoresTexto}
+    const candidatos = await buscarCandidatos(ganadoresTexto, blacklistTexto, nichosYaVistos);
 
-NICHOS A EVITAR (ya fallaron):
-${blacklistTexto}
+    if (!candidatos.length) {
+      console.warn(`[Researcher] Ronda ${ronda}: sin candidatos válidos`);
+      continue;
+    }
 
-Analiza estos factores para elegir el mejor nicho:
-1. Problema URGENTE y específico — el cliente lo necesita esta semana, no "algún día"
-2. Búsqueda activa en español — hay gente buscando esto en Google/YouTube en español ahora
-3. Precio validado — hay gente pagando por soluciones similares (aunque sean en inglés)
-4. Competencia baja EN ESPAÑOL — puede haber competencia en inglés, pero en español hay hueco
-5. Subgrupo latino específico — no "todos los hispanos", sino un grupo concreto con un dolor concreto
-6. Producto creatable con IA en menos de 4 horas — no requiere experiencia real del creador
+    // Registrar para no repetir en próxima ronda
+    candidatos.forEach(c => nichosYaVistos.push(c.nicho));
 
-Para el campo formato_ad_recomendado usa esta lógica:
-- "stories": urgencia/supervivencia (documentos, inmigración, trabajo, licencias, crédito, $17-$47) — CPC $1.83
-- "feed": transformación/aspiración (negocios, inversión, tecnología, cursos premium, $47-$97)
+    // Ordenar por score desc
+    candidatos.sort((a, b) => (b.score || 0) - (a.score || 0));
 
-Tipos de productos y cuándo usar cada uno:
-- Pack de prompts IA ($17-$37): cuando el cliente ya usa IA pero no sabe cómo aplicarla a su caso
-- Plantilla Notion/Excel ($17-$37): cuando el problema es de organización, seguimiento o cálculo
-- Guía PDF ($27-$57): cuando el cliente necesita un proceso paso a paso documentado
-- Mini curso HTML ($47-$97): cuando hay múltiples pasos que aprender en secuencia
-- Toolkit/checklist ($17-$37): cuando el cliente necesita no olvidar pasos críticos
+    console.log(`[Researcher] Ronda ${ronda} — ${candidatos.length} candidatos:`);
+    candidatos.forEach(c => console.log(`  • Score ${c.score}: ${c.nicho}`));
 
-Devuelve JSON con TODOS estos campos:
-{
-  "nicho": "nombre específico del nicho — NO genérico (mal: 'negocios online', bien: 'ITIN para indocumentados en Texas')",
-  "subgrupo_latino": "grupo específico: ej. 'Mexicanos indocumentados en TX y CA, 25-45 años'",
-  "tipo": "prompts|plantilla|guia_pdf|mini_curso|toolkit",
-  "nombre_producto": "nombre que el cliente ideal entiende en 3 segundos y quiere comprar",
-  "subtitulo": "subtítulo con el resultado concreto: qué logra, en cuánto tiempo, sin qué requisito",
-  "precio": 27,
-  "problema_que_resuelve": "el dolor específico en palabras que usaría el cliente, no un marketero",
-  "cliente_ideal": "nombre ficticio + edad + ciudad + situación exacta + por qué necesita esto HOY (ej: 'Jorge, 38 años, Houston TX, llegó hace 5 años, trabaja en construcción, quiere manejar legal pero no tiene SSN')",
-  "puntos_de_venta": ["resultado concreto con número", "resultado 2", "resultado 3", "resultado 4"],
-  "quick_win": "acción exacta que hace en los primeros 30 minutos y resultado que tiene al terminar",
-  "herramientas_clave": ["Herramienta real (gratis/$X/mes)", "Herramienta2", "Herramienta3"],
-  "modulos_temas": [
-    "Tema específico del nicho — NO 'Introducción' ni 'Fundamentos'",
-    "Tema 2", "Tema 3", "Tema 4", "Tema 5", "Tema 6"
-  ],
-  "ejemplo_exito": "historia de 2-3 líneas: nombre latino + ciudad + situación inicial + resultado con números (ej: 'Carlos de Dallas pasó de manejar sin licencia a obtener su TX DL en 6 semanas siguiendo estos pasos')",
-  "score": 85,
-  "razon_score": "justificación honesta del score — qué lo hace bueno y qué limitaciones tiene",
-  "razon": "por qué este nicho AHORA — tendencia, evento, temporada o necesidad urgente actual",
-  "formato_ad_recomendado": "stories|feed",
-  "razon_formato": "por qué este formato para este subgrupo específico"
-}
-`, SYSTEM, 'researcher');
+    // ¿Alguno supera el mínimo?
+    const calificados = candidatos.filter(c => c.score >= SCORE_MINIMO);
+
+    if (calificados.length > 0) {
+      mejorCandidato = calificados[0]; // el de mayor score
+      console.log(`[Researcher] Ganador encontrado en ronda ${ronda}: "${mejorCandidato.nicho}" — ${mejorCandidato.score}/100`);
+      break;
+    }
+
+    // Última ronda: aceptar el mejor aunque no llegue al mínimo
+    if (ronda === MAX_RONDAS) {
+      mejorCandidato = candidatos[0];
+      console.warn(`[Researcher] Ninguno superó ${SCORE_MINIMO} tras ${MAX_RONDAS} rondas — usando mejor disponible: ${mejorCandidato.score}/100`);
+      await enviar(`⚠️ Mejor nicho encontrado: score ${mejorCandidato.score}/100 (mínimo es ${SCORE_MINIMO})\nSi no te convence usa <b>OTRO</b> para buscar más.`).catch(() => {});
+    }
+  }
+
+  // Enriquecer el ganador con todos los detalles
+  const nicho = await enriquecerNicho(mejorCandidato, ganadoresTexto, blacklistTexto);
 
   await db.log('researcher', 'nicho_encontrado', {
-    nicho: resultado.nicho,
-    tipo: resultado.tipo,
-    score: resultado.score
+    nicho: nicho.nicho,
+    tipo: nicho.tipo,
+    score: nicho.score,
+    rondas_necesarias: nichosYaVistos.length / CANDIDATOS_POR_RONDA
   });
 
-  console.log(`[Researcher] Nicho encontrado: "${resultado.nombre_producto}" — Score ${resultado.score}/100`);
-  return resultado;
+  console.log(`[Researcher] Nicho final: "${nicho.nombre_producto}" — Score ${nicho.score}/100`);
+  return nicho;
 }

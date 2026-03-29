@@ -369,48 +369,32 @@ export async function generarProducto(nicho) {
   return html;
 }
 
-// ── Helper: genera una sección con Claude — siempre completa ─
-async function generarSeccion(prompt, agente = 'generator') {
-  const MAX_INTENTOS = 2;
-  for (let intento = 0; intento < MAX_INTENTOS; intento++) {
-    try {
-      const onCorte = async (iteracion, costoHoy) => {
-        if (iteracion === 2) {
-          // 2do corte — aviso en Telegram
-          await enviar(
-            `⚠️ <b>Claude cortando secciones repetidamente</b>\n` +
-            `Corte #${iteracion} en generación de producto\n` +
-            `💸 Costo acumulado hoy: $${costoHoy.toFixed(4)}\n` +
-            `El sistema continúa — si quieres detenerlo escribe <b>CANCELAR</b>`
-          ).catch(() => {});
-        }
-        if (iteracion >= 3) {
-          // 3er corte — abortar para no seguir gastando tokens
-          throw new Error(`CORTE_EXCESIVO: Claude cortó ${iteracion} veces en una sección — generación abortada para evitar gasto innecesario`);
-        }
-      };
-      const resultado = await preguntarCompleto(prompt, SYSTEM, agente, 8000, 5, onCorte);
-      const limpio = resultado.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
-      if (limpio.length > 100) return limpio; // válido
-      throw new Error('Respuesta demasiado corta');
-    } catch (err) {
-      if (err.message?.startsWith('CORTE_EXCESIVO')) {
-        // Abortar toda la generación — no reintentar
-        await enviar(
-          `🛑 <b>Generación detenida</b>\n` +
-          `Claude cortó demasiadas veces la misma sección sin completarla.\n` +
-          `Tokens ahorrados al detener. Usa <b>LANZAR</b> para intentar con otro nicho.`
-        ).catch(() => {});
-        throw err;
-      }
-      if (intento < MAX_INTENTOS - 1) {
-        console.log(`[Generator] Sección falló (intento ${intento + 1}): ${err.message} — reintentando en 10s...`);
-        await delay(10000);
-      } else {
-        console.error(`[Generator] Sección falló tras ${MAX_INTENTOS} intentos: ${err.message}`);
-        return `<div class="card"><p style="color:#ff6b6b;">⚠️ Esta sección no pudo generarse. Por favor regenera el producto.</p></div>`;
-      }
-    }
+// ── Helper: genera una sección con Claude — nunca cancela todo ─
+// Si una sección falla tras reintentos, devuelve placeholder y SIGUE con las demás
+async function generarSeccion(prompt, agente = 'generator', etiqueta = '') {
+  // Intento 1 — full quality, hasta 8 continuaciones
+  try {
+    const resultado = await preguntarCompleto(prompt, SYSTEM, agente, 6000, 8);
+    const limpio = resultado.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
+    if (limpio.length > 200) return limpio;
+    throw new Error('Respuesta demasiado corta');
+  } catch (err) {
+    console.warn(`[Generator] Sección "${etiqueta}" falló en intento 1: ${err.message} — reintentando versión compacta...`);
+    await enviar(`⚠️ Sección "${etiqueta || 'actual'}" requirió reintento — continuando...`).catch(() => {});
+    await delay(8000);
+  }
+
+  // Intento 2 — versión compacta (menos tokens, más fácil de completar)
+  try {
+    const promptCompacto = prompt + `\n\nIMPORTANTE: Versión compacta. Máximo 500 palabras. Directo al punto, sin introducciones. Completa la sección en una sola respuesta.`;
+    const resultado = await preguntarCompleto(promptCompacto, SYSTEM, agente, 4000, 4);
+    const limpio = resultado.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
+    if (limpio.length > 100) return limpio;
+    throw new Error('Respuesta demasiado corta en intento compacto');
+  } catch (err) {
+    console.error(`[Generator] Sección "${etiqueta}" falló en intento 2: ${err.message} — usando placeholder`);
+    // NO cancelar todo — devolver placeholder y continuar con las demás secciones
+    return `<div class="card"><div class="highlight">⚠️ Esta sección se generó parcialmente. El resto del producto está completo y disponible.</div><p style="color:var(--text-muted);">Sección: ${etiqueta || 'contenido'} — Regenera el producto si necesitas esta sección completa.</p></div>`;
   }
 }
 
@@ -553,7 +537,7 @@ Esta sección debe:
 - Tono: emocionante, "ya lo lograste, ahora vamos al resto"
 - Incluye <div class="highlight"> con el resultado que van a lograr
 - Termina con <div class="tip">✅ Logro desbloqueado: [lo que acaban de conseguir]</div>
-Formato: <div class="card"> con pasos y highlight. Sin <html> ni <body>.`);
+Formato: <div class="card"> con pasos y highlight. Sin <html> ni <body>.`, 'generator', 'Quick Win');
   ctx.push(resumirParaContexto('Quick Win', quickWin));
   await delay(DELAY_SECCIONES);
 
@@ -568,8 +552,8 @@ Escribe la introducción profunda de la guía "${nicho.nombre_producto}".
 - Párrafo 2: Por qué la mayoría falla en ${nicho.nicho} (error más común, específico)
 - Párrafo 3: Qué van a tener cuando terminen esta guía (resultados concretos con números)
 - Incluye <div class="highlight"> con la promesa principal de la guía
-- Mínimo 600 palabras. Sin frases de relleno. Directo y poderoso.
-Formato: <div class="card"><p>...</p></div>. Sin <html> ni <body>.`);
+- Entre 400-500 palabras. Sin frases de relleno. Directo y poderoso.
+Formato: <div class="card"><p>...</p></div>. Sin <html> ni <body>.`, 'generator', 'Introducción');
   ctx.push(resumirParaContexto('Introducción', intro));
   await delay(DELAY_SECCIONES);
 
@@ -587,8 +571,8 @@ Escribe el Capítulo 1: "${tema1}" para la guía "${nicho.nombre_producto}".
 - Lista ordenada de los pasos iniciales que necesita hacer el lector
 - Incluye un <div class="tip"> con el error más común en esta etapa y cómo evitarlo
 - Ejercicio al final: algo concreto que el lector hace en los próximos 15 minutos
-- Mínimo 700 palabras. Herramientas reales con nombres y precios.
-Formato: <div class="card"> y elementos HTML. Sin <html> ni <body>.`);
+- Entre 400-600 palabras. Herramientas reales con nombres y precios.
+Formato: <div class="card"> y elementos HTML. Sin <html> ni <body>.`, 'generator', tema1);
   ctx.push(resumirParaContexto(tema1, cap1));
   await delay(DELAY_SECCIONES);
 
@@ -606,8 +590,8 @@ Escribe el Capítulo 2: "${tema2}" para la guía "${nicho.nombre_producto}".
 - Incluye <div class="tip"> con el atajo o truco que los expertos usan y los principiantes no conocen
 - Ejemplo real de alguien del mercado hispano aplicando este método con resultados numéricos
 - Ejercicio práctico al final que aplica todo el capítulo
-- Mínimo 700 palabras. Específico, accionable, con números reales.
-Formato: <div class="card"> y elementos HTML. Sin <html> ni <body>.`);
+- Entre 400-600 palabras. Específico, accionable, con números reales.
+Formato: <div class="card"> y elementos HTML. Sin <html> ni <body>.`, 'generator', tema2);
   ctx.push(resumirParaContexto(tema2, cap2));
   await delay(DELAY_SECCIONES);
 
@@ -627,8 +611,8 @@ Para cada caso incluye:
 - Qué hizo exactamente: pasos específicos, herramientas usadas, tiempo invertido
 - Resultado con números: ingresos, tiempo, porcentajes, clientes conseguidos, etc.
 - Lección transferible: qué puede copiar el lector de este caso HOY
-- Cada caso mínimo 250 palabras
-Formato: <div class="card"> separado por cada caso, con <div class="highlight"> para el resultado. Sin <html> ni <body>.`);
+- Cada caso entre 150-200 palabras
+Formato: <div class="card"> separado por cada caso, con <div class="highlight"> para el resultado. Sin <html> ni <body>.`, 'generator', tema3);
   ctx.push(resumirParaContexto('Casos Reales', cap3));
   await delay(DELAY_SECCIONES);
 
@@ -647,10 +631,10 @@ Tabla HTML completa con al menos 10 herramientas REALES del sector:
 - Herramientas del nicho: ${nicho.herramientas_clave?.join(', ') || 'las del sector'}
 - Para cada herramienta: tip de uso específico en este nicho
 
-PARTE 2 — Los 10 Errores que Cuestan Dinero:
-Lista ordenada de los 10 errores más comunes en ${nicho.nicho}:
-- Error específico (no genérico como "no planificar") + por qué pasa + cómo evitarlo + cuánto puede costar ese error
-Formato: <table> para herramientas + <div class="card"><ol> para errores. Sin <html> ni <body>.`);
+PARTE 2 — Los 7 Errores que Cuestan Dinero:
+Lista de los 7 errores más comunes en ${nicho.nicho}:
+- Error específico + por qué pasa + cómo evitarlo
+Formato: <table> para herramientas + <div class="card"><ol> para errores. Sin <html> ni <body>.`, 'generator', tema4);
   ctx.push(resumirParaContexto('Herramientas y Errores', recursos));
   await delay(DELAY_SECCIONES);
 
@@ -674,7 +658,7 @@ Día 1 debe conectar con el Quick Win ya logrado.
 Día 7 debe entregar el resultado principal prometido en la guía.
 Usa acordeón HTML:
 <div class="accordion-item"><div class="accordion-header" onclick="toggleAccordion(this)">📅 Día N: [Título] — [tiempo] <span class="arrow">▼</span></div><div class="accordion-body"><p>...</p></div></div>
-Sin <html> ni <body>.`);
+Sin <html> ni <body>.`, 'generator', 'Plan 7 Días');
 
   const secciones = [
     { icono: '⚡', titulo: 'Resultado en 30 Min', contenido: quickWin },

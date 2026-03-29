@@ -18,7 +18,7 @@ export async function validarCampanas() {
   const { data: campanas } = await supabase
     .from('campaigns')
     .select('*, experiments(nombre, precio)')
-    .eq('estado', 'activo')
+    .in('estado', ['activo', 'escalando'])
     .eq('plataforma', 'meta');
 
   if (!campanas?.length) {

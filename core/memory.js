@@ -79,6 +79,16 @@ export const memory = {
     return memorias.filter(m => m.contenido.includes('[EVITAR]'));
   },
 
+  // Guarda un nicho rechazado manualmente por Eduardo
+  async rechazarNicho(nicho) {
+    await db.guardarMemoria({
+      tipo: 'aprendizaje',
+      categoria: 'digital',
+      contenido: `[EVITAR] Nicho rechazado manualmente: "${nicho.nicho || nicho}" — tipo ${nicho.tipo || '?'} a $${nicho.precio || '?'}. Motivo: rechazado por Eduardo.`,
+      confianza: 1.0 // máxima confianza — decisión humana
+    });
+  },
+
   // ════════════════════════════════════
   // APRENDER DE UN EXPERIMENTO TERMINADO
   // ════════════════════════════════════

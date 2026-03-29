@@ -31,7 +31,7 @@ const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const API = `https://api.telegram.org/bot${TOKEN}`;
 
 let telegramOffset = 0;
-let aprobacionPendiente = null; // { tipo, datos, resolve }
+let aprobacionPendiente = null; // { tipo, datos, nicho, resolve }
 let experimentoEnCurso = false;
 
 // ════════════════════════════════════
@@ -103,6 +103,16 @@ async function leerComandosTelegram() {
         continue;
       }
 
+      if (texto === 'OTRO' || texto === '3') {
+        if (aprobacionPendiente && typeof aprobacionPendiente.resolve === 'function') {
+          aprobacionPendiente.resolve('OTRO');
+          aprobacionPendiente = null;
+        } else {
+          await enviar('ℹ️ No hay nicho pendiente. Usa <b>LANZAR</b> para buscar uno.');
+        }
+        continue;
+      }
+
       // Comandos principales
       if (texto === 'RELANZMETA') {
         await enviar('🔄 Buscando último producto publicado...');
@@ -147,15 +157,16 @@ async function leerComandosTelegram() {
 
       } else if (texto === 'AYUDA' || texto === '/START') {
         await enviar(
-          `⚡ <b>NEXUS AGENT v4.0 — Comandos</b>\n\n` +
-          `<b>LANZAR</b> — Lanza un nuevo producto ahora\n` +
+          `⚡ <b>NEXUS AGENT v4.1 — Comandos</b>\n\n` +
+          `<b>LANZAR</b> — Busca y presenta el mejor nicho\n` +
+          `<b>PUBLICAR</b> — Aprueba el nicho y genera el producto\n` +
+          `<b>OTRO</b> — Rechaza el nicho y busca uno diferente\n` +
+          `<b>CANCELAR</b> — Cancela sin lanzar nada\n\n` +
           `<b>ESTADO</b> — Ver experimentos activos\n` +
           `<b>REPORTE</b> — Reporte financiero\n` +
-          `<b>PUBLICAR</b> — Aprueba landing pendiente\n` +
-          `<b>CANCELAR</b> — Cancela publicación pendiente\n` +
           `<b>TESTMETA</b> — Verifica conexión Meta Ads\n` +
           `<b>RELANZMETA</b> — Relanza campaña del último producto\n\n` +
-          `<i>El sistema también acepta texto libre para calificar leads de carros.</i>`
+          `<i>Puedes escribir OTRO varias veces hasta encontrar un nicho que te convenza.</i>`
         );
 
       } else if (texto && texto.length > 20) {
@@ -193,57 +204,72 @@ async function lanzarExperimento() {
   console.log('\n[Motor 1] Iniciando nuevo experimento...');
 
   try {
-    // 1. Investigar nicho
-    const nicho = await investigarNicho();
+    // Loop: busca → muestra → espera → si OTRO repite, si PUBLICAR avanza
+    let nichoAprobado = null;
 
-    // 2. Mostrar nicho y pedir aprobación ANTES de generar
-    const tipoLabel = {
-      'mini_curso': '🎓 Mini Curso',
-      'guia_pdf': '📘 Guía PDF',
-      'plantilla': '📋 Plantilla',
-      'toolkit': '🔧 Toolkit',
-      'prompts': '⚡ Pack de Prompts'
-    }[nicho.tipo] || `📦 ${nicho.tipo}`;
+    while (!nichoAprobado) {
+      // 1. Investigar nicho (busca 5 candidatos internamente, filtra score >= 82)
+      const nicho = await investigarNicho();
 
-    await enviar(
-      `🔍 <b>Nicho encontrado:</b> ${nicho.nombre_producto}\n` +
-      `📦 <b>Tipo:</b> ${tipoLabel}\n` +
-      `📊 Score: ${nicho.score}/100 | 💵 Precio: $${nicho.precio}\n` +
-      `🎯 <i>${nicho.subtitulo}</i>\n` +
-      `💡 ${nicho.problema_que_resuelve}\n\n` +
-      `Escribe <b>PUBLICAR</b> para generar y lanzar\n` +
-      `Escribe <b>CANCELAR</b> para descartar`
-    );
+      // 2. Mostrar nicho y pedir aprobación
+      const tipoLabel = {
+        'mini_curso': '🎓 Mini Curso',
+        'guia_pdf': '📘 Guía PDF',
+        'plantilla': '📋 Plantilla',
+        'toolkit': '🔧 Toolkit',
+        'prompts': '⚡ Pack de Prompts'
+      }[nicho.tipo] || `📦 ${nicho.tipo}`;
 
-    // 3. Esperar decisión (timeout 4h → cancelar automáticamente)
-    const decision = await new Promise((resolve) => {
-      aprobacionPendiente = { tipo: 'publicar', resolve };
-      setTimeout(async () => {
-        if (aprobacionPendiente) {
-          aprobacionPendiente = null;
-          try {
-            await enviar(
-              '⏰ Han pasado 4 horas sin respuesta.\n' +
-              'El nicho fue <b>cancelado</b> automáticamente — no se publicó nada.\n\n' +
-              'Usa <b>LANZAR</b> cuando estés listo para buscar un nuevo nicho.'
-            );
-          } catch {}
-          resolve('CANCELAR');
-        }
-      }, 4 * 60 * 60 * 1000);
-    });
+      const scoreEmoji = nicho.score >= 90 ? '🔥' : nicho.score >= 85 ? '✅' : nicho.score >= 82 ? '👍' : '⚠️';
 
-    if (decision === 'CANCELAR') {
-      await enviar('❌ Publicación cancelada.');
-      return;
+      await enviar(
+        `🔍 <b>Nicho encontrado:</b> ${nicho.nombre_producto}\n` +
+        `📦 <b>Tipo:</b> ${tipoLabel}\n` +
+        `${scoreEmoji} Score: <b>${nicho.score}/100</b> | 💵 Precio: $${nicho.precio}\n` +
+        `👥 ${nicho.subgrupo_latino || ''}\n` +
+        `🎯 <i>${nicho.subtitulo}</i>\n` +
+        `💡 ${nicho.problema_que_resuelve}\n` +
+        `📊 ${nicho.razon_score || ''}\n\n` +
+        `<b>PUBLICAR</b> — generar y lanzar\n` +
+        `<b>OTRO</b> — buscar nicho diferente\n` +
+        `<b>CANCELAR</b> — cancelar`
+      );
+
+      // 3. Esperar decisión (timeout 4h)
+      const decision = await new Promise((resolve) => {
+        aprobacionPendiente = { tipo: 'publicar', nicho, resolve };
+        setTimeout(async () => {
+          if (aprobacionPendiente) {
+            aprobacionPendiente = null;
+            try { await enviar('⏰ 4 horas sin respuesta — nicho cancelado automáticamente.\nUsa <b>LANZAR</b> cuando estés listo.'); } catch {}
+            resolve('CANCELAR');
+          }
+        }, 4 * 60 * 60 * 1000);
+      });
+
+      if (decision === 'PUBLICAR') {
+        nichoAprobado = nicho;
+
+      } else if (decision === 'OTRO') {
+        await memory.rechazarNicho(nicho);
+        await enviar(`🔄 Descartado. Buscando otro nicho...`);
+        console.log(`[Motor 1] Nicho rechazado: "${nicho.nicho}" — a blacklist`);
+        await new Promise(r => setTimeout(r, 3000));
+        // continúa el while → busca de nuevo
+
+      } else {
+        // CANCELAR
+        await enviar('❌ Búsqueda cancelada.');
+        return;
+      }
     }
 
-    // 4. Aprobado — generar y publicar todo automático
+    // 4. Aprobado — generar y publicar
     await enviar('⚙️ Aprobado. Generando producto y landing page...');
-    const resultado = await publicarAutomatico(nicho);
+    const resultado = await publicarAutomatico(nichoAprobado);
 
     if (resultado) {
-      await memory.aprenderDeExperimento({ ...nicho, metricas: { revenue: 0 }, aprendizaje: 'recién lanzado' });
+      await memory.aprenderDeExperimento({ ...nichoAprobado, metricas: { revenue: 0 }, aprendizaje: 'recién lanzado' });
       console.log(`[Motor 1] Experimento lanzado: ${resultado.url}`);
     }
 

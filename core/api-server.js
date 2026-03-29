@@ -96,18 +96,53 @@ app.get('/api/estado', auth, async (req, res) => {
     const gastoClaudeMes = logsMes?.reduce((s, l) => s + (l.costo_api || 0), 0) || 0;
     const limiteClaudeHoy = Number(process.env.MAX_DAILY_API_SPEND) || 5;
 
-    // Meta Ads — gasto total desde nuestra BD (no depende de permisos del token)
+    // Meta Ads — gasto real directo desde Meta API (lifetime de la cuenta)
     let metaBalance = { balance: null, gasto_mes: null, moneda: 'USD', error: null };
     try {
+      const META_TOKEN = process.env.META_ACCESS_TOKEN?.trim();
+      const META_ACCOUNT = process.env.META_AD_ACCOUNT_ID;
+
+      // Intentar primero con Meta API directo (datos reales)
+      let gastoReal = null;
+      if (META_TOKEN && META_ACCOUNT) {
+        try {
+          const metaRes = await axios.get(
+            `https://graph.facebook.com/v25.0/${META_ACCOUNT}/insights`,
+            {
+              params: {
+                fields: 'spend',
+                date_preset: 'this_month',
+                access_token: META_TOKEN
+              },
+              timeout: 8000
+            }
+          );
+          const insightData = metaRes.data?.data;
+          if (insightData?.length) {
+            gastoReal = parseFloat(insightData[0].spend || 0);
+          } else {
+            // Sin datos este mes — puede ser que sea inicio de mes o no hubo actividad
+            gastoReal = 0;
+          }
+        } catch (metaErr) {
+          console.warn('[API/estado] Meta insights falló, usando BD como fallback:', metaErr.response?.data?.error?.message || metaErr.message);
+        }
+      }
+
+      // Fallback: sumar gasto_total de la BD (siempre disponible)
       const { data: camps } = await supabase
         .from('campaigns')
         .select('gasto_total, estado')
         .eq('plataforma', 'meta');
-      const gastoTotal = (camps || []).reduce((s, c) => s + (parseFloat(c.gasto_total) || 0), 0);
+      const gastoBD = (camps || []).reduce((s, c) => s + (parseFloat(c.gasto_total) || 0), 0);
       const activas = (camps || []).filter(c => c.estado === 'activo' || c.estado === 'escalando').length;
+
+      const gastoFinal = gastoReal !== null ? gastoReal : gastoBD;
       metaBalance = {
         balance: null,
-        gasto_mes: gastoTotal.toFixed(2),
+        gasto_mes: gastoFinal.toFixed(2),
+        gasto_bd: gastoBD.toFixed(2),         // para debug
+        fuente: gastoReal !== null ? 'meta_api' : 'bd_cache',
         moneda: 'USD',
         campanas_activas: activas,
         error: null
@@ -164,10 +199,151 @@ app.get('/api/campanias', auth, async (req, res) => {
     const { data, error } = await supabase
       .from('campaigns')
       .select('*')
-      .order('roas', { ascending: false })
-      .limit(20);
+      .order('fecha_inicio', { ascending: false })
+      .limit(30);
     if (error) throw error;
     res.json(data || []);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ══════════════════════════════════════
+// /api/meta-sincronizar — Sincroniza métricas live desde Meta API
+// ══════════════════════════════════════
+app.post('/api/meta-sincronizar', auth, async (req, res) => {
+  try {
+    const { validarCampanas } = await import('../agents/ads/campaign-validator.js');
+    await validarCampanas();
+    res.json({ ok: true, ts: new Date().toISOString() });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ══════════════════════════════════════
+// /api/campania/:id/sync — Sincroniza métricas de UNA campaña desde Meta
+// ══════════════════════════════════════
+app.post('/api/campania/:id/sync', auth, async (req, res) => {
+  try {
+    const { data: camp, error } = await supabase
+      .from('campaigns')
+      .select('*, experiments(precio)')
+      .eq('id', req.params.id)
+      .single();
+    if (error || !camp) return res.status(404).json({ error: 'Campaña no encontrada' });
+    if (!camp.campaign_id_externo) return res.status(400).json({ error: 'Sin campaign_id_externo' });
+
+    const { metaAds } = await import('../agents/ads/meta-ads.js');
+    const metricas = await metaAds.getMetricas(camp.campaign_id_externo);
+    const precio = camp.experiments?.precio || 47;
+    const revenue = metricas.conversiones * precio;
+    const roas = metricas.spend > 0 ? revenue / metricas.spend : 0;
+    const cpa = metricas.conversiones > 0 ? metricas.spend / metricas.conversiones : 0;
+
+    await supabase.from('campaigns').update({
+      gasto_total: metricas.spend,
+      impresiones: metricas.impressions,
+      clicks: metricas.clicks,
+      conversiones: metricas.conversiones,
+      revenue_generado: revenue,
+      ctr: metricas.ctr,
+      cpa,
+      roas,
+      fecha_ultimo_update: new Date().toISOString()
+    }).eq('id', req.params.id);
+
+    res.json({ ok: true, metricas: { ...metricas, revenue, roas } });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ══════════════════════════════════════
+// /api/campania/:id/pausar — Pausa campaña en Meta + BD
+// ══════════════════════════════════════
+app.post('/api/campania/:id/pausar', auth, async (req, res) => {
+  try {
+    const { data: camp } = await supabase
+      .from('campaigns').select('campaign_id_externo, estado').eq('id', req.params.id).single();
+    if (!camp) return res.status(404).json({ error: 'Campaña no encontrada' });
+
+    if (camp.campaign_id_externo) {
+      const { metaAds } = await import('../agents/ads/meta-ads.js');
+      await metaAds.pausarCampana(camp.campaign_id_externo);
+    }
+    await supabase.from('campaigns').update({
+      estado: 'pausado',
+      fecha_decision: new Date().toISOString(),
+      decision: 'pausar_manual',
+      razon_decision: 'Pausada manualmente desde dashboard'
+    }).eq('id', req.params.id);
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ══════════════════════════════════════
+// /api/campania/:id/activar — Activa campaña en Meta + BD
+// ══════════════════════════════════════
+app.post('/api/campania/:id/activar', auth, async (req, res) => {
+  try {
+    const { data: camp } = await supabase
+      .from('campaigns').select('campaign_id_externo').eq('id', req.params.id).single();
+    if (!camp) return res.status(404).json({ error: 'Campaña no encontrada' });
+
+    if (camp.campaign_id_externo) {
+      const { metaAds } = await import('../agents/ads/meta-ads.js');
+      await metaAds.activarCampana(camp.campaign_id_externo);
+    }
+    await supabase.from('campaigns').update({
+      estado: 'activo',
+      fecha_decision: new Date().toISOString(),
+      decision: 'activar_manual',
+      razon_decision: 'Activada manualmente desde dashboard'
+    }).eq('id', req.params.id);
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ══════════════════════════════════════
+// /api/campania/:id — DELETE — Elimina campaña de la BD
+// ══════════════════════════════════════
+app.delete('/api/campania/:id', auth, async (req, res) => {
+  try {
+    const { error } = await supabase.from('campaigns').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ══════════════════════════════════════
+// /api/emails — Estadísticas de email
+// ══════════════════════════════════════
+app.get('/api/emails', auth, async (req, res) => {
+  try {
+    const [{ count: entregados }, { count: abandono1 }, { count: abandono2 }, { count: clientes }] = await Promise.all([
+      supabase.from('agent_logs').select('*', { count: 'exact', head: true })
+        .eq('agente', 'email').eq('accion', 'producto_entregado'),
+      supabase.from('digital_leads').select('*', { count: 'exact', head: true })
+        .eq('fuente', 'abandono_1'),
+      supabase.from('digital_leads').select('*', { count: 'exact', head: true })
+        .eq('fuente', 'abandono_2'),
+      supabase.from('customers').select('*', { count: 'exact', head: true })
+    ]);
+    res.json({
+      productos_entregados: entregados || 0,
+      abandono_email1: abandono1 || 0,
+      abandono_email2: abandono2 || 0,
+      total_clientes: clientes || 0
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

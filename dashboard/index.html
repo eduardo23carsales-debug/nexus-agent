@@ -29,6 +29,8 @@ tailwind.config = {
   .badge-red    { background: rgba(255,50,50,0.15);  color: #ff4444; border: 1px solid rgba(255,50,50,0.3); }
   .badge-gray   { background: rgba(150,150,150,0.15);color: #999;    border: 1px solid rgba(150,150,150,0.3); }
   .badge-blue   { background: rgba(50,100,255,0.15); color: #6699ff; border: 1px solid rgba(50,100,255,0.3); }
+  .badge-purple { background: rgba(160,80,255,0.15); color: #cc88ff; border: 1px solid rgba(160,80,255,0.3); }
+  .badge-orange { background: rgba(255,140,0,0.15);  color: #ffaa44; border: 1px solid rgba(255,140,0,0.3); }
   .progress-bg  { background: #1a1a2e; border-radius: 99px; }
   .progress-bar { background: linear-gradient(90deg, #00ff88, #00cc66); border-radius: 99px; transition: width 0.6s ease; }
   .progress-warn { background: linear-gradient(90deg, #ffc800, #ff8800); }
@@ -43,9 +45,38 @@ tailwind.config = {
   .spinner { border: 2px solid #1a1a2e; border-top: 2px solid #00ff88; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; }
   @keyframes spin { to { transform: rotate(360deg); } }
   #login-screen { background: #0a0a0f; }
+  .btn-sync { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.25); color: #00ff88; transition: all 0.2s; }
+  .btn-sync:hover { background: rgba(0,255,136,0.18); border-color: rgba(0,255,136,0.5); }
+  .btn-sync:disabled { opacity: 0.4; cursor: not-allowed; }
+  .mini-kpi { background: #0d0d17; border: 1px solid #151525; border-radius: 10px; }
+  .btn-row { font-size: 11px; padding: 2px 7px; border-radius: 5px; border: 1px solid; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn-row:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-row-sync  { border-color: rgba(100,150,255,0.4); color: #6699ff; background: rgba(100,150,255,0.08); }
+  .btn-row-sync:hover  { background: rgba(100,150,255,0.18); }
+  .btn-row-pause { border-color: rgba(255,200,0,0.4);  color: #ffc800; background: rgba(255,200,0,0.08); }
+  .btn-row-pause:hover { background: rgba(255,200,0,0.18); }
+  .btn-row-play  { border-color: rgba(0,255,136,0.4);  color: #00ff88; background: rgba(0,255,136,0.08); }
+  .btn-row-play:hover  { background: rgba(0,255,136,0.18); }
+  .btn-row-del   { border-color: rgba(255,50,50,0.4);  color: #ff6666; background: rgba(255,50,50,0.08); }
+  .btn-row-del:hover   { background: rgba(255,50,50,0.18); }
+  .confirm-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; display:flex; align-items:center; justify-content:center; }
+  .confirm-box { background:#0f0f1a; border:1px solid #2a1a1a; border-radius:12px; padding:28px 32px; max-width:380px; width:90%; text-align:center; }
 </style>
 </head>
 <body class="min-h-screen text-white">
+
+<!-- ════════════════ CONFIRM MODAL ════════════════ -->
+<div id="confirm-overlay" class="confirm-overlay hidden">
+  <div class="confirm-box">
+    <div id="confirm-icon" class="text-3xl mb-3">⚠️</div>
+    <div id="confirm-msg" class="text-white font-semibold mb-2">¿Confirmar acción?</div>
+    <div id="confirm-sub" class="text-gray-500 text-sm mb-6"></div>
+    <div class="flex gap-3 justify-center">
+      <button onclick="confirmCancel()" class="px-5 py-2 rounded-lg border border-gray-700 text-gray-400 hover:text-white transition text-sm">Cancelar</button>
+      <button id="confirm-ok-btn" class="px-5 py-2 rounded-lg bg-red-900 border border-red-700 text-red-200 hover:bg-red-800 transition text-sm font-semibold">Confirmar</button>
+    </div>
+  </div>
+</div>
 
 <!-- ════════════════ LOGIN SCREEN ════════════════ -->
 <div id="login-screen" class="fixed inset-0 flex items-center justify-center z-50">
@@ -71,14 +102,14 @@ tailwind.config = {
   <header class="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
     <div class="flex items-center gap-3">
       <span class="text-2xl font-black neon">⚡ NEXUS</span>
-      <span class="text-gray-500 text-sm">Agent Dashboard v4.0</span>
+      <span class="text-gray-500 text-sm">Agent Dashboard v4.1</span>
     </div>
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-3">
       <div id="sistema-status" class="flex items-center gap-2 text-sm">
         <span id="status-dot" class="w-2 h-2 rounded-full bg-gray-500"></span>
         <span id="status-text" class="text-gray-500">Conectando...</span>
       </div>
-      <div id="last-update" class="text-gray-600 text-xs"></div>
+      <div id="last-update" class="text-gray-600 text-xs hidden sm:block"></div>
       <div id="refresh-spinner" class="spinner hidden"></div>
       <button onclick="cargarTodo()" class="text-xs text-gray-500 hover:text-neon transition px-3 py-1 border border-gray-800 rounded-md hover:border-green-800">
         ↻ Refresh
@@ -86,60 +117,59 @@ tailwind.config = {
     </div>
   </header>
 
-  <div class="p-6 max-w-screen-2xl mx-auto space-y-6">
+  <div class="p-4 sm:p-6 max-w-screen-2xl mx-auto space-y-5">
 
-    <!-- ── FILA 1: TARJETAS DE CRÉDITOS ── -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    <!-- ── FILA 1: TARJETAS PRINCIPALES ── -->
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
 
       <!-- Claude API -->
-      <div class="card p-5 space-y-3">
+      <div class="card p-4 sm:p-5 space-y-3">
         <div class="flex items-center justify-between">
-          <div class="text-xs text-gray-500 uppercase tracking-wider">Claude API (Anthropic)</div>
+          <div class="text-xs text-gray-500 uppercase tracking-wider">Claude API</div>
           <div class="text-lg">🤖</div>
         </div>
         <div class="flex items-end gap-2">
-          <span id="claude-restante" class="text-2xl font-bold text-white">—</span>
-          <span class="text-gray-500 text-sm mb-0.5">restante hoy</span>
+          <span id="claude-restante" class="text-xl sm:text-2xl font-bold text-white">—</span>
+          <span class="text-gray-500 text-xs sm:text-sm mb-0.5">restante hoy</span>
         </div>
-        <div class="progress-bg h-2">
-          <div id="claude-bar" class="progress-bar h-2" style="width:0%"></div>
+        <div class="progress-bg h-1.5">
+          <div id="claude-bar" class="progress-bar h-1.5" style="width:0%"></div>
         </div>
         <div class="flex justify-between text-xs text-gray-600">
-          <span>Gastado hoy: <span id="claude-gasto" class="text-gray-400">—</span> <span id="claude-limite" class="text-gray-600"></span></span>
+          <span>Gastado: <span id="claude-gasto" class="text-gray-400">—</span> <span id="claude-limite" class="text-gray-700"></span></span>
           <span id="claude-pct" class="text-gray-400">0%</span>
         </div>
         <div class="text-xs text-gray-600">Este mes: <span id="claude-mes" class="text-gray-400">—</span></div>
       </div>
 
       <!-- Meta Ads -->
-      <div class="card p-5 space-y-3">
+      <div class="card p-4 sm:p-5 space-y-3">
         <div class="flex items-center justify-between">
           <div class="text-xs text-gray-500 uppercase tracking-wider">Meta Ads</div>
           <div class="text-lg">📢</div>
         </div>
         <div>
           <div class="flex items-baseline gap-2">
-            <span id="meta-balance" class="text-2xl font-bold text-white">—</span>
-            <span id="meta-balance-label" class="text-gray-500 text-sm">límite</span>
+            <span id="meta-gasto-card" class="text-xl sm:text-2xl font-bold text-white">—</span>
+            <span class="text-gray-500 text-xs sm:text-sm">gastado</span>
           </div>
           <div class="text-xs text-gray-600 mt-1">
-            Gastado total: <span id="meta-gasto" class="text-gray-400">—</span>
-            · <span id="meta-activas" class="text-gray-400">—</span> activas
+            <span id="meta-activas" class="text-gray-400">—</span> campañas activas
           </div>
         </div>
         <div id="meta-error" class="text-xs text-red-400 hidden"></div>
       </div>
 
       <!-- Stripe -->
-      <div class="card p-5 space-y-3">
+      <div class="card p-4 sm:p-5 space-y-3">
         <div class="flex items-center justify-between">
           <div class="text-xs text-gray-500 uppercase tracking-wider">Stripe</div>
           <div class="text-lg">💳</div>
         </div>
         <div>
           <div class="flex items-baseline gap-2">
-            <span id="stripe-disponible" class="text-2xl font-bold text-white">—</span>
-            <span class="text-gray-500 text-sm">disponible</span>
+            <span id="stripe-disponible" class="text-xl sm:text-2xl font-bold text-white">—</span>
+            <span class="text-gray-500 text-xs sm:text-sm">disponible</span>
           </div>
           <div class="text-xs text-gray-600 mt-1">
             Pendiente: <span id="stripe-pendiente" class="text-gray-400">—</span>
@@ -149,33 +179,69 @@ tailwind.config = {
       </div>
 
       <!-- Revenue Total -->
-      <div class="card p-5 space-y-3 border-green-900">
+      <div class="card p-4 sm:p-5 space-y-3 border-green-900">
         <div class="flex items-center justify-between">
           <div class="text-xs text-gray-500 uppercase tracking-wider">Revenue Total</div>
           <div class="text-lg">💰</div>
         </div>
         <div>
           <div class="flex items-baseline gap-2">
-            <span id="revenue-total" class="text-2xl font-bold neon">—</span>
-            <span class="text-gray-500 text-sm">neto</span>
+            <span id="revenue-total" class="text-xl sm:text-2xl font-bold neon">—</span>
+            <span class="text-gray-500 text-xs sm:text-sm">neto</span>
           </div>
-          <div class="text-xs text-gray-600 mt-1 space-x-3">
+          <div class="text-xs text-gray-600 mt-1 space-x-2">
             <span>Digital: <span id="revenue-digital" class="text-gray-400">—</span></span>
             <span>Leads: <span id="revenue-leads" class="text-gray-400">—</span></span>
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-600">Activos:</span>
-          <span id="exp-activos" class="text-xs badge-green px-2 py-0.5 rounded-full font-bold">—</span>
+          <span class="text-xs text-gray-600">Gastos:</span>
+          <span id="gastos-total" class="text-xs text-red-400 font-medium">—</span>
+          <span id="exp-activos" class="text-xs badge-green px-2 py-0.5 rounded-full font-bold ml-auto">—</span>
         </div>
       </div>
     </div>
 
-    <!-- ── FILA 2: CAMPAÑAS RANKING ── -->
-    <div class="card p-5">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="font-bold text-gray-200">📊 Campañas — Ranking por ROAS</h2>
-        <span id="campanias-count" class="text-xs text-gray-600"></span>
+    <!-- ── FILA 2: EMAIL FUNNEL KPIs ── -->
+    <div class="card p-4 sm:p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-bold text-gray-200 text-sm">📧 Email Funnel</h2>
+        <span class="text-xs text-gray-600">emails y conversiones</span>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="mini-kpi p-3">
+          <div class="text-xs text-gray-600 mb-1">Productos entregados</div>
+          <div id="email-entregados" class="text-xl font-bold neon">—</div>
+          <div class="text-xs text-gray-700 mt-0.5">vía email</div>
+        </div>
+        <div class="mini-kpi p-3">
+          <div class="text-xs text-gray-600 mb-1">Email abandono #1</div>
+          <div id="email-abandono1" class="text-xl font-bold text-yellow-400">—</div>
+          <div class="text-xs text-gray-700 mt-0.5">enviados (2h)</div>
+        </div>
+        <div class="mini-kpi p-3">
+          <div class="text-xs text-gray-600 mb-1">Email abandono #2</div>
+          <div id="email-abandono2" class="text-xl font-bold text-orange-400">—</div>
+          <div class="text-xs text-gray-700 mt-0.5">enviados (24h)</div>
+        </div>
+        <div class="mini-kpi p-3">
+          <div class="text-xs text-gray-600 mb-1">Total clientes</div>
+          <div id="email-clientes" class="text-xl font-bold text-blue-400">—</div>
+          <div class="text-xs text-gray-700 mt-0.5">en base de datos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FILA 3: CAMPAÑAS ── -->
+    <div class="card p-4 sm:p-5">
+      <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <div class="flex items-center gap-3">
+          <h2 class="font-bold text-gray-200">📊 Campañas — Performance Live</h2>
+          <span id="campanias-count" class="text-xs text-gray-600"></span>
+        </div>
+        <button id="btn-sync-meta" onclick="sincronizarMeta()" class="btn-sync text-xs px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5">
+          <span id="sync-icon">⟳</span> Sincronizar Meta
+        </button>
       </div>
       <div id="campanias-empty" class="text-center py-10 text-gray-600 hidden">
         <div class="text-3xl mb-2">📭</div>
@@ -190,14 +256,19 @@ tailwind.config = {
         <table class="w-full text-sm">
           <thead>
             <tr class="text-left text-gray-600 border-b border-gray-800">
-              <th class="pb-3 pr-4 font-medium">#</th>
-              <th class="pb-3 pr-4 font-medium">Producto</th>
-              <th class="pb-3 pr-4 font-medium">Estado</th>
-              <th class="pb-3 pr-4 font-medium text-right">ROAS</th>
-              <th class="pb-3 pr-4 font-medium text-right">Gasto</th>
-              <th class="pb-3 pr-4 font-medium text-right">Revenue</th>
-              <th class="pb-3 pr-4 font-medium text-right">Clicks</th>
-              <th class="pb-3 font-medium text-right">CTR</th>
+              <th class="pb-3 pr-3 font-medium">#</th>
+              <th class="pb-3 pr-3 font-medium">Producto</th>
+              <th class="pb-3 pr-3 font-medium">Formato</th>
+              <th class="pb-3 pr-3 font-medium">Estado</th>
+              <th class="pb-3 pr-3 font-medium text-right">ROAS</th>
+              <th class="pb-3 pr-3 font-medium text-right">Gasto</th>
+              <th class="pb-3 pr-3 font-medium text-right">Revenue</th>
+              <th class="pb-3 pr-3 font-medium text-right">Ventas</th>
+              <th class="pb-3 pr-3 font-medium text-right">Impr.</th>
+              <th class="pb-3 pr-3 font-medium text-right">Clicks</th>
+              <th class="pb-3 pr-3 font-medium text-right">CTR</th>
+              <th class="pb-3 pr-3 font-medium text-right">CPC</th>
+              <th class="pb-3 font-medium text-right">Acciones</th>
             </tr>
           </thead>
           <tbody id="campanias-tbody"></tbody>
@@ -205,11 +276,11 @@ tailwind.config = {
       </div>
     </div>
 
-    <!-- ── FILA 3: PRODUCTOS + LOGS ── -->
+    <!-- ── FILA 4: PRODUCTOS + LOGS ── -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
 
       <!-- Productos Ranking -->
-      <div class="card p-5">
+      <div class="card p-4 sm:p-5">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-bold text-gray-200">🚀 Productos — Ranking por Revenue</h2>
           <span id="productos-count" class="text-xs text-gray-600"></span>
@@ -226,7 +297,7 @@ tailwind.config = {
       </div>
 
       <!-- Activity Log -->
-      <div class="card p-5">
+      <div class="card p-4 sm:p-5">
         <div class="flex items-center justify-between mb-4">
           <h2 class="font-bold text-gray-200">📋 Actividad Reciente</h2>
           <span class="text-xs text-gray-600">últimas 30 acciones</span>
@@ -243,7 +314,7 @@ tailwind.config = {
 
   <!-- Footer -->
   <footer class="text-center py-4 text-gray-700 text-xs border-t border-gray-900">
-    NEXUS AGENT v4.0 — Auto-refresh cada 30s
+    NEXUS AGENT v4.1 — Auto-refresh cada 30s
   </footer>
 </div>
 
@@ -255,7 +326,6 @@ let SECRET = '';
 const REFRESH_INTERVAL = 30000;
 let refreshTimer = null;
 
-// ── Leer secret de URL (si viene guardado) ──
 const urlParams = new URLSearchParams(window.location.search);
 const urlSecret = urlParams.get('secret');
 if (urlSecret) {
@@ -270,14 +340,12 @@ function doLogin() {
   const input = document.getElementById('secret-input').value.trim();
   if (!input) return;
   SECRET = input;
-  // Probar autenticación
   fetch(`/api/estado?secret=${SECRET}`)
     .then(r => {
       if (r.status === 401) {
         document.getElementById('login-error').classList.remove('hidden');
         SECRET = '';
       } else {
-        // Guardar en URL para bookmarking
         history.replaceState(null, '', `?secret=${SECRET}`);
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('dashboard').classList.remove('hidden');
@@ -304,7 +372,13 @@ function iniciarAutoRefresh() {
 async function cargarTodo() {
   document.getElementById('refresh-spinner').classList.remove('hidden');
   try {
-    await Promise.all([cargarEstado(), cargarCampanias(), cargarProductos(), cargarLogs()]);
+    await Promise.all([
+      cargarEstado(),
+      cargarCampanias(),
+      cargarEmails(),
+      cargarProductos(),
+      cargarLogs()
+    ]);
   } finally {
     document.getElementById('refresh-spinner').classList.add('hidden');
   }
@@ -317,11 +391,11 @@ async function cargarEstado() {
     if (!r.ok) throw new Error('Error ' + r.status);
     const d = await r.json();
 
-    // Sistema status
     document.getElementById('status-dot').className = 'w-2 h-2 rounded-full bg-green-400 pulse';
     document.getElementById('status-text').textContent = 'Online';
     document.getElementById('status-text').className = 'text-green-400 text-sm';
     document.getElementById('last-update').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es');
+    document.getElementById('last-update').classList.remove('hidden');
 
     // Claude API
     const c = d.claude;
@@ -332,20 +406,18 @@ async function cargarEstado() {
     document.getElementById('claude-mes').textContent = `$${c.gasto_mes}`;
     const bar = document.getElementById('claude-bar');
     bar.style.width = `${c.porcentaje}%`;
-    bar.className = 'progress-bar h-2';
+    bar.className = 'progress-bar h-1.5';
     if (c.porcentaje >= 90) bar.classList.add('progress-danger');
     else if (c.porcentaje >= 70) bar.classList.add('progress-warn');
 
     // Meta Ads
     const m = d.meta;
     if (m.error) {
-      document.getElementById('meta-balance').textContent = 'Error';
+      document.getElementById('meta-gasto-card').textContent = 'Error';
       document.getElementById('meta-error').textContent = m.error.slice(0, 60);
       document.getElementById('meta-error').classList.remove('hidden');
     } else {
-      document.getElementById('meta-balance').textContent = `$${m.gasto_mes ?? '0.00'}`;
-      document.getElementById('meta-balance-label').textContent = 'gastado';
-      document.getElementById('meta-gasto').textContent = `$${m.gasto_mes ?? '0.00'}`;
+      document.getElementById('meta-gasto-card').textContent = `$${m.gasto_mes ?? '0.00'}`;
       document.getElementById('meta-activas').textContent = m.campanas_activas ?? 0;
       document.getElementById('meta-error').classList.add('hidden');
     }
@@ -367,6 +439,7 @@ async function cargarEstado() {
     document.getElementById('revenue-total').textContent = `$${sis.revenue_total}`;
     document.getElementById('revenue-digital').textContent = `$${sis.revenue_digital}`;
     document.getElementById('revenue-leads').textContent = `$${sis.revenue_leads}`;
+    document.getElementById('gastos-total').textContent = `$${sis.gastos_totales}`;
     document.getElementById('exp-activos').textContent = `${sis.experimentos_activos} activos`;
 
   } catch (e) {
@@ -374,6 +447,50 @@ async function cargarEstado() {
     document.getElementById('status-text').textContent = 'Sin conexión';
     document.getElementById('status-text').className = 'text-red-400 text-sm';
     console.error('Error cargando estado:', e);
+  }
+}
+
+// ── Email Funnel ─────────────────────────────────────────────
+async function cargarEmails() {
+  try {
+    const r = await fetch(`/api/emails?secret=${SECRET}`);
+    if (!r.ok) return;
+    const d = await r.json();
+    document.getElementById('email-entregados').textContent = d.productos_entregados ?? 0;
+    document.getElementById('email-abandono1').textContent = d.abandono_email1 ?? 0;
+    document.getElementById('email-abandono2').textContent = d.abandono_email2 ?? 0;
+    document.getElementById('email-clientes').textContent = d.total_clientes ?? 0;
+  } catch (e) {
+    console.error('Error cargando emails:', e);
+  }
+}
+
+// ── Sincronizar Meta Live ────────────────────────────────────
+async function sincronizarMeta() {
+  const btn = document.getElementById('btn-sync-meta');
+  const icon = document.getElementById('sync-icon');
+  btn.disabled = true;
+  icon.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:1.5px;"></span>';
+  try {
+    const r = await fetch(`/api/meta-sincronizar?secret=${SECRET}`, { method: 'POST' });
+    if (r.ok) {
+      icon.textContent = '✓';
+      btn.style.color = '#00ff88';
+      setTimeout(() => {
+        icon.textContent = '⟳';
+        btn.style.color = '';
+        cargarCampanias();
+      }, 1500);
+    } else {
+      icon.textContent = '✗';
+      btn.style.color = '#ff4444';
+      setTimeout(() => { icon.textContent = '⟳'; btn.style.color = ''; }, 2000);
+    }
+  } catch(e) {
+    icon.textContent = '✗';
+    setTimeout(() => { icon.textContent = '⟳'; btn.style.color = ''; }, 2000);
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -395,34 +512,77 @@ async function cargarCampanias() {
     document.getElementById('campanias-table').classList.remove('hidden');
     document.getElementById('campanias-count').textContent = `${data.length} campañas`;
 
+    // Ordenar por ROAS desc
+    data.sort((a, b) => (parseFloat(b.roas) || 0) - (parseFloat(a.roas) || 0));
+
     const tbody = document.getElementById('campanias-tbody');
     tbody.innerHTML = data.map((c, i) => {
       const roas = parseFloat(c.roas || 0);
-      const roasBadge = roas >= 1.5 ? 'badge-green' : roas >= 0.5 ? 'badge-yellow' : 'badge-red';
+      const roasBadge = roas >= 2 ? 'badge-green' : roas >= 1 ? 'badge-yellow' : roas > 0 ? 'badge-red' : 'badge-gray';
       const roasText = roas > 0 ? `${roas.toFixed(2)}x` : '—';
       const estadoBadge = {
-        activa: 'badge-green', escalando: 'badge-blue',
-        pausada: 'badge-yellow', muerta: 'badge-red'
+        activo: 'badge-green', activa: 'badge-green', escalando: 'badge-blue',
+        pausado: 'badge-yellow', pausada: 'badge-yellow', muerto: 'badge-red', muerta: 'badge-red'
       }[c.estado] || 'badge-gray';
-      const revenue = parseFloat(c.revenue || c.ventas || 0);
+
       const gasto = parseFloat(c.gasto_total || 0);
+      const revenue = parseFloat(c.revenue_generado || c.revenue || 0);
+      const conversiones = parseInt(c.conversiones || 0);
+      const impresiones = parseInt(c.impresiones || 0);
+      const clicks = parseInt(c.clicks || 0);
+      const ctr = parseFloat(c.ctr || 0);
+      const cpc = clicks > 0 ? (gasto / clicks) : 0;
+
+      // Formato badge (feed o stories)
+      const fmt = (c.formato || c.tipo_formato || '').toLowerCase();
+      const formatoBadge = fmt === 'stories'
+        ? '<span class="badge-purple text-xs px-2 py-0.5 rounded-full">📱 Stories</span>'
+        : fmt === 'feed'
+        ? '<span class="badge-blue text-xs px-2 py-0.5 rounded-full">🖼 Feed</span>'
+        : '<span class="text-gray-700 text-xs">—</span>';
+
+      const fechaCorta = c.fecha_inicio
+        ? new Date(c.fecha_inicio).toLocaleDateString('es', { month:'short', day:'numeric' })
+        : '';
+
+      const estaActiva = c.estado === 'activo' || c.estado === 'escalando';
+      const estaPausada = c.estado === 'pausado' || c.estado === 'pausada' || c.estado === 'muerto' || c.estado === 'muerta';
+      const updateTs = c.fecha_ultimo_update
+        ? new Date(c.fecha_ultimo_update).toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' })
+        : null;
+
       return `
-        <tr class="table-row border-b border-gray-900">
-          <td class="py-3 pr-4 text-gray-600">${i+1}</td>
-          <td class="py-3 pr-4">
+        <tr id="row-${c.id}" class="table-row border-b border-gray-900">
+          <td class="py-3 pr-3 text-gray-600">${i+1}</td>
+          <td class="py-3 pr-3">
             <div class="font-medium text-white text-sm">${c.nombre_producto || c.nombre || 'Sin nombre'}</div>
-            <div class="text-xs text-gray-600">${c.nicho || ''}</div>
+            <div class="text-xs text-gray-600">${c.nicho || ''} ${fechaCorta ? '· '+fechaCorta : ''}${updateTs ? ' · sync '+updateTs : ''}</div>
           </td>
-          <td class="py-3 pr-4">
-            <span class="${estadoBadge} text-xs px-2 py-1 rounded-full font-medium">${c.estado || '—'}</span>
+          <td class="py-3 pr-3">${formatoBadge}</td>
+          <td class="py-3 pr-3">
+            <span class="${estadoBadge} text-xs px-2 py-0.5 rounded-full font-medium">${c.estado || '—'}</span>
           </td>
-          <td class="py-3 pr-4 text-right">
-            <span class="${roasBadge} text-xs px-2 py-1 rounded-full font-bold">${roasText}</span>
+          <td class="py-3 pr-3 text-right">
+            <span class="${roasBadge} text-xs px-2 py-0.5 rounded-full font-bold">${roasText}</span>
           </td>
-          <td class="py-3 pr-4 text-right text-gray-300">$${gasto.toFixed(2)}</td>
-          <td class="py-3 pr-4 text-right ${revenue > 0 ? 'text-green-400 font-medium' : 'text-gray-600'}">$${revenue.toFixed(2)}</td>
-          <td class="py-3 pr-4 text-right text-gray-400">${(c.clicks || 0).toLocaleString()}</td>
-          <td class="py-3 text-right text-gray-500">${c.ctr ? c.ctr.toFixed(2)+'%' : '—'}</td>
+          <td class="py-3 pr-3 text-right text-gray-300">$${gasto.toFixed(2)}</td>
+          <td class="py-3 pr-3 text-right ${revenue > 0 ? 'text-green-400 font-medium' : 'text-gray-600'}">$${revenue.toFixed(2)}</td>
+          <td class="py-3 pr-3 text-right ${conversiones > 0 ? 'text-green-300' : 'text-gray-600'}">${conversiones}</td>
+          <td class="py-3 pr-3 text-right text-gray-500">${impresiones > 0 ? impresiones.toLocaleString() : '—'}</td>
+          <td class="py-3 pr-3 text-right text-gray-400">${clicks > 0 ? clicks.toLocaleString() : '—'}</td>
+          <td class="py-3 pr-3 text-right text-gray-500">${ctr > 0 ? ctr.toFixed(2)+'%' : '—'}</td>
+          <td class="py-3 pr-3 text-right text-gray-500">${cpc > 0 ? '$'+cpc.toFixed(2) : '—'}</td>
+          <td class="py-3 text-right">
+            <div class="flex gap-1 justify-end">
+              <button onclick="syncCampana('${c.id}', this)" class="btn-row btn-row-sync" title="Actualizar datos de Meta">⟳</button>
+              ${estaActiva
+                ? `<button onclick="pausarCampana('${c.id}', this)" class="btn-row btn-row-pause" title="Pausar en Meta">⏸</button>`
+                : estaPausada
+                ? `<button onclick="activarCampana('${c.id}', this)" class="btn-row btn-row-play" title="Reactivar en Meta">▶</button>`
+                : ''}
+              <button onclick="borrarCampana('${c.id}', '${(c.nombre_producto || c.nombre || '').replace(/'/g, '')}', this)" class="btn-row btn-row-del" title="Eliminar de la BD">✕</button>
+            </div>
+          </td>
         </tr>`;
     }).join('');
   } catch (e) {
@@ -459,28 +619,119 @@ async function cargarProductos() {
       const tipoBadge = {
         guia_pdf: '📄', mini_curso: '🎓', prompts: '💬', toolkit: '🛠️', plantilla: '📋'
       }[p.tipo] || '📦';
+      const rankIcon = i < 3 ? ['🥇','🥈','🥉'][i] : `${i+1}`;
       const rankColor = i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-amber-600' : 'text-gray-700';
       return `
         <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-900/40 transition group">
-          <span class="${rankColor} font-bold text-sm w-5 text-center">${i < 3 ? ['🥇','🥈','🥉'][i] : `${i+1}`}</span>
+          <span class="${rankColor} font-bold text-sm w-5 text-center">${rankIcon}</span>
           <span class="text-base">${tipoBadge}</span>
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-white truncate">${p.nombre}</div>
-            <div class="flex items-center gap-2 mt-0.5">
+            <div class="flex items-center gap-2 mt-0.5 flex-wrap">
               <span class="text-xs text-gray-600">${p.nicho || ''}</span>
               <span class="${estadoBadge} text-xs px-1.5 py-0.5 rounded-full">${p.estado}</span>
+              ${p.precio ? `<span class="text-xs text-gray-700">$${p.precio}</span>` : ''}
             </div>
           </div>
           <div class="text-right">
             <div class="${revenue > 0 ? 'text-green-400 font-bold' : 'text-gray-600'} text-sm">$${revenue.toFixed(2)}</div>
             <div class="text-xs text-gray-600">${ventas} ventas</div>
           </div>
-          ${p.url ? `<a href="${p.url}" target="_blank" class="text-gray-700 hover:text-neon transition text-xs opacity-0 group-hover:opacity-100">↗</a>` : ''}
+          ${p.url ? `<a href="${p.url}" target="_blank" class="text-gray-700 hover:text-neon transition text-xs opacity-0 group-hover:opacity-100" title="Ver landing">↗</a>` : ''}
         </div>`;
     }).join('');
   } catch (e) {
     console.error('Error cargando productos:', e);
   }
+}
+
+// ════════════════════════════════════
+// ACCIONES DE CAMPAÑA
+// ════════════════════════════════════
+
+async function syncCampana(id, btn) {
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:10px;height:10px;border-width:1.5px;vertical-align:middle"></span>';
+  try {
+    const r = await fetch(`/api/campania/${id}/sync?secret=${SECRET}`, { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) {
+      btn.textContent = '✓';
+      btn.style.color = '#00ff88';
+      setTimeout(() => { btn.textContent = original; btn.style.color = ''; btn.disabled = false; cargarCampanias(); }, 1200);
+    } else {
+      throw new Error(d.error);
+    }
+  } catch(e) {
+    btn.textContent = '✗';
+    btn.style.color = '#ff4444';
+    btn.title = e.message;
+    setTimeout(() => { btn.textContent = original; btn.style.color = ''; btn.disabled = false; }, 2500);
+  }
+}
+
+async function pausarCampana(id, btn) {
+  btn.disabled = true;
+  try {
+    const r = await fetch(`/api/campania/${id}/pausar?secret=${SECRET}`, { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) cargarCampanias();
+    else { btn.disabled = false; alert('Error: ' + d.error); }
+  } catch(e) { btn.disabled = false; }
+}
+
+async function activarCampana(id, btn) {
+  btn.disabled = true;
+  try {
+    const r = await fetch(`/api/campania/${id}/activar?secret=${SECRET}`, { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) cargarCampanias();
+    else { btn.disabled = false; alert('Error: ' + d.error); }
+  } catch(e) { btn.disabled = false; }
+}
+
+// ── Confirm modal ────────────────────────────────────────────
+let _confirmResolve = null;
+
+function showConfirm(icon, msg, sub, okLabel = 'Confirmar', okClass = 'bg-red-900 border-red-700 text-red-200') {
+  return new Promise(resolve => {
+    _confirmResolve = resolve;
+    document.getElementById('confirm-icon').textContent = icon;
+    document.getElementById('confirm-msg').textContent = msg;
+    document.getElementById('confirm-sub').textContent = sub;
+    const btn = document.getElementById('confirm-ok-btn');
+    btn.textContent = okLabel;
+    btn.className = `px-5 py-2 rounded-lg border transition text-sm font-semibold ${okClass}`;
+    document.getElementById('confirm-overlay').classList.remove('hidden');
+  });
+}
+
+function confirmCancel() {
+  document.getElementById('confirm-overlay').classList.add('hidden');
+  if (_confirmResolve) _confirmResolve(false);
+}
+
+document.getElementById('confirm-ok-btn').onclick = () => {
+  document.getElementById('confirm-overlay').classList.add('hidden');
+  if (_confirmResolve) _confirmResolve(true);
+};
+
+async function borrarCampana(id, nombre, btn) {
+  const ok = await showConfirm('🗑️', `¿Eliminar "${nombre}"?`, 'Se borra solo de la BD. No afecta Meta Ads.', 'Eliminar', 'bg-red-900 border-red-700 text-red-200');
+  if (!ok) return;
+  btn.disabled = true;
+  try {
+    const r = await fetch(`/api/campania/${id}?secret=${SECRET}`, { method: 'DELETE' });
+    const d = await r.json();
+    if (d.ok) {
+      const row = document.getElementById(`row-${id}`);
+      if (row) row.remove();
+    } else {
+      alert('Error: ' + d.error);
+      btn.disabled = false;
+    }
+  } catch(e) { btn.disabled = false; }
 }
 
 // ── Logs ─────────────────────────────────────────────────────
@@ -510,7 +761,7 @@ async function cargarLogs() {
         <div class="flex items-start gap-2 py-1.5 px-2 rounded hover:bg-gray-900/30 transition">
           <span class="text-base mt-0.5">${icono}</span>
           <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-1.5">
+            <div class="flex items-center gap-1.5 flex-wrap">
               <span class="text-xs font-medium text-gray-300">${log.agente}</span>
               <span class="text-gray-700">·</span>
               <span class="text-xs text-gray-500 truncate">${log.accion}</span>
