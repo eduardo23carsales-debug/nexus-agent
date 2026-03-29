@@ -193,42 +193,40 @@ async function leerComandosTelegram() {
           `<b>TESTMETA</b> — Verifica conexión Meta Ads\n` +
           `<b>RELANZMETA</b> — Relanza campaña del último producto\n\n` +
           `<b>LEADCAMP</b> — Lanza campaña para cualquier oferta tuya\n` +
-          `<i>Formato: LEADCAMP [URL] [WhatsApp opcional] [descripción de la oferta]</i>\n` +
-          `<i>Ej: LEADCAMP https://miweb.com +13055551234 Elantra 2026 $299/mes Miami</i>\n\n` +
+          `<i>Escribe libre: LEADCAMP + tu oferta + tu página web + WhatsApp (opcional)</i>\n` +
+          `<i>Ej: LEADCAMP Elantra 2026 $299/mes Miami https://miweb.com +13055551234</i>\n\n` +
           `<i>Puedes escribir OTRO varias veces hasta encontrar un nicho que te convenza.</i>`
         );
 
       } else if (texto?.startsWith('LEADCAMP')) {
-        // Formato: LEADCAMP https://url.com +1XXXXXXXXXX descripción de la oferta
-        const rawMsg = msg.text.trim();
-        const tokens = rawMsg.split(/\s+/);
-        tokens.shift(); // quitar "LEADCAMP"
+        // Escribe libre — el sistema detecta la URL y el WhatsApp donde sea que estén
+        const rawMsg = msg.text.trim().replace(/^LEADCAMP\s*/i, '');
 
-        let landingUrl = null;
-        let whatsappNum = null;
-        const ofertaTokens = [];
+        // Extraer URL (http o www)
+        const urlMatch = rawMsg.match(/https?:\/\/[^\s]+|www\.[^\s]+/i);
+        let landingUrl = urlMatch ? urlMatch[0] : null;
+        if (landingUrl && landingUrl.startsWith('www.')) landingUrl = 'https://' + landingUrl;
 
-        for (const token of tokens) {
-          if (!landingUrl && (token.startsWith('http://') || token.startsWith('https://'))) {
-            landingUrl = token;
-          } else if (!whatsappNum && /^\+\d{7,15}$/.test(token)) {
-            whatsappNum = token;
-          } else {
-            ofertaTokens.push(token);
-          }
-        }
+        // Extraer número WhatsApp (formato +1... o variantes)
+        const waMatch = rawMsg.match(/\+\d[\d\s\-]{7,14}/);
+        const whatsappNum = waMatch ? waMatch[0].replace(/[\s\-]/g, '') : null;
 
-        const oferta = ofertaTokens.join(' ').trim();
+        // La oferta es el texto libre sin URL ni teléfono
+        const oferta = rawMsg
+          .replace(urlMatch?.[0] || '', '')
+          .replace(waMatch?.[0] || '', '')
+          .replace(/\s{2,}/g, ' ')
+          .trim();
 
         if (!landingUrl || !oferta) {
           await enviar(
-            `❌ <b>Formato incorrecto.</b>\n\n` +
-            `Usa: <b>LEADCAMP</b> [URL] [WhatsApp] [oferta]\n\n` +
-            `Ejemplo:\n<code>LEADCAMP https://miweb.com +13055551234 Elantra 2026 $1,000 down $299/mes Miami</code>\n\n` +
-            `El WhatsApp es opcional. Si no lo pones el anuncio apunta directo a tu página.`
+            `❌ Necesito al menos tu <b>página web</b> y la <b>descripción de la oferta</b>.\n\n` +
+            `Escribe libre, por ejemplo:\n` +
+            `<code>LEADCAMP Elantra 2026 $1,000 down $299/mes Miami, mi página https://miweb.com WhatsApp +13055551234</code>\n\n` +
+            `El WhatsApp es opcional.`
           );
         } else {
-          await enviar(`⚙️ Generando ${whatsappNum ? '3 copies + imagen + campaña WhatsApp' : '3 copies + imagen + campaña'}...`);
+          await enviar(`⚙️ Entendido. Creando copies y lanzando campaña...`);
           lanzarCampanaLeadCamp({ oferta, landingUrl, whatsappNum }).catch(e => enviar(`❌ Error: ${e.message}`));
         }
 
