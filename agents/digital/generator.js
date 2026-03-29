@@ -48,32 +48,32 @@ function crearShellHTML(titulo, subtitulo, tipo, secciones) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${titulo}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg: #0a0a0f;
-  --surface: #13131a;
-  --surface2: #1c1c26;
-  --border: #2a2a3a;
-  --accent: #00e87a;
-  --accent-dim: rgba(0,232,122,0.1);
-  --accent-dim2: rgba(0,232,122,0.06);
-  --blue: #4f8ef7;
-  --blue-dim: rgba(79,142,247,0.1);
-  --yellow: #ffd166;
-  --yellow-dim: rgba(255,209,102,0.1);
-  --red: #ff6b6b;
-  --text: #e2e2ef;
-  --text-muted: #8888aa;
-  --text-faint: #444460;
-  --radius: 10px;
+  --bg:        #0F1729;
+  --surface:   #172035;
+  --surface2:  #1E2A42;
+  --border:    #2A3A55;
+  --accent:    #F5A623;
+  --accent-dim:  rgba(245,166,35,0.12);
+  --accent-dim2: rgba(245,166,35,0.07);
+  --blue:      #4f8ef7;
+  --blue-dim:  rgba(79,142,247,0.1);
+  --green:     #34d399;
+  --green-dim: rgba(52,211,153,0.1);
+  --red:       #ff6b6b;
+  --text:      #E8EAF0;
+  --text-muted:#9AA3B8;
+  --text-faint:#4A5568;
+  --radius:    10px;
 }
 body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
 /* ── HEADER ── */
 .header {
-  background: linear-gradient(135deg, #0d0d1a 0%, #111128 50%, #0a1628 100%);
+  background: linear-gradient(135deg, #0B1220 0%, #0F1729 50%, #0B1828 100%);
   padding: 52px 24px 44px;
   text-align: center;
   border-bottom: 1px solid var(--border);
@@ -85,21 +85,21 @@ body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); colo
   position: absolute;
   top: -60px; left: 50%; transform: translateX(-50%);
   width: 500px; height: 200px;
-  background: radial-gradient(ellipse, rgba(0,232,122,0.12) 0%, transparent 70%);
+  background: radial-gradient(ellipse, rgba(245,166,35,0.1) 0%, transparent 70%);
   pointer-events: none;
 }
 .badge {
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--accent-dim); color: var(--accent);
-  border: 1px solid rgba(0,232,122,0.25);
+  border: 1px solid rgba(245,166,35,0.3);
   padding: 5px 16px; border-radius: 20px;
   font-size: 0.72em; font-weight: 700; letter-spacing: 1.5px;
   text-transform: uppercase; margin-bottom: 20px;
 }
 .header h1 {
-  color: #fff; font-size: clamp(1.5em, 4vw, 2.4em);
+  font-family: 'Poppins', sans-serif;
+  color: #fff; font-size: clamp(1.4em, 4vw, 2.3em);
   font-weight: 700; line-height: 1.25; margin-bottom: 12px;
-  letter-spacing: -0.02em;
 }
 .header p { color: var(--text-muted); font-size: 1.05em; max-width: 580px; margin: 0 auto; line-height: 1.6; }
 
@@ -150,10 +150,11 @@ body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); colo
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
 .section-title {
+  font-family: 'Poppins', sans-serif;
   font-size: 1.5em; font-weight: 700; color: #fff;
-  margin-bottom: 6px; letter-spacing: -0.02em;
+  margin-bottom: 6px;
 }
-.section-sub { color: var(--text-muted); font-size: 0.95em; margin-bottom: 32px; }
+.section-sub { color: var(--text-muted); font-size: 0.9em; margin-bottom: 28px; }
 
 /* ── CARDS ── */
 .card {
@@ -163,24 +164,24 @@ body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); colo
   padding: 24px; margin-bottom: 16px;
 }
 .card h3 { color: #fff; margin-bottom: 10px; font-size: 1em; font-weight: 600; }
-.card h4 { color: var(--accent); margin: 16px 0 8px; font-size: 0.9em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-.card p { color: #b0b0c8; line-height: 1.75; margin-bottom: 10px; }
+.card h4 { color: var(--accent); margin: 16px 0 8px; font-size: 0.85em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.card p { color: #C8CEDC; line-height: 1.8; margin-bottom: 10px; }
 .card ul, .card ol { padding-left: 20px; }
-.card li { color: #b0b0c8; line-height: 1.75; margin-bottom: 6px; }
+.card li { color: #C8CEDC; line-height: 1.8; margin-bottom: 6px; }
 .card strong { color: var(--text); }
 
-/* ── HIGHLIGHT / TIP / WARNING ── */
+/* ── HIGHLIGHT / TIP / INFO ── */
 .highlight {
   background: var(--accent-dim);
-  border: 1px solid rgba(0,232,122,0.2);
+  border: 1px solid rgba(245,166,35,0.25);
   border-radius: var(--radius); padding: 16px 20px; margin: 14px 0;
   color: var(--accent); font-weight: 600; line-height: 1.6;
 }
 .tip {
-  background: var(--yellow-dim);
-  border: 1px solid rgba(255,209,102,0.2);
+  background: var(--green-dim);
+  border: 1px solid rgba(52,211,153,0.2);
   border-radius: var(--radius); padding: 14px 20px; margin: 14px 0;
-  color: var(--yellow); font-size: 0.92em; line-height: 1.6;
+  color: var(--green); font-size: 0.92em; line-height: 1.6;
 }
 .info {
   background: var(--blue-dim);
@@ -191,11 +192,11 @@ body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); colo
 
 /* ── PROMPT BOX ── */
 .prompt-box {
-  background: #07070f;
+  background: #0B1220;
   border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 20px 20px 20px 20px;
+  border-radius: var(--radius); padding: 20px;
   margin: 14px 0; font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  font-size: 0.87em; color: #a8ffcc; white-space: pre-wrap;
+  font-size: 0.87em; color: #F5A623; white-space: pre-wrap;
   line-height: 1.8; position: relative;
 }
 .copy-btn {
@@ -212,7 +213,7 @@ body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); colo
 .checklist li {
   display: flex; align-items: flex-start; gap: 10px;
   padding: 10px 0; border-bottom: 1px solid var(--border);
-  color: #b0b0c8; line-height: 1.6; font-size: 0.95em;
+  color: #C8CEDC; line-height: 1.6; font-size: 0.95em;
 }
 .checklist li::before {
   content: "○"; color: var(--accent);
@@ -231,7 +232,7 @@ body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); colo
   font-weight: 600; font-size: 0.95em; transition: background 0.15s;
 }
 .accordion-header:hover { background: var(--surface2); }
-.accordion-body { padding: 0 20px 20px; color: #b0b0c8; line-height: 1.8; display: none; }
+.accordion-body { padding: 0 20px 20px; color: #C8CEDC; line-height: 1.8; display: none; }
 .accordion-body p { margin-bottom: 10px; }
 .accordion-body ul { padding-left: 20px; }
 .arrow { transition: transform 0.2s; color: var(--accent); font-size: 0.85em; }
@@ -243,12 +244,29 @@ body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); colo
 table { width: 100%; border-collapse: collapse; }
 thead { background: var(--surface2); }
 th { color: var(--accent); padding: 12px 16px; text-align: left; font-size: 0.82em; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; }
-td { padding: 11px 16px; border-top: 1px solid var(--border); color: #b0b0c8; font-size: 0.9em; vertical-align: top; }
+td { padding: 11px 16px; border-top: 1px solid var(--border); color: #C8CEDC; font-size: 0.9em; vertical-align: top; }
 tbody tr:hover { background: var(--surface2); }
 
 /* ── MOBILE ── */
-.mobile-menu { display: none; background: var(--surface); padding: 12px 16px; border-bottom: 1px solid var(--border); }
-.mobile-select { width: 100%; background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 10px 12px; border-radius: var(--radius); font-size: 0.95em; font-family: inherit; }
+.mobile-menu { display: none; background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 0; }
+.mobile-tab-btn {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; text-align: left; background: none; border: none;
+  color: var(--text-muted); padding: 12px 20px;
+  cursor: pointer; font-size: 0.9em; font-family: inherit;
+  transition: all 0.15s; border-left: 3px solid transparent; font-weight: 500;
+}
+.mobile-tab-btn.active {
+  background: var(--accent-dim2); color: var(--accent);
+  border-left-color: var(--accent); font-weight: 600;
+}
+.mobile-tab-num {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  background: var(--surface2); color: var(--text-faint);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75em; font-weight: 700; transition: all 0.15s;
+}
+.mobile-tab-btn.active .mobile-tab-num { background: var(--accent); color: #000; }
 
 /* ── FOOTER ── */
 .footer { background: var(--surface); padding: 24px; text-align: center; border-top: 1px solid var(--border); margin-top: 40px; }
@@ -272,9 +290,11 @@ tbody tr:hover { background: var(--surface2); }
 </div>
 
 <div class="mobile-menu">
-  <select class="mobile-select" onchange="showTab(this.value)">
-    ${secciones.map((s, i) => `<option value="${i}">${s.icono} ${s.titulo}</option>`).join('')}
-  </select>
+  ${secciones.map((s, i) => `
+  <button class="mobile-tab-btn ${i === 0 ? 'active' : ''}" onclick="showTab(${i})" id="mbtn-${i}">
+    <span class="mobile-tab-num">${i + 1}</span>
+    ${s.icono} ${s.titulo}
+  </button>`).join('')}
 </div>
 
 <div class="layout">
@@ -304,8 +324,11 @@ tbody tr:hover { background: var(--surface2); }
 function showTab(i) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.mobile-tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + i)?.classList.add('active');
   document.getElementById('btn-' + i)?.classList.add('active');
+  document.getElementById('mbtn-' + i)?.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function toggleAccordion(el) {
   el.parentElement.classList.toggle('open');
