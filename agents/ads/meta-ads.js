@@ -298,6 +298,106 @@ export const metaAds = {
     console.log(`[MetaAds] Presupuesto actualizado: $${nuevoPresupuesto / 100}/día`);
   },
 
+  // ── Campaña LeadCamp — oferta libre con URL + WhatsApp ──
+  async crearCampanaLeadCamp({ oferta, landingUrl, whatsappNum, copies, presupuestoDiario = 2000 }) {
+    console.log(`[MetaAds] LeadCamp: ${oferta.slice(0, 50)}`);
+
+    // 1. Generar imagen con DALL-E para la oferta
+    let imageHash = null;
+    if (OPENAI_KEY) {
+      try {
+        imageHash = await generarYSubirUnaImagen(
+          `Professional advertising image for this offer targeting Hispanic market in USA: "${oferta}". Eye-catching, professional, Miami Florida vibe. No text in the image.`,
+          'LeadCamp', '1024x1024'
+        );
+      } catch (e) {
+        console.warn('[MetaAds] LeadCamp imagen falló (no crítico):', e.message);
+      }
+    }
+
+    // 2. Crear campaña CBO
+    const campana = await metaPost(`/${AD_ACCOUNT}/campaigns`, {
+      name: `LEADCAMP | ${oferta.slice(0, 40)} | ${new Date().toISOString().slice(0, 10)}`,
+      objective: 'OUTCOME_TRAFFIC',
+      status: 'ACTIVE',
+      special_ad_categories: [],
+      daily_budget: presupuestoDiario,
+      bid_strategy: 'LOWEST_COST_WITHOUT_CAP'
+    });
+    console.log(`[MetaAds] LeadCamp campaña creada: ${campana.id}`);
+    await new Promise(r => setTimeout(r, 3000));
+
+    // 3. Construir URL destino (WhatsApp si hay número, si no la landing)
+    const waNum = whatsappNum ? whatsappNum.replace(/\D/g, '') : null;
+    const waUrl = waNum
+      ? `https://wa.me/${waNum}?text=${encodeURIComponent(`Hola, vi tu anuncio: "${oferta.slice(0, 60)}"... Me interesa más información`)}`
+      : landingUrl;
+
+    const targeting = {
+      age_min: 25,
+      age_max: 60,
+      genders: [1, 2],
+      geo_locations: { countries: ['US'] },
+      targeting_automation: { advantage_audience: 0 }
+    };
+
+    const adsetBase = {
+      campaign_id: campana.id,
+      billing_event: 'IMPRESSIONS',
+      optimization_goal: 'LINK_CLICKS',
+      bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
+      promoted_object: { page_id: PAGE_ID },
+      dsa_beneficiary: 'Aprende Gana y Crece IA',
+      dsa_payor: 'Aprende Gana y Crece IA',
+      targeting,
+      status: 'ACTIVE'
+    };
+
+    // 4. Crear un adset + ad por cada copy
+    const adsCreados = [];
+    const etiquetas = ['Emocional', 'Precio', 'Urgencia'];
+    for (let i = 0; i < copies.length; i++) {
+      try {
+        await new Promise(r => setTimeout(r, 2000));
+        const adset = await metaPost(`/${AD_ACCOUNT}/adsets`, {
+          ...adsetBase,
+          name: `LeadCamp Copy-${etiquetas[i] || i + 1}`
+        });
+
+        const linkData = {
+          link: waUrl,
+          message: copies[i],
+          name: oferta.slice(0, 40),
+          description: `🌐 ${landingUrl}`,
+          call_to_action: { type: 'LEARN_MORE', value: { link: waUrl } }
+        };
+        if (imageHash) linkData.image_hash = imageHash;
+
+        const creative = await metaPost(`/${AD_ACCOUNT}/adcreatives`, {
+          name: `LeadCamp Creative-${etiquetas[i] || i + 1}`,
+          object_story_spec: { page_id: PAGE_ID, link_data: linkData }
+        });
+        const ad = await metaPost(`/${AD_ACCOUNT}/ads`, {
+          name: `LeadCamp Ad-${etiquetas[i] || i + 1}`,
+          adset_id: adset.id,
+          creative: { creative_id: creative.id },
+          status: 'ACTIVE'
+        });
+        adsCreados.push({ adset_id: adset.id, ad_id: ad.id });
+        console.log(`[MetaAds] LeadCamp Ad-${i + 1} creado: ${ad.id}`);
+      } catch (e) {
+        console.warn(`[MetaAds] ⚠️ LeadCamp Copy-${i + 1} falló: ${e.message}`);
+      }
+    }
+
+    return {
+      campaign_id: campana.id,
+      adset_id: adsCreados[0]?.adset_id || null,
+      total_ads: adsCreados.length,
+      imagenes: imageHash ? 1 : 0
+    };
+  },
+
   // ── Verificar que el token funcione ─────────────────────
   async ping() {
     if (!TOKEN) throw new Error('META_ACCESS_TOKEN no configurado');

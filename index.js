@@ -23,7 +23,7 @@ import { generarProducto } from './agents/digital/generator.js';
 import { publicarProducto } from './agents/digital/publisher.js';
 import { calificarLeadManual } from './agents/leadgen/lead-qualifier.js';
 import { entregarLeadsCalificados } from './agents/leadgen/lead-delivery.js';
-import { lanzarCampanaParaProducto } from './agents/advanced/ads-manager.js';
+import { lanzarCampanaParaProducto, lanzarCampanaLeadCamp } from './agents/advanced/ads-manager.js';
 import { validarCampanas } from './agents/ads/campaign-validator.js';
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -183,7 +183,7 @@ async function leerComandosTelegram() {
 
       } else if (texto === 'AYUDA' || texto === '/START') {
         await enviar(
-          `⚡ <b>NEXUS AGENT v4.1 — Comandos</b>\n\n` +
+          `⚡ <b>NEXUS AGENT v4.2 — Comandos</b>\n\n` +
           `<b>LANZAR</b> — Busca y presenta el mejor nicho\n` +
           `<b>PUBLICAR</b> — Aprueba el nicho y genera el producto\n` +
           `<b>OTRO</b> — Rechaza el nicho y busca uno diferente\n` +
@@ -192,8 +192,45 @@ async function leerComandosTelegram() {
           `<b>REPORTE</b> — Reporte financiero\n` +
           `<b>TESTMETA</b> — Verifica conexión Meta Ads\n` +
           `<b>RELANZMETA</b> — Relanza campaña del último producto\n\n` +
+          `<b>LEADCAMP</b> — Lanza campaña para cualquier oferta tuya\n` +
+          `<i>Formato: LEADCAMP [URL] [WhatsApp opcional] [descripción de la oferta]</i>\n` +
+          `<i>Ej: LEADCAMP https://miweb.com +13055551234 Elantra 2026 $299/mes Miami</i>\n\n` +
           `<i>Puedes escribir OTRO varias veces hasta encontrar un nicho que te convenza.</i>`
         );
+
+      } else if (texto?.startsWith('LEADCAMP')) {
+        // Formato: LEADCAMP https://url.com +1XXXXXXXXXX descripción de la oferta
+        const rawMsg = msg.text.trim();
+        const tokens = rawMsg.split(/\s+/);
+        tokens.shift(); // quitar "LEADCAMP"
+
+        let landingUrl = null;
+        let whatsappNum = null;
+        const ofertaTokens = [];
+
+        for (const token of tokens) {
+          if (!landingUrl && (token.startsWith('http://') || token.startsWith('https://'))) {
+            landingUrl = token;
+          } else if (!whatsappNum && /^\+\d{7,15}$/.test(token)) {
+            whatsappNum = token;
+          } else {
+            ofertaTokens.push(token);
+          }
+        }
+
+        const oferta = ofertaTokens.join(' ').trim();
+
+        if (!landingUrl || !oferta) {
+          await enviar(
+            `❌ <b>Formato incorrecto.</b>\n\n` +
+            `Usa: <b>LEADCAMP</b> [URL] [WhatsApp] [oferta]\n\n` +
+            `Ejemplo:\n<code>LEADCAMP https://miweb.com +13055551234 Elantra 2026 $1,000 down $299/mes Miami</code>\n\n` +
+            `El WhatsApp es opcional. Si no lo pones el anuncio apunta directo a tu página.`
+          );
+        } else {
+          await enviar(`⚙️ Generando ${whatsappNum ? '3 copies + imagen + campaña WhatsApp' : '3 copies + imagen + campaña'}...`);
+          lanzarCampanaLeadCamp({ oferta, landingUrl, whatsappNum }).catch(e => enviar(`❌ Error: ${e.message}`));
+        }
 
       } else if (texto && texto.length > 20) {
         // Texto largo = lead manual para calificar
