@@ -56,9 +56,11 @@ export async function lanzarCampanaParaProducto(experimento) {
       `📢 <b>CAMPAÑA META ADS LANZADA</b>\n\n` +
       `<b>Producto:</b> ${experimento.nombre}\n` +
       `💰 Presupuesto: $${PRESUPUESTO_DIARIO / 100}/día\n` +
-      `🎯 Audiencia: ${audiencia.intereses?.slice(0,3).join(', ')}\n` +
-      `📝 Copy: "${audiencia.copy}"\n` +
-      `⏳ Decisión en 72 horas`
+      `🖼 Imágenes: ${campanaData.imagenes || 1} variantes (dolor / transformación / comunidad)\n` +
+      `📝 Copy A (dolor): "${audiencia.copy}"\n` +
+      (audiencia.copy_b ? `📝 Copy B (transform.): "${audiencia.copy_b}"\n` : '') +
+      `🎯 Total anuncios: ${campanaData.total_ads || 1}\n` +
+      `⏳ Decisión en 72 horas — Meta elige el ganador`
     );
 
     console.log(`[AdsManager] Campaña lanzada exitosamente`);

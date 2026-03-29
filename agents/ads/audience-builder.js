@@ -26,14 +26,15 @@ Devuelve JSON:
   "edad_min": 25,
   "edad_max": 50,
   "intereses": ["interés 1", "interés 2", "interés 3", "interés 4", "interés 5"],
-  "copy": "texto del anuncio en español, máximo 125 caracteres, directo y que genere urgencia",
+  "copy": "VARIANTE A — ángulo del DOLOR: conecta con el problema urgente del cliente, máximo 125 caracteres",
+  "copy_b": "VARIANTE B — ángulo de la TRANSFORMACIÓN: promesa del resultado positivo y aspiracional, máximo 125 caracteres",
   "descripcion": "descripción corta del producto, máximo 30 caracteres",
   "headline": "título del anuncio, máximo 40 caracteres",
   "razon": "por qué esta audiencia convierte para este nicho"
 }
 
 Los intereses deben ser nombres EXACTOS de intereses de Meta Ads en español o inglés.
-El copy debe conectar directamente con el dolor del cliente ideal.
+copy y copy_b deben ser completamente diferentes entre sí: uno ataca el dolor, el otro vende la transformación.
 `, SYSTEM, 'audience-builder');
 
   console.log(`[AudienceBuilder] Audiencia lista — ${audiencia.intereses?.length} intereses`);

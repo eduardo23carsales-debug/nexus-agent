@@ -50,44 +50,70 @@ async function metaGet(endpoint, params = {}) {
   }
 }
 
-// ── Generar imagen con DALL-E 3 y subirla a Meta ─────────────
-async function generarYSubirImagen(nombre, nicho) {
+// ── Generar una imagen con DALL-E 3 y subirla a Meta ──────────
+async function generarYSubirUnaImagen(prompt, etiqueta) {
+  const dalleRes = await axios.post(
+    'https://api.openai.com/v1/images/generations',
+    { model: 'dall-e-3', prompt, n: 1, size: '1024x1024', response_format: 'b64_json' },
+    { headers: { Authorization: `Bearer ${OPENAI_KEY}` }, timeout: 90000 }
+  );
+  const b64 = dalleRes.data.data[0].b64_json;
+  const uploadRes = await metaPost(`/${AD_ACCOUNT}/adimages`, { bytes: b64 });
+  const imageHash = Object.values(uploadRes.images || {})[0]?.hash;
+  if (!imageHash) throw new Error('No se obtuvo hash de imagen');
+  console.log(`[MetaAds] Imagen ${etiqueta} subida — hash: ${imageHash}`);
+  return imageHash;
+}
+
+// ── Generar 3 variantes de imagen en paralelo ────────────────
+async function generarImagenesVariantes(nombre, nicho) {
   if (!OPENAI_KEY) {
-    console.warn('[MetaAds] OPENAI_API_KEY no configurado — sin imagen');
-    return null;
+    console.warn('[MetaAds] OPENAI_API_KEY no configurado — sin imágenes');
+    return [];
   }
-  try {
-    console.log('[MetaAds] Generando imagen con DALL-E 3...');
-    const prompt = `Professional Facebook ad image for a Spanish-language digital product. Product: "${nombre}". Niche: ${nicho}. Bold vibrant colors, modern design, motivational feeling. No text in the image. High quality, suitable for Hispanic audience on social media.`;
 
-    const dalleRes = await axios.post(
-      'https://api.openai.com/v1/images/generations',
-      { model: 'dall-e-3', prompt, n: 1, size: '1024x1024', response_format: 'b64_json' },
-      { headers: { Authorization: `Bearer ${OPENAI_KEY}` }, timeout: 90000 }
-    );
+  const variantes = [
+    {
+      etiqueta: 'A (dolor)',
+      prompt: `Professional Facebook ad image for a Spanish-language digital product. Product: "${nombre}". Niche: ${nicho}. PAIN ANGLE: show a stressed, worried Hispanic person facing a problem. Urgent mood. Bold red and orange colors. No text in the image. High quality, suitable for Hispanic audience on social media.`
+    },
+    {
+      etiqueta: 'B (transformación)',
+      prompt: `Professional Facebook ad image for a Spanish-language digital product. Product: "${nombre}". Niche: ${nicho}. TRANSFORMATION ANGLE: show a happy, successful Hispanic person celebrating results. Optimistic mood. Bold green and gold colors. No text in the image. High quality, suitable for Hispanic audience on social media.`
+    },
+    {
+      etiqueta: 'C (comunidad)',
+      prompt: `Professional Facebook ad image for a Spanish-language digital product. Product: "${nombre}". Niche: ${nicho}. SOCIAL PROOF ANGLE: show a group of happy Latinos who already achieved success together. Trust and community mood. Bold blue and white colors. No text in the image. High quality, suitable for Hispanic audience on social media.`
+    }
+  ];
 
-    const b64 = dalleRes.data.data[0].b64_json;
-    console.log('[MetaAds] Imagen generada — subiendo a Meta...');
+  console.log('[MetaAds] Generando 3 variantes de imagen en paralelo con DALL-E 3...');
+  const results = await Promise.allSettled(
+    variantes.map(v => generarYSubirUnaImagen(v.prompt, v.etiqueta))
+  );
 
-    // Subir imagen a Meta Ad Account
-    const uploadRes = await metaPost(`/${AD_ACCOUNT}/adimages`, { bytes: b64 });
-    const imageHash = Object.values(uploadRes.images || {})[0]?.hash;
-    if (!imageHash) throw new Error('No se obtuvo hash de imagen');
-    console.log(`[MetaAds] Imagen subida OK — hash: ${imageHash}`);
-    return imageHash;
-  } catch (e) {
-    console.warn(`[MetaAds] ⚠️ Imagen falló (${e.message}) — continuando sin imagen`);
-    return null;
-  }
+  const hashes = results
+    .map((r, i) => {
+      if (r.status === 'fulfilled') return r.value;
+      console.warn(`[MetaAds] ⚠️ Variante ${variantes[i].etiqueta} falló: ${r.reason?.message}`);
+      return null;
+    })
+    .filter(Boolean);
+
+  console.log(`[MetaAds] ${hashes.length}/3 imágenes generadas OK`);
+  return hashes;
 }
 
 export const metaAds = {
 
-  // ── Crear campaña completa para un producto ──────────────
+  // ── Crear campaña completa con variantes A/B ────────────
   async crearCampana({ nombre, landingUrl, presupuestoDiario = 500, nicho, audiencia }) {
-    console.log(`[MetaAds] v7 — Creando campaña para: ${nombre} | PAGE_ID=${PAGE_ID} | AD_ACCOUNT=${AD_ACCOUNT}`);
+    console.log(`[MetaAds] v8 — Creando campaña A/B para: ${nombre} | PAGE_ID=${PAGE_ID} | AD_ACCOUNT=${AD_ACCOUNT}`);
 
-    // 1. Crear campaña
+    // 1. Generar 3 variantes de imagen en paralelo (antes de crear en Meta para no bloquear)
+    const imageHashes = await generarImagenesVariantes(nombre, nicho);
+
+    // 2. Crear campaña
     const campana = await metaPost(`/${AD_ACCOUNT}/campaigns`, {
       name: `NEXUS | ${nombre} | ${new Date().toISOString().slice(0,10)}`,
       objective: 'OUTCOME_TRAFFIC',
@@ -96,13 +122,10 @@ export const metaAds = {
       is_adset_budget_sharing_enabled: false
     });
     console.log(`[MetaAds] Campaña creada: ${campana.id}`);
-    await new Promise(r => setTimeout(r, 3000)); // Meta necesita propagar la campaña
+    await new Promise(r => setTimeout(r, 3000));
 
-    // 2. Crear conjunto de anuncios
-    console.log(`[MetaAds] Paso 2: creando adset... PAGE_ID="${PAGE_ID}" PIXEL_ID="${PIXEL_ID_CLEAN}" presupuesto=${presupuestoDiario}`);
     const targeting = this.construirTargeting(nicho, audiencia);
-    const adsetPayload = {
-      name: `Audiencia Principal | ${nicho}`,
+    const adsetBase = {
       campaign_id: campana.id,
       daily_budget: presupuestoDiario,
       billing_event: 'IMPRESSIONS',
@@ -114,61 +137,93 @@ export const metaAds = {
       targeting,
       status: 'ACTIVE'
     };
-    console.log(`[MetaAds] Adset payload:`, JSON.stringify(adsetPayload));
-    let adSet;
-    try {
-      adSet = await metaPost(`/${AD_ACCOUNT}/adsets`, adsetPayload);
-      console.log(`[MetaAds] Paso 2 OK: Ad set creado: ${adSet.id}`);
-    } catch (e) {
-      console.error(`[MetaAds] Paso 2 FALLÓ: ${e.message}`);
-      throw e;
+
+    // 3. Adset A — copy del dolor (principal)
+    console.log(`[MetaAds] Creando adset A (copy dolor)...`);
+    const adSetA = await metaPost(`/${AD_ACCOUNT}/adsets`, {
+      ...adsetBase,
+      name: `Copy-A Dolor | ${nicho}`
+    });
+    console.log(`[MetaAds] Adset A creado: ${adSetA.id}`);
+
+    // 4. Ads en adset A — uno por cada variante de imagen
+    const adsA = [];
+    const etiquetas = ['Dolor', 'Transformacion', 'Comunidad'];
+    for (let i = 0; i < imageHashes.length; i++) {
+      try {
+        await new Promise(r => setTimeout(r, 1000));
+        const linkData = {
+          link: landingUrl,
+          message: audiencia.copy,
+          name: nombre,
+          description: audiencia.descripcion,
+          call_to_action: { type: 'LEARN_MORE', value: { link: landingUrl } },
+          image_hash: imageHashes[i]
+        };
+        const creative = await metaPost(`/${AD_ACCOUNT}/adcreatives`, {
+          name: `Creative A-${etiquetas[i]} | ${nombre}`,
+          object_story_spec: { page_id: PAGE_ID, link_data: linkData }
+        });
+        const ad = await metaPost(`/${AD_ACCOUNT}/ads`, {
+          name: `Ad A-${etiquetas[i]} | ${nombre}`,
+          adset_id: adSetA.id,
+          creative: { creative_id: creative.id },
+          status: 'ACTIVE'
+        });
+        adsA.push(ad.id);
+        console.log(`[MetaAds] Ad A-${etiquetas[i]} creado: ${ad.id}`);
+      } catch (e) {
+        console.warn(`[MetaAds] ⚠️ Ad A-${etiquetas[i]} falló: ${e.message}`);
+      }
     }
 
-    // 3. Generar imagen + crear creative
-    const imageHash = await generarYSubirImagen(nombre, nicho);
-    console.log(`[MetaAds] Paso 3: creando creative... imagen=${imageHash ? 'OK' : 'sin imagen'}`);
-    let creative;
-    try {
-      const linkData = {
-        link: landingUrl,
-        message: audiencia.copy,
-        name: nombre,
-        description: audiencia.descripcion,
-        call_to_action: { type: 'LEARN_MORE', value: { link: landingUrl } }
-      };
-      if (imageHash) linkData.image_hash = imageHash;
+    // 5. Adset B — copy de transformación (A/B test) con imagen principal
+    let adSetBId = null;
+    if (audiencia.copy_b && imageHashes.length > 0) {
+      try {
+        await new Promise(r => setTimeout(r, 2000));
+        console.log(`[MetaAds] Creando adset B (copy transformación)...`);
+        const adSetB = await metaPost(`/${AD_ACCOUNT}/adsets`, {
+          ...adsetBase,
+          name: `Copy-B Transformacion | ${nicho}`
+        });
+        adSetBId = adSetB.id;
+        console.log(`[MetaAds] Adset B creado: ${adSetB.id}`);
 
-      creative = await metaPost(`/${AD_ACCOUNT}/adcreatives`, {
-        name: `Creative | ${nombre}`,
-        object_story_spec: { page_id: PAGE_ID, link_data: linkData }
-      });
-      console.log(`[MetaAds] Paso 3 OK: Creative creado: ${creative.id}`);
-    } catch (e) {
-      console.error(`[MetaAds] Paso 3 FALLÓ: ${e.message}`);
-      throw e;
+        await new Promise(r => setTimeout(r, 1000));
+        const linkDataB = {
+          link: landingUrl,
+          message: audiencia.copy_b,
+          name: nombre,
+          description: audiencia.descripcion,
+          call_to_action: { type: 'LEARN_MORE', value: { link: landingUrl } },
+          image_hash: imageHashes[0]
+        };
+        const creativeB = await metaPost(`/${AD_ACCOUNT}/adcreatives`, {
+          name: `Creative B-Transformacion | ${nombre}`,
+          object_story_spec: { page_id: PAGE_ID, link_data: linkDataB }
+        });
+        const adB = await metaPost(`/${AD_ACCOUNT}/ads`, {
+          name: `Ad B-Transformacion | ${nombre}`,
+          adset_id: adSetB.id,
+          creative: { creative_id: creativeB.id },
+          status: 'ACTIVE'
+        });
+        console.log(`[MetaAds] Ad B creado: ${adB.id}`);
+      } catch (e) {
+        console.warn(`[MetaAds] ⚠️ Adset B falló (no crítico): ${e.message}`);
+      }
     }
 
-    // 4. Crear anuncio
-    console.log(`[MetaAds] Paso 4: creando ad...`);
-    let ad;
-    try {
-      ad = await metaPost(`/${AD_ACCOUNT}/ads`, {
-        name: `Anuncio | ${nombre}`,
-        adset_id: adSet.id,
-        creative: { creative_id: creative.id },
-        status: 'ACTIVE'
-      });
-      console.log(`[MetaAds] Paso 4 OK: Anuncio creado: ${ad.id}`);
-    } catch (e) {
-      console.error(`[MetaAds] Paso 4 FALLÓ: ${e.message}`);
-      throw e;
-    }
+    const totalAds = adsA.length + (adSetBId ? 1 : 0);
+    console.log(`[MetaAds] Campaña lista — ${totalAds} anuncios, ${imageHashes.length} imágenes, ${adSetBId ? '2 copies A/B' : '1 copy'}`);
 
     return {
       campaign_id: campana.id,
-      adset_id: adSet.id,
-      creative_id: creative.id,
-      ad_id: ad.id
+      adset_id: adSetA.id,       // principal (usado por el validator para escalar)
+      adset_b_id: adSetBId,
+      total_ads: totalAds,
+      imagenes: imageHashes.length
     };
   },
 
