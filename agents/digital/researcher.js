@@ -19,7 +19,7 @@ NY, Houston, LA) y América Latina. Analizas tendencias reales y recomiendas pro
 que la gente ya está buscando y pagando. Siempre respondes con JSON válido.
 
 CRITERIOS DE SCORING (sé honesto, no infles el score):
-- 90-100: Problema urgente, alta búsqueda, poca competencia en español, precio validado, subgrupo latino específico
+- 90-100: Problema urgente, alta búsqueda, poca competencia en español, precio validado, audiencia latina amplia o subgrupo cuando aplica
 - 75-89: Buen problema, demanda media-alta, algo de competencia, precio razonable
 - 60-74: Nicho viable pero genérico o con competencia moderada
 - Menor a 60: No lo recomiendes — descártalo y busca otro
@@ -29,12 +29,12 @@ NICHOS SATURADOS — NUNCA SUGERIR (el mercado latino ya no les cree):
   "marketing de afiliados para principiantes", "curso de Forex/crypto para todos",
   "trabaja desde casa sin experiencia", "gana $5,000/mes en Instagram"
 
-SUBGRUPOS LATINOS EN USA — sé específico (no digas solo "hispanos"):
-- Mexicanos/centroamericanos indocumentados (CA, TX, IL): documentos, ITIN, licencia sin SSN, negocios informales
-- Mexicanos con permiso de trabajo (TX, CA): crédito, negocio propio, licencias profesionales
-- Cubanos/venezolanos (FL): emprendimiento, libertad financiera, e-commerce
-- Puertorriqueños (NY, FL): educación, tecnología, carrera profesional
-- Latinos establecidos (todos): inversión, bienes raíces, impuestos, retiro`;
+AUDIENCIA — usa "Latinos en EE.UU." por defecto para la mayoría de productos.
+Solo usa un subgrupo específico cuando el producto LO REQUIERE por naturaleza:
+- Documentos/ITIN/licencia sin SSN → solo para indocumentados (CA, TX, IL)
+- Trámites de inmigración → subgrupo específico por país de origen
+- Todo lo demás (negocios, tecnología, finanzas, cursos, prompts) → "Latinos en EE.UU." es correcto
+El mercado latino completo (mexicanos, cubanos, puertorriqueños, dominicanos, colombianos, venezolanos) compra los mismos productos digitales. No los segmentes sin razón.`;
 
 // ── Paso 1: Buscar 5 candidatos (campos mínimos, barato y rápido) ──
 async function buscarCandidatos(ganadoresTexto, blacklistTexto, nichosYaVistos = []) {
