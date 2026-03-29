@@ -42,12 +42,25 @@ export async function cargarCostoHoy() {
   }
 }
 
-// Precio por token en USD (claude-opus-4-6)
-const PRECIO_INPUT  = 15   / 1_000_000; // $15 por millón input
-const PRECIO_OUTPUT = 75   / 1_000_000; // $75 por millón output
+// Precios por token en USD según modelo
+const PRECIOS = {
+  opus:   { input: 15 / 1_000_000, output: 75 / 1_000_000 },  // claude-opus-4-6
+  sonnet: { input:  3 / 1_000_000, output: 15 / 1_000_000 },  // claude-sonnet-4-6
+  haiku:  { input:  1 / 1_000_000, output:  5 / 1_000_000 },  // claude-haiku
+};
 
-function calcularCosto(inputTokens, outputTokens) {
-  return (inputTokens * PRECIO_INPUT) + (outputTokens * PRECIO_OUTPUT);
+function calcularCosto(inputTokens, outputTokens, model = MODEL) {
+  const p = model.includes('opus') ? PRECIOS.opus
+          : model.includes('haiku') ? PRECIOS.haiku
+          : PRECIOS.sonnet;
+  return (inputTokens * p.input) + (outputTokens * p.output);
+}
+
+function costoEstimadoPorModelo(maxTokens, model = MODEL) {
+  const p = model.includes('opus') ? PRECIOS.opus
+          : model.includes('haiku') ? PRECIOS.haiku
+          : PRECIOS.sonnet;
+  return maxTokens * p.output * 1.2; // 20% buffer
 }
 
 // ════════════════════════════════════
@@ -67,7 +80,7 @@ export async function preguntar(prompt, system = '', agente = 'sistema', maxToke
 
   // Reservar costo estimado antes de llamar — evita que llamadas concurrentes
   // pasen todas el check y juntas superen el límite diario
-  const costoEstimado = maxTokens * PRECIO_OUTPUT * 1.2; // 20% buffer sobre output máximo
+  const costoEstimado = costoEstimadoPorModelo(maxTokens, model);
   if (costoHoy + costoEstimado > MAX_DAILY_SPEND) {
     await db.log(agente, 'claude_bloqueado', {
       razon: 'limite_diario_alcanzado',
@@ -88,7 +101,7 @@ export async function preguntar(prompt, system = '', agente = 'sistema', maxToke
     });
 
     const texto = response.content[0].text;
-    const costoReal = calcularCosto(response.usage.input_tokens, response.usage.output_tokens);
+    const costoReal = calcularCosto(response.usage.input_tokens, response.usage.output_tokens, model);
     const duracion = Date.now() - inicio;
 
     // Ajustar al costo real (la reserva ya está sumada, solo compensar la diferencia)
@@ -138,7 +151,7 @@ export async function preguntarCompleto(prompt, system = '', agente = 'sistema',
     iteracion++;
 
     // Reservar costo estimado antes de llamar (mismo patrón que preguntar())
-    const costoEstimado = maxTokens * PRECIO_OUTPUT * 1.2;
+    const costoEstimado = costoEstimadoPorModelo(maxTokens, model);
     if (costoHoy + costoEstimado > MAX_DAILY_SPEND) {
       await db.log(agente, 'claude_bloqueado', { razon: 'limite_diario_alcanzado', costo_hoy: costoHoy }, false);
       throw new Error(`Límite diario de API alcanzado ($${costoHoy.toFixed(4)}/$${MAX_DAILY_SPEND}).`);
@@ -158,7 +171,7 @@ export async function preguntarCompleto(prompt, system = '', agente = 'sistema',
           messages
         });
 
-        const costoReal = calcularCosto(response.usage.input_tokens, response.usage.output_tokens);
+        const costoReal = calcularCosto(response.usage.input_tokens, response.usage.output_tokens, model);
         costoHoy += costoReal - costoEstimado; // ajustar al costo real
         await db.log(agente, 'claude_llamada', {
           tokens_input: response.usage.input_tokens,
