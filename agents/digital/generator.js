@@ -14,15 +14,20 @@ const DELAY_SECCIONES = 2000; // 2 segundos entre llamadas (era 4s)
 
 const SYSTEM = `Eres un experto creador de productos digitales premium para el mercado hispano.
 Tu misión: crear contenido que haga que el cliente diga "wow, pagué muy poco por esto".
+Escribes para latinos reales — no para marketeros. Tu tono es de amigo que sabe, no de gurú.
 
 REGLAS DE CALIDAD — OBLIGATORIAS EN CADA SECCIÓN:
-1. ESPECIFICIDAD REAL: Nombra herramientas reales (Canva, Notion, TikTok Ads, Shopify, etc.), precios reales ($47/mes, gratis, $0.30/clic), pasos con clicks exactos ("Ve a Configuración > Monetización > Pagos")
-2. NÚMEROS CONCRETOS: Porcentajes, tiempos, ingresos posibles, promedios del mercado (23% de margen, $1,200/mes promedio, 3-5 días para primer resultado)
-3. EJEMPLOS HISPANOS: Casos con nombres reales latinos (María de Guadalajara, Carlos de Miami, etc.), contexto cultural real, métodos de pago locales (Mercado Pago, PayPal, Zelle)
-4. ACCIONABLE AL 100%: El lector debe poder ejecutar cada paso HOY, sin necesitar nada más
-5. PROGRESIÓN: Cada sección construye sobre la anterior — referencia lo que ya aprendieron
-6. CERO RELLENO: Sin frases como "es importante recordar que..." o "como mencionamos antes...". Directo al contenido de valor.
-7. EJERCICIO PRÁCTICO: Cada sección termina con algo que el lector hace inmediatamente
+1. ESPECIFICIDAD REAL: Herramientas reales con precios reales, pasos con clicks exactos
+   MAL: "usa una herramienta de diseño" | BIEN: "abre Canva (canva.com, gratis) → New Design → Instagram Post"
+2. NÚMEROS CONCRETOS: Siempre con cifras reales del mercado
+   MAL: "puedes ganar buen dinero" | BIEN: "promedio $1,200/mes los primeros 3 meses, $3,500+ al año"
+3. PERSONAJES LATINOS ESPECÍFICOS: Usa el perfil del cliente ideal como personaje en ejemplos
+   MAL: "un usuario de Texas" | BIEN: "Jorge, 38 años de Houston, que llegó hace 5 años de Michoacán"
+4. ACCIONABLE HOY: Cada paso se puede ejecutar hoy, sin prereqs ocultos
+5. PROGRESIÓN: Cada sección construye sobre la anterior — di "como viste en la sección anterior..."
+6. CERO RELLENO: Sin "es importante recordar", "como mencionamos", "en conclusión". Directo al valor.
+7. EJERCICIO PRÁCTICO: Termina cada sección con una acción inmediata concreta
+8. CONTEXTO CULTURAL: Menciona barrios, ciudades, formas de pago y situaciones reales del subgrupo
 
 Devuelves SOLO el HTML del contenido, sin <html> ni <body>. Contenido denso, rico, específico.`;
 
@@ -426,17 +431,23 @@ function bloqueContexto(historial) {
 // ── Bloque de especificidad del nicho para cada prompt ────────
 function bloqueNicho(nicho) {
   const herramientas = nicho.herramientas_clave?.join(', ') || 'herramientas del sector';
-  const quickWin = nicho.quick_win || '';
-  const ejemplo = nicho.ejemplo_exito || '';
   return `
-DATOS DEL NICHO (úsalos para hacer el contenido específico y no genérico):
+CONTEXTO DEL CLIENTE — LEE ESTO ANTES DE ESCRIBIR UNA SOLA LÍNEA:
 - Producto: ${nicho.nombre_producto}
 - Nicho exacto: ${nicho.nicho}
-- Cliente ideal: ${nicho.cliente_ideal}
-- Problema que resuelve: ${nicho.problema_que_resuelve}
-- Herramientas clave del sector: ${herramientas}
-- Quick win prometido: ${quickWin}
-- Ejemplo de éxito de referencia: ${ejemplo}
+- Subgrupo latino: ${nicho.subgrupo_latino || nicho.cliente_ideal}
+- Cliente ideal (úsalo como personaje real en ejemplos): ${nicho.cliente_ideal}
+- Su dolor exacto en sus palabras: ${nicho.problema_que_resuelve}
+- Herramientas reales del sector: ${herramientas}
+- Quick win prometido al cliente: ${nicho.quick_win || ''}
+- Historia de éxito de referencia (menciónala o usa una similar): ${nicho.ejemplo_exito || ''}
+
+REGLAS DE ESPECIFICIDAD — OBLIGATORIAS:
+1. Usa el nombre/perfil del cliente ideal en los ejemplos — no digas "el usuario", di "Jorge" o "María"
+2. Menciona ciudades y estados reales donde vive ese subgrupo latino
+3. Usa los precios, tiempos y porcentajes exactos — no digas "varios dólares", di "$47/mes"
+4. Cada sección debe tener mínimo 1 ejemplo con nombre latino + ciudad + resultado con número
+5. Menciona métodos de pago que usa ese subgrupo: Zelle, Venmo, efectivo, MetroPCS, etc.
 `;
 }
 

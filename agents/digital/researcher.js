@@ -11,7 +11,25 @@ import { enviar } from '../../core/telegram.js';
 const SYSTEM = `Eres el agente investigador de NEXUS AGENT. Tu trabajo es encontrar
 nichos de productos digitales rentables en el mercado latino/hispano de USA (Miami,
 NY, Houston, LA) y América Latina. Analizas tendencias reales y recomiendas productos
-que la gente ya está buscando y pagando. Siempre respondes con JSON válido.`;
+que la gente ya está buscando y pagando. Siempre respondes con JSON válido.
+
+CRITERIOS DE SCORING (sé honesto, no infles el score):
+- 90-100: Problema urgente, alta búsqueda, poca competencia en español, precio validado, subgrupo latino específico
+- 75-89: Buen problema, demanda media-alta, algo de competencia, precio razonable
+- 60-74: Nicho viable pero genérico o con competencia moderada
+- Menor a 60: No lo recomiendes — descártalo y busca otro
+
+NICHOS SATURADOS — NUNCA SUGERIR (el mercado latino ya no les cree):
+- Dropshipping genérico, "vende en Amazon sin inventario", "gana dinero en TikTok",
+  "marketing de afiliados para principiantes", "curso de Forex/crypto para todos",
+  "trabaja desde casa sin experiencia", "gana $5,000/mes en Instagram"
+
+SUBGRUPOS LATINOS EN USA — sé específico (no digas solo "hispanos"):
+- Mexicanos/centroamericanos indocumentados (CA, TX, IL): documentos, ITIN, licencia sin SSN, negocios informales
+- Mexicanos con permiso de trabajo (TX, CA): crédito, negocio propio, licencias profesionales
+- Cubanos/venezolanos (FL): emprendimiento, libertad financiera, e-commerce
+- Puertorriqueños (NY, FL): educación, tecnología, carrera profesional
+- Latinos establecidos (todos): inversión, bienes raíces, impuestos, retiro`;
 
 export async function investigarNicho() {
   console.log('[Researcher] Buscando nicho rentable...');
@@ -38,48 +56,47 @@ NICHOS A EVITAR (ya fallaron):
 ${blacklistTexto}
 
 Analiza estos factores para elegir el mejor nicho:
-1. Alta demanda en el mercado hispano ahora mismo
-2. Producto que se pueda crear en pocas horas con IA
-3. Precio entre $17-$97 que la gente pague sin dudar
-4. Poca competencia directa en español
-5. Problema real y urgente que resuelve
+1. Problema URGENTE y específico — el cliente lo necesita esta semana, no "algún día"
+2. Búsqueda activa en español — hay gente buscando esto en Google/YouTube en español ahora
+3. Precio validado — hay gente pagando por soluciones similares (aunque sean en inglés)
+4. Competencia baja EN ESPAÑOL — puede haber competencia en inglés, pero en español hay hueco
+5. Subgrupo latino específico — no "todos los hispanos", sino un grupo concreto con un dolor concreto
+6. Producto creatable con IA en menos de 4 horas — no requiere experiencia real del creador
 
 Para el campo formato_ad_recomendado usa esta lógica:
-- "stories": nichos de urgencia/supervivencia (documentos, inmigración, trabajo, licencias, crédito, precio $17-$47) — CTR 61% mayor, CPC $1.83
-- "feed": nichos de transformación/aspiración (negocios, inversión, tecnología, cursos premium, precio $47-$97) — mayor consideración antes de comprar
+- "stories": urgencia/supervivencia (documentos, inmigración, trabajo, licencias, crédito, $17-$47) — CPC $1.83
+- "feed": transformación/aspiración (negocios, inversión, tecnología, cursos premium, $47-$97)
 
-Tipos de productos posibles:
-- Pack de prompts de IA en español ($17-47)
-- Plantilla Notion/Excel para negocio ($17-37)
-- Guía PDF de negocio o finanzas ($27-67)
-- Mini curso de texto ($47-97)
-- Checklist/toolkit profesional ($17-37)
+Tipos de productos y cuándo usar cada uno:
+- Pack de prompts IA ($17-$37): cuando el cliente ya usa IA pero no sabe cómo aplicarla a su caso
+- Plantilla Notion/Excel ($17-$37): cuando el problema es de organización, seguimiento o cálculo
+- Guía PDF ($27-$57): cuando el cliente necesita un proceso paso a paso documentado
+- Mini curso HTML ($47-$97): cuando hay múltiples pasos que aprender en secuencia
+- Toolkit/checklist ($17-$37): cuando el cliente necesita no olvidar pasos críticos
 
-Devuelve JSON con TODOS estos campos — son críticos para generar contenido específico y de alta calidad:
+Devuelve JSON con TODOS estos campos:
 {
-  "nicho": "nombre del nicho específico",
+  "nicho": "nombre específico del nicho — NO genérico (mal: 'negocios online', bien: 'ITIN para indocumentados en Texas')",
+  "subgrupo_latino": "grupo específico: ej. 'Mexicanos indocumentados en TX y CA, 25-45 años'",
   "tipo": "prompts|plantilla|guia_pdf|mini_curso|toolkit",
-  "nombre_producto": "nombre atractivo del producto",
-  "subtitulo": "subtítulo que explica el beneficio concreto",
+  "nombre_producto": "nombre que el cliente ideal entiende en 3 segundos y quiere comprar",
+  "subtitulo": "subtítulo con el resultado concreto: qué logra, en cuánto tiempo, sin qué requisito",
   "precio": 27,
-  "problema_que_resuelve": "descripción detallada del dolor del cliente",
-  "cliente_ideal": "perfil detallado: edad, situación, por qué lo necesita YA",
-  "puntos_de_venta": ["beneficio concreto 1 con número o resultado", "beneficio 2", "beneficio 3", "beneficio 4"],
-  "quick_win": "resultado específico y concreto que el cliente logra en los primeros 30 minutos de aplicar el producto (ej: 'Tener su primera lista de productos para vender en Amazon con margen >40%')",
-  "herramientas_clave": ["Herramienta1 (gratis/precio)", "Herramienta2", "Herramienta3", "Herramienta4", "Herramienta5"],
+  "problema_que_resuelve": "el dolor específico en palabras que usaría el cliente, no un marketero",
+  "cliente_ideal": "nombre ficticio + edad + ciudad + situación exacta + por qué necesita esto HOY (ej: 'Jorge, 38 años, Houston TX, llegó hace 5 años, trabaja en construcción, quiere manejar legal pero no tiene SSN')",
+  "puntos_de_venta": ["resultado concreto con número", "resultado 2", "resultado 3", "resultado 4"],
+  "quick_win": "acción exacta que hace en los primeros 30 minutos y resultado que tiene al terminar",
+  "herramientas_clave": ["Herramienta real (gratis/$X/mes)", "Herramienta2", "Herramienta3"],
   "modulos_temas": [
-    "Tema específico 1 relevante al nicho (NO genérico como 'Fundamentos')",
-    "Tema específico 2",
-    "Tema específico 3",
-    "Tema específico 4",
-    "Tema específico 5",
-    "Tema específico 6"
+    "Tema específico del nicho — NO 'Introducción' ni 'Fundamentos'",
+    "Tema 2", "Tema 3", "Tema 4", "Tema 5", "Tema 6"
   ],
-  "ejemplo_exito": "caso real o tipo de persona del mercado hispano que logró resultados con esto, con números específicos",
+  "ejemplo_exito": "historia de 2-3 líneas: nombre latino + ciudad + situación inicial + resultado con números (ej: 'Carlos de Dallas pasó de manejar sin licencia a obtener su TX DL en 6 semanas siguiendo estos pasos')",
   "score": 85,
-  "razon": "por qué este nicho ahora mismo",
+  "razon_score": "justificación honesta del score — qué lo hace bueno y qué limitaciones tiene",
+  "razon": "por qué este nicho AHORA — tendencia, evento, temporada o necesidad urgente actual",
   "formato_ad_recomendado": "stories|feed",
-  "razon_formato": "por qué este formato para este nicho específico"
+  "razon_formato": "por qué este formato para este subgrupo específico"
 }
 `, SYSTEM, 'researcher');
 
