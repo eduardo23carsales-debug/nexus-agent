@@ -117,21 +117,22 @@ export const metaAds = {
     // 1. Generar 3 variantes de imagen en paralelo con el tamaño correcto
     const imageHashes = await generarImagenesVariantes(nombre, nicho, formato);
 
-    // 2. Crear campaña
+    // 2. Crear campaña con CBO — presupuesto en campaña, Meta distribuye entre adsets
     const campana = await metaPost(`/${AD_ACCOUNT}/campaigns`, {
       name: `NEXUS | ${nombre} | ${new Date().toISOString().slice(0,10)}`,
       objective: 'OUTCOME_TRAFFIC',
       status: 'ACTIVE',
       special_ad_categories: [],
-      is_adset_budget_sharing_enabled: false
+      daily_budget: presupuestoDiario,        // CBO: presupuesto total en la campaña
+      bid_strategy: 'LOWEST_COST_WITHOUT_CAP' // Meta distribuye al adset ganador
     });
-    console.log(`[MetaAds] Campaña creada: ${campana.id}`);
+    console.log(`[MetaAds] Campaña CBO creada: ${campana.id} | $${presupuestoDiario/100}/día`);
     await new Promise(r => setTimeout(r, 3000));
 
     const targeting = this.construirTargeting(nicho, audiencia, formato);
     const adsetBase = {
       campaign_id: campana.id,
-      daily_budget: presupuestoDiario,
+      // Sin daily_budget — el presupuesto lo controla CBO a nivel campaña
       billing_event: 'IMPRESSIONS',
       optimization_goal: 'LINK_CLICKS',
       bid_strategy: 'LOWEST_COST_WITHOUT_CAP',

@@ -100,7 +100,7 @@ async function evaluarCampana(campana) {
   } else if (roas >= MIN_ROAS_ESCALAR) {
     // Escalar — ROAS positivo
     const nuevoPresupuesto = Math.min(campana.presupuesto_diario * 2, 5000); // máx $50/día
-    await metaAds.escalarPresupuesto(campana.adset_id, nuevoPresupuesto);
+    await metaAds.escalarPresupuesto(campana.campaign_id_externo, nuevoPresupuesto); // CBO: escalar en campaña
     await supabase.from('campaigns').update({
       estado: 'escalando',
       presupuesto_diario: nuevoPresupuesto,
