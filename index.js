@@ -34,6 +34,7 @@ let telegramOffset = 0;
 let aprobacionPendiente = null; // { tipo, datos, nicho, resolve }
 let experimentoEnCurso = false;
 let telegramPollingActivo = false; // evita llamadas concurrentes al polling
+let cancelarFlag = false; // CANCELAR en cualquier momento del proceso
 
 // ════════════════════════════════════
 // INICIALIZACIÓN
@@ -119,8 +120,11 @@ async function leerComandosTelegram() {
         if (aprobacionPendiente && typeof aprobacionPendiente.resolve === 'function') {
           aprobacionPendiente.resolve('CANCELAR');
           aprobacionPendiente = null;
+        } else if (experimentoEnCurso) {
+          cancelarFlag = true;
+          await enviar('🛑 Cancelando... el proceso se detiene al terminar el paso actual.');
         } else {
-          await enviar('ℹ️ No hay publicación pendiente que cancelar.');
+          await enviar('ℹ️ No hay nada en curso que cancelar.');
         }
         continue;
       }
@@ -142,7 +146,7 @@ async function leerComandosTelegram() {
           const { supabase } = await import('./core/database.js');
           const { data: exps } = await supabase
             .from('experiments')
-            .select('id, nombre, nicho, url, precio, descripcion')
+            .select('id, nombre, nicho, url, precio, descripcion, cliente_ideal, problema_que_resuelve, formato_ad')
             .order('fecha_inicio', { ascending: false })
             .limit(1);
           if (!exps?.length) {
@@ -223,6 +227,7 @@ async function lanzarExperimento() {
     return;
   }
   experimentoEnCurso = true;
+  cancelarFlag = false;
   await db.setEstadoOperacion('experimento_en_curso', { inicio: new Date().toISOString() }).catch(() => {});
   console.log('\n[Motor 1] Iniciando nuevo experimento...');
 
@@ -318,19 +323,24 @@ async function publicarAutomatico(nicho) {
   const { deploy } = await import('./core/deploy.js');
   const { preguntar, MODEL_SONNET } = await import('./core/claude.js');
 
+  if (cancelarFlag) { cancelarFlag = false; await enviar('🛑 Proceso cancelado.'); return null; }
+
   // Generar contenido del producto y landing en paralelo
   await enviar('📝 Generando contenido del producto...');
   const contenido = await generarProducto(nicho);
 
   // Validar que el producto se generó completo y con estructura HTML real
+  // El generator usa tab-panel (divs), no <section>
   const productoValido = contenido &&
     contenido.length >= 5000 &&
     contenido.includes('</html>') &&
-    contenido.includes('<section') &&
-    contenido.split('<section').length >= 4;
+    contenido.includes('tab-panel') &&
+    contenido.split('tab-panel').length >= 4;
   if (!productoValido) {
     throw new Error(`Producto generado incompleto o sin estructura (${contenido?.length || 0} chars). Abortando para no publicar contenido roto.`);
   }
+
+  if (cancelarFlag) { cancelarFlag = false; await enviar('🛑 Proceso cancelado.'); return null; }
 
   // Crear producto en Stripe
   await enviar('💳 Creando producto en Stripe...');
@@ -340,13 +350,15 @@ async function publicarAutomatico(nicho) {
     precio: nicho.precio
   });
 
+  if (cancelarFlag) { cancelarFlag = false; await enviar('🛑 Proceso cancelado.'); return null; }
+
   // Generar landing page HTML
   await enviar('🎨 Generando landing page...');
   const html = await preguntar(`
 Crea landing page HTML con estilos inline para: ${nicho.nombre_producto} — $${nicho.precio}
 Subtítulo: ${nicho.subtitulo}
 Link de pago: ${stripeData.stripe_payment_link}
-Beneficios: ${nicho.puntos_de_venta.join(', ')}
+Beneficios: ${Array.isArray(nicho.puntos_de_venta) ? nicho.puntos_de_venta.join(', ') : nicho.puntos_de_venta || ''}
 Problema: ${nicho.problema_que_resuelve}
 
 Usa SOLO estilos inline. Fondo #0f0f0f, acento #00ff88, texto blanco.
@@ -417,6 +429,8 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
     tipo: nicho.tipo || 'guia_pdf',
     nombre: nicho.nombre_producto,
     descripcion: nicho.subtitulo,
+    cliente_ideal: nicho.cliente_ideal || '',
+    problema_que_resuelve: nicho.problema_que_resuelve || '',
     url,
     stripe_product_id: stripeData.stripe_product_id,
     stripe_payment_link: stripeData.stripe_payment_link,

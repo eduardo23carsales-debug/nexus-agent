@@ -12,7 +12,7 @@ const TOKEN = process.env.GUMROAD_ACCESS_TOKEN;
 export const gumroad = {
 
   // ── Crea un producto en Gumroad y devuelve el link de venta ──
-  async crearProducto({ nombre, descripcion, precio, contenido }) {
+  async crearProducto({ nombre, descripcion, precio }) {
     try {
       const res = await axios.post(`${BASE}/products`, {
         access_token: TOKEN,

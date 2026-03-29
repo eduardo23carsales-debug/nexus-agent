@@ -24,8 +24,8 @@ export async function lanzarCampanaParaProducto(experimento) {
       nicho: experimento.nicho,
       nombre_producto: experimento.nombre,
       precio: experimento.precio,
-      cliente_ideal: experimento.descripcion,
-      problema_que_resuelve: experimento.descripcion
+      cliente_ideal: experimento.cliente_ideal || experimento.descripcion,
+      problema_que_resuelve: experimento.problema_que_resuelve || experimento.descripcion
     }, formato);
 
     // 3. Lanzar campaña en Meta con formato correcto

@@ -5,7 +5,9 @@
       "Bash(do echo:*)",
       "Read(//c/dev/agentes de hacer dinero/**)",
       "Bash(done)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(/tmp/field_trace.txt:*)",
+      "Read(//tmp/**)"
     ]
   }
 }

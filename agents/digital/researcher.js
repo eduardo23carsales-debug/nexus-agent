@@ -187,6 +187,10 @@ export async function investigarNicho() {
     }
   }
 
+  if (!mejorCandidato) {
+    throw new Error('No se encontraron nichos válidos tras todos los intentos. Intenta LANZAR de nuevo.');
+  }
+
   // Enriquecer el ganador con todos los detalles
   const nicho = await enriquecerNicho(mejorCandidato, ganadoresTexto, blacklistTexto);
 
