@@ -239,7 +239,7 @@ export const metaAds = {
       age_max: audiencia.edad_max || 55,
       genders: [1, 2],
       geo_locations: {
-        countries: ['US', 'MX', 'CO', 'AR', 'CL', 'PE']
+        countries: ['US']
       },
       targeting_automation: { advantage_audience: 0 }
     };
