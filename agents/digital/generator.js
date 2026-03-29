@@ -252,6 +252,34 @@ th { color: var(--accent); padding: 12px 16px; text-align: left; font-size: 0.82
 td { padding: 11px 16px; border-top: 1px solid var(--border); color: #C8CEDC; font-size: 0.9em; vertical-align: top; }
 tbody tr:hover { background: var(--surface2); }
 
+/* ── TABLE ACTIONS ── */
+.table-actions { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.tbl-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted);
+  padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-family: inherit;
+  transition: all 0.15s; }
+.tbl-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ── SECTION PRINT BUTTON ── */
+.section-print-btn { float: right; background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text-muted); padding: 6px 14px; border-radius: 6px; cursor: pointer;
+  font-size: 12px; font-family: inherit; transition: all 0.15s; margin-bottom: 16px; }
+.section-print-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ── PRINT STYLES ── */
+@media print {
+  .header, .sidebar, .mobile-menu, .footer, .tab-btn, .mobile-tab-btn,
+  .section-print-btn, .tbl-btn, .table-actions, .copy-btn { display: none !important; }
+  body { background: white !important; color: black !important; }
+  .tab-panel { display: block !important; color: black !important; }
+  .card { background: white !important; border: 1px solid #ddd !important; color: black !important; }
+  .highlight { background: #fff8e1 !important; color: #333 !important; }
+  .tip { background: #e8f5e9 !important; color: #333 !important; }
+  .accordion-body { display: block !important; color: black !important; }
+  th { background: #f0f0f0 !important; color: #333 !important; }
+  td { color: #333 !important; border-top: 1px solid #ccc !important; }
+  thead { background: #f0f0f0 !important; }
+}
+
 /* ── MOBILE ── */
 .mobile-menu { display: none; background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 0; }
 .mobile-tab-btn {
@@ -345,6 +373,92 @@ document.querySelectorAll('.prompt-box').forEach(box => {
     btn.textContent = '✅ Copiado';
     setTimeout(() => btn.textContent = 'Copiar', 2000);
   });
+});
+
+// ── TABLAS: scroll + botones imprimir/descargar ──────────────
+function enhanceTables() {
+  document.querySelectorAll('table').forEach((table, idx) => {
+    if (table.closest('.table-wrap')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'table-wrap';
+    const actions = document.createElement('div');
+    actions.className = 'table-actions';
+    const btnPrint = document.createElement('button');
+    btnPrint.className = 'tbl-btn';
+    btnPrint.innerHTML = '🖨️ Imprimir tabla';
+    btnPrint.onclick = () => printTable(table);
+    const btnCSV = document.createElement('button');
+    btnCSV.className = 'tbl-btn';
+    btnCSV.innerHTML = '📥 Descargar CSV';
+    btnCSV.onclick = () => downloadCSV(table, idx + 1);
+    actions.appendChild(btnPrint);
+    actions.appendChild(btnCSV);
+    table.parentNode.insertBefore(wrap, table);
+    wrap.appendChild(actions);
+    wrap.appendChild(table);
+  });
+}
+
+function printTable(table) {
+  const win = window.open('', '_blank');
+  win.document.write('<html><head><style>' +
+    'body{font-family:Inter,sans-serif;padding:24px;color:#111;max-width:900px;margin:0 auto}' +
+    'table{border-collapse:collapse;width:100%}' +
+    'th{background:#f0f0f0;font-weight:700;padding:10px 14px;text-align:left;border:1px solid #ccc}' +
+    'td{padding:9px 14px;border:1px solid #ccc;vertical-align:top}' +
+    'tr:nth-child(even){background:#fafafa}' +
+    '</style></head><body>' + table.outerHTML + '</body></html>');
+  win.document.close();
+  win.focus();
+  win.print();
+}
+
+function downloadCSV(table, idx) {
+  const rows = Array.from(table.querySelectorAll('tr'));
+  const csv = rows.map(row =>
+    Array.from(row.querySelectorAll('th,td'))
+      .map(cell => '"' + cell.innerText.replace(/"/g, '""').trim() + '"')
+      .join(',')
+  ).join('\\n');
+  const blob = new Blob(['\\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'tabla-' + idx + '.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── SECCIONES: botón imprimir por sección ────────────────────
+function addSectionPrintButtons() {
+  document.querySelectorAll('.tab-panel').forEach((panel) => {
+    const btn = document.createElement('button');
+    btn.className = 'section-print-btn';
+    btn.innerHTML = '🖨️ Imprimir sección';
+    btn.onclick = () => printSection(panel);
+    panel.insertBefore(btn, panel.firstChild);
+  });
+}
+
+function printSection(panel) {
+  const win = window.open('', '_blank');
+  win.document.write('<html><head><style>' +
+    'body{font-family:Inter,sans-serif;padding:24px;color:#111;max-width:800px;margin:0 auto}' +
+    'h2,h3{color:#1a1a2e}.card{border:1px solid #ddd;padding:16px;margin:12px 0;border-radius:8px}' +
+    '.highlight{background:#fff8e1;padding:12px;border-radius:6px;margin:8px 0}' +
+    '.tip{background:#e8f5e9;padding:12px;border-radius:6px;margin:8px 0}' +
+    'table{border-collapse:collapse;width:100%}' +
+    'th{background:#f0f0f0;font-weight:700;padding:10px 14px;text-align:left;border:1px solid #ccc}' +
+    'td{padding:9px 14px;border:1px solid #ccc;vertical-align:top}' +
+    '.accordion-body{display:block!important}' +
+    '.section-print-btn,.tbl-btn,.copy-btn{display:none}' +
+    '</style></head><body>' + panel.innerHTML + '</body></html>');
+  win.document.close();
+  win.focus();
+  win.print();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  enhanceTables();
+  addSectionPrintButtons();
 });
 </script>
 </body>
