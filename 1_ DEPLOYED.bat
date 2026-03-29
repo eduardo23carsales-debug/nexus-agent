@@ -22,7 +22,7 @@ git push origin master
 
 echo.
 echo Verificando Railway...
-curl -s "https://nexus-agent-production-3ce6.up.railway.app/api/estado?secret=nexus2024"
+curl -s -H "x-dashboard-secret: nexus2024" "https://nexus-agent-production-3ce6.up.railway.app/api/estado"
 
 echo.
 echo ================================
