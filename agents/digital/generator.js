@@ -4,7 +4,7 @@
 // Cada sección se genera por separado para evitar truncado
 // ════════════════════════════════════
 
-import { preguntarCompleto } from '../../core/claude.js';
+import { preguntarCompleto, MODEL_SONNET } from '../../core/claude.js';
 import { db } from '../../core/database.js';
 import { enviar } from '../../core/telegram.js';
 
@@ -374,7 +374,7 @@ export async function generarProducto(nicho) {
 async function generarSeccion(prompt, agente = 'generator', etiqueta = '') {
   // Intento 1 — full quality, hasta 8 continuaciones
   try {
-    const resultado = await preguntarCompleto(prompt, SYSTEM, agente, 6000, 8);
+    const resultado = await preguntarCompleto(prompt, SYSTEM, agente, 6000, 8, null, MODEL_SONNET);
     const limpio = resultado.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
     if (limpio.length > 200) return limpio;
     throw new Error('Respuesta demasiado corta');
@@ -387,7 +387,7 @@ async function generarSeccion(prompt, agente = 'generator', etiqueta = '') {
   // Intento 2 — versión compacta (menos tokens, más fácil de completar)
   try {
     const promptCompacto = prompt + `\n\nIMPORTANTE: Versión compacta. Máximo 500 palabras. Directo al punto, sin introducciones. Completa la sección en una sola respuesta.`;
-    const resultado = await preguntarCompleto(promptCompacto, SYSTEM, agente, 4000, 4);
+    const resultado = await preguntarCompleto(promptCompacto, SYSTEM, agente, 4000, 4, null, MODEL_SONNET);
     const limpio = resultado.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
     if (limpio.length > 100) return limpio;
     throw new Error('Respuesta demasiado corta en intento compacto');

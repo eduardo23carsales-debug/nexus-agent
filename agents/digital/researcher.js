@@ -141,8 +141,9 @@ export async function investigarNicho() {
     memory.getBlacklist('digital')
   ]);
 
-  const ganadoresTexto = ganadores.map(g => g.contenido).join('\n') || 'Ninguno aún';
-  const blacklistTexto = blacklist.map(b => b.contenido).join('\n') || 'Ninguno aún';
+  // Truncar cada entrada a 200 chars — evita prompt injection desde contenido de memoria
+  const ganadoresTexto = ganadores.map(g => g.contenido?.slice(0, 200)).join('\n') || 'Ninguno aún';
+  const blacklistTexto = blacklist.map(b => b.contenido?.slice(0, 200)).join('\n') || 'Ninguno aún';
 
   let mejorCandidato = null;
   const nichosYaVistos = [];

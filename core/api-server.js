@@ -20,7 +20,8 @@ const DASHBOARD_SECRET = process.env.DASHBOARD_SECRET || 'nexus2024';
 
 // ── Autenticación simple ─────────────────────────────────────
 function auth(req, res, next) {
-  const secret = req.query.secret || req.headers['x-dashboard-secret'];
+  // Solo aceptar header — el query param expone el secret en logs y URLs
+  const secret = req.headers['x-dashboard-secret'];
   if (secret !== DASHBOARD_SECRET) {
     return res.status(401).json({ error: 'No autorizado' });
   }
@@ -397,15 +398,13 @@ app.post('/webhook/stripe', express.raw({ type: 'application/json' }), async (re
 
   let event;
   try {
-    if (webhookSecret && sig) {
-      const Stripe = (await import('stripe')).default;
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-    } else {
-      // Sin secreto configurado: acepta sin verificar (modo prueba)
-      console.warn('[Webhook] STRIPE_WEBHOOK_SECRET no configurado — procesando sin verificar firma');
-      event = JSON.parse(req.body.toString());
+    if (!webhookSecret || !sig) {
+      console.error('[Webhook] STRIPE_WEBHOOK_SECRET no configurado — rechazando evento no verificado');
+      return res.status(400).send('Webhook no configurado correctamente');
     }
+    const Stripe = (await import('stripe')).default;
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
   } catch (err) {
     console.error('[Webhook] Error verificando firma de Stripe:', err.message);
     return res.status(400).send(`Webhook error: ${err.message}`);
@@ -426,8 +425,11 @@ app.post('/webhook/stripe', express.raw({ type: 'application/json' }), async (re
 // ARRANQUE
 // ══════════════════════════════════════
 export function iniciarAPIServer() {
+  if (process.env.NODE_ENV === 'production' && DASHBOARD_SECRET === 'nexus2024') {
+    console.warn('⚠️  DASHBOARD_SECRET usa el valor por defecto — configúralo en las variables de entorno de Railway');
+  }
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Dashboard API corriendo en puerto ${PORT}`);
-    console.log(`   Accede en: http://localhost:${PORT}/?secret=${DASHBOARD_SECRET}`);
+    console.log(`   Usa el header X-Dashboard-Secret para autenticarte`);
   });
 }

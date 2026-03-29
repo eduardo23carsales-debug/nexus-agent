@@ -331,6 +331,40 @@ export const db = {
   },
 
   // ════════════════════════════════════
+  // ESTADO DE OPERACIÓN — persiste flags críticos entre reinicios
+  // Usa system_memory con tipo='estado_operacion' como key-value store
+  // ════════════════════════════════════
+
+  async setEstadoOperacion(clave, valor) {
+    // Borrar entrada anterior con esa clave, luego insertar la nueva
+    await supabase.from('system_memory')
+      .delete()
+      .eq('tipo', 'estado_operacion')
+      .eq('categoria', clave);
+    await supabase.from('system_memory')
+      .insert({ tipo: 'estado_operacion', categoria: clave, contenido: JSON.stringify(valor), confianza: 1.0, activo: true });
+  },
+
+  async getEstadoOperacion(clave) {
+    const { data } = await supabase
+      .from('system_memory')
+      .select('contenido')
+      .eq('tipo', 'estado_operacion')
+      .eq('categoria', clave)
+      .eq('activo', true)
+      .maybeSingle();
+    if (!data) return null;
+    try { return JSON.parse(data.contenido); } catch { return data.contenido; }
+  },
+
+  async clearEstadoOperacion(clave) {
+    await supabase.from('system_memory')
+      .delete()
+      .eq('tipo', 'estado_operacion')
+      .eq('categoria', clave);
+  },
+
+  // ════════════════════════════════════
   // HEALTH CHECK — verifica conexión
   // ════════════════════════════════════
 

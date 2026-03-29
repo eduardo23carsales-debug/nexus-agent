@@ -13,8 +13,9 @@ const client = new Anthropic({
   timeout: 300 * 1000, // 5 minutos máximo por llamada (6000 tokens ~3-4 min de generación)
 });
 
-const MODEL = 'claude-opus-4-6';
-const MAX_TOKENS = 6000; // Reducido de 8000 — respuestas más rápidas, igual de completas
+const MODEL        = 'claude-opus-4-6';   // decisiones, research, scoring
+const MODEL_SONNET = 'claude-sonnet-4-6'; // generación de contenido HTML (5x más rápido, mismo resultado)
+const MAX_TOKENS = 6000;
 const MAX_DAILY_SPEND = Number(process.env.MAX_DAILY_API_SPEND) || 5;
 
 // ── Rastreador de costo diario (cargado desde DB al iniciar) ──
@@ -64,15 +65,19 @@ function calcularCosto(inputTokens, outputTokens) {
 export async function preguntar(prompt, system = '', agente = 'sistema', maxTokens = MAX_TOKENS, model = MODEL) {
   const inicio = Date.now();
 
-  // Verificar límite de gasto diario
-  if (costoHoy >= MAX_DAILY_SPEND) {
+  // Reservar costo estimado antes de llamar — evita que llamadas concurrentes
+  // pasen todas el check y juntas superen el límite diario
+  const costoEstimado = maxTokens * PRECIO_OUTPUT * 1.2; // 20% buffer sobre output máximo
+  if (costoHoy + costoEstimado > MAX_DAILY_SPEND) {
     await db.log(agente, 'claude_bloqueado', {
       razon: 'limite_diario_alcanzado',
       costo_hoy: costoHoy,
+      costo_estimado: costoEstimado,
       limite: MAX_DAILY_SPEND
     }, false);
     throw new Error(`Límite diario de API alcanzado ($${costoHoy.toFixed(4)}/$${MAX_DAILY_SPEND}). Esperando reset.`);
   }
+  costoHoy += costoEstimado; // reserva inmediata
 
   try {
     const response = await client.messages.create({
@@ -83,21 +88,23 @@ export async function preguntar(prompt, system = '', agente = 'sistema', maxToke
     });
 
     const texto = response.content[0].text;
-    const costo = calcularCosto(response.usage.input_tokens, response.usage.output_tokens);
+    const costoReal = calcularCosto(response.usage.input_tokens, response.usage.output_tokens);
     const duracion = Date.now() - inicio;
 
-    costoHoy += costo;
+    // Ajustar al costo real (la reserva ya está sumada, solo compensar la diferencia)
+    costoHoy += costoReal - costoEstimado;
 
     await db.log(agente, 'claude_llamada', {
       tokens_input: response.usage.input_tokens,
       tokens_output: response.usage.output_tokens,
-      costo_usd: costo,
+      costo_usd: costoReal,
       costo_acumulado_hoy: costoHoy
-    }, true, duracion, costo);
+    }, true, duracion, costoReal);
 
     return texto;
 
   } catch (err) {
+    costoHoy -= costoEstimado; // liberar reserva si la llamada falló
     await db.log(agente, 'claude_error', { error: err.message }, false, Date.now() - inicio);
     throw err;
   }
@@ -119,7 +126,7 @@ export async function preguntar(prompt, system = '', agente = 'sistema', maxToke
  * @param {number} maxIter    - máximo de continuaciones (seguridad)
  * @returns {string}          - texto completo, sin cortes
  */
-export async function preguntarCompleto(prompt, system = '', agente = 'sistema', maxTokens = MAX_TOKENS, maxIter = 5, onCorte = null) {
+export async function preguntarCompleto(prompt, system = '', agente = 'sistema', maxTokens = MAX_TOKENS, maxIter = 5, onCorte = null, model = MODEL) {
   const SYSTEM = system || 'Eres NEXUS AGENT, un sistema autónomo de ingresos digitales. Responde siempre en español. Sé directo y accionable.';
   const SYSTEM_DEFINITIVO = SYSTEM;
 
@@ -130,11 +137,13 @@ export async function preguntarCompleto(prompt, system = '', agente = 'sistema',
   while (iteracion < maxIter) {
     iteracion++;
 
-    // Verificar límite diario antes de cada llamada
-    if (costoHoy >= MAX_DAILY_SPEND) {
+    // Reservar costo estimado antes de llamar (mismo patrón que preguntar())
+    const costoEstimado = maxTokens * PRECIO_OUTPUT * 1.2;
+    if (costoHoy + costoEstimado > MAX_DAILY_SPEND) {
       await db.log(agente, 'claude_bloqueado', { razon: 'limite_diario_alcanzado', costo_hoy: costoHoy }, false);
       throw new Error(`Límite diario de API alcanzado ($${costoHoy.toFixed(4)}/$${MAX_DAILY_SPEND}).`);
     }
+    costoHoy += costoEstimado; // reserva inmediata
 
     // Retry con backoff en rate limit
     let response;
@@ -143,22 +152,22 @@ export async function preguntarCompleto(prompt, system = '', agente = 'sistema',
       try {
         const inicio = Date.now();
         response = await client.messages.create({
-          model: MODEL,
+          model,
           max_tokens: maxTokens,
           system: SYSTEM_DEFINITIVO,
           messages
         });
 
-        const costo = calcularCosto(response.usage.input_tokens, response.usage.output_tokens);
-        costoHoy += costo;
+        const costoReal = calcularCosto(response.usage.input_tokens, response.usage.output_tokens);
+        costoHoy += costoReal - costoEstimado; // ajustar al costo real
         await db.log(agente, 'claude_llamada', {
           tokens_input: response.usage.input_tokens,
           tokens_output: response.usage.output_tokens,
-          costo_usd: costo,
+          costo_usd: costoReal,
           costo_acumulado_hoy: costoHoy,
           iteracion,
           stop_reason: response.stop_reason
-        }, true, Date.now() - inicio, costo);
+        }, true, Date.now() - inicio, costoReal);
         break; // éxito — salir del loop de reintentos
 
       } catch (err) {
@@ -168,6 +177,7 @@ export async function preguntarCompleto(prompt, system = '', agente = 'sistema',
           console.log(`[Claude] Rate limit (intento ${intento + 1}) — esperando ${espera / 1000}s...`);
           await new Promise(r => setTimeout(r, espera));
         } else {
+          costoHoy -= costoEstimado; // liberar reserva si falló definitivamente
           await db.log(agente, 'claude_error', { error: err.message, intento }, false);
           throw err;
         }
@@ -208,15 +218,35 @@ export async function preguntarCompleto(prompt, system = '', agente = 'sistema',
 export async function preguntarJSON(prompt, system = '', agente = 'sistema') {
   const systemJSON = (system || '') + '\n\nIMPORTANTE: Responde ÚNICAMENTE con JSON válido, sin texto adicional, sin markdown, sin explicaciones.';
 
-  const texto = await preguntar(prompt, systemJSON, agente);
+  const MAX_INTENTOS_JSON = 2;
 
-  try {
-    // Limpia posibles bloques de código markdown
-    const limpio = texto.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    return JSON.parse(limpio);
-  } catch {
-    await db.log(agente, 'claude_json_parse_error', { respuesta_raw: texto.slice(0, 500) }, false);
-    throw new Error(`Claude no devolvió JSON válido: ${texto.slice(0, 200)}`);
+  for (let intento = 1; intento <= MAX_INTENTOS_JSON; intento++) {
+    const texto = await preguntar(prompt, systemJSON, agente);
+
+    try {
+      // Limpia posibles bloques de código markdown
+      const limpio = texto.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+      // Intento directo
+      try { return JSON.parse(limpio); } catch {}
+
+      // Fallback: extraer el primer array u objeto JSON del texto
+      const match = limpio.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
+      if (match) return JSON.parse(match[0]);
+
+      throw new Error('sin JSON extraíble');
+
+    } catch (err) {
+      await db.log(agente, 'claude_json_parse_error', {
+        intento,
+        respuesta_raw: texto.slice(0, 500)
+      }, false);
+
+      if (intento === MAX_INTENTOS_JSON) {
+        throw new Error(`Claude no devolvió JSON válido tras ${MAX_INTENTOS_JSON} intentos: ${texto.slice(0, 200)}`);
+      }
+      console.warn(`[Claude] JSON inválido (intento ${intento}) — reintentando...`);
+    }
   }
 }
 
@@ -259,4 +289,4 @@ export function resetCostoHoy() {
   costoHoy = 0;
 }
 
-export { MODEL };
+export { MODEL, MODEL_SONNET };

@@ -33,6 +33,7 @@ const API = `https://api.telegram.org/bot${TOKEN}`;
 let telegramOffset = 0;
 let aprobacionPendiente = null; // { tipo, datos, nicho, resolve }
 let experimentoEnCurso = false;
+let telegramPollingActivo = false; // evita llamadas concurrentes al polling
 
 // ════════════════════════════════════
 // INICIALIZACIÓN
@@ -58,6 +59,27 @@ async function iniciar() {
     if (updates.length > 0) telegramOffset = updates[updates.length - 1].update_id + 1;
   } catch {}
   console.log('✅ Telegram listo');
+
+  // Detectar si el sistema se reinició con operaciones en curso
+  try {
+    const [nichoPendiente, experCurso] = await Promise.all([
+      db.getEstadoOperacion('nicho_pendiente'),
+      db.getEstadoOperacion('experimento_en_curso')
+    ]);
+    if (nichoPendiente) {
+      console.warn('[Startup] Había un nicho pendiente de aprobación antes del reinicio — limpiando.');
+      await db.clearEstadoOperacion('nicho_pendiente');
+    }
+    if (experCurso) {
+      console.warn('[Startup] Había un experimento en curso antes del reinicio — limpiando flag.');
+      await db.clearEstadoOperacion('experimento_en_curso');
+    }
+    if (nichoPendiente || experCurso) {
+      await enviar('⚠️ El sistema se reinició durante una operación en curso.\nUsa <b>LANZAR</b> para retomar cuando estés listo.').catch(() => {});
+    }
+  } catch (e) {
+    console.warn('[Startup] No se pudo verificar estado previo:', e.message);
+  }
 
   await alerta.sistemaOnline();
   console.log('✅ Notificación enviada\n');
@@ -201,6 +223,7 @@ async function lanzarExperimento() {
     return;
   }
   experimentoEnCurso = true;
+  await db.setEstadoOperacion('experimento_en_curso', { inicio: new Date().toISOString() }).catch(() => {});
   console.log('\n[Motor 1] Iniciando nuevo experimento...');
 
   try {
@@ -235,7 +258,10 @@ async function lanzarExperimento() {
         `<b>CANCELAR</b> — cancelar`
       );
 
-      // 3. Esperar decisión (timeout 4h)
+      // 3. Guardar nicho en DB por si el sistema se reinicia durante la espera
+      await db.setEstadoOperacion('nicho_pendiente', { nicho, guardado_en: new Date().toISOString() }).catch(() => {});
+
+      // Esperar decisión (timeout 4h)
       const decision = await new Promise((resolve) => {
         aprobacionPendiente = { tipo: 'publicar', nicho, resolve };
         setTimeout(async () => {
@@ -246,6 +272,9 @@ async function lanzarExperimento() {
           }
         }, 4 * 60 * 60 * 1000);
       });
+
+      // Decisión recibida — limpiar el nicho pendiente de DB
+      await db.clearEstadoOperacion('nicho_pendiente').catch(() => {});
 
       if (decision === 'PUBLICAR') {
         nichoAprobado = nicho;
@@ -269,7 +298,7 @@ async function lanzarExperimento() {
     const resultado = await publicarAutomatico(nichoAprobado);
 
     if (resultado) {
-      await memory.aprenderDeExperimento({ ...nichoAprobado, metricas: { revenue: 0 }, aprendizaje: 'recién lanzado' });
+      // No guardamos en memoria hasta tener datos reales — evita contaminar el contexto con revenue=0
       console.log(`[Motor 1] Experimento lanzado: ${resultado.url}`);
     }
 
@@ -278,6 +307,8 @@ async function lanzarExperimento() {
     await alerta.errorCritico('motor1', err.message);
   } finally {
     experimentoEnCurso = false;
+    await db.clearEstadoOperacion('experimento_en_curso').catch(() => {});
+    await db.clearEstadoOperacion('nicho_pendiente').catch(() => {});
   }
 }
 
@@ -285,15 +316,20 @@ async function lanzarExperimento() {
 async function publicarAutomatico(nicho) {
   const { stripeCore } = await import('./core/stripe.js');
   const { deploy } = await import('./core/deploy.js');
-  const { preguntar } = await import('./core/claude.js');
+  const { preguntar, MODEL_SONNET } = await import('./core/claude.js');
 
   // Generar contenido del producto y landing en paralelo
   await enviar('📝 Generando contenido del producto...');
   const contenido = await generarProducto(nicho);
 
-  // Validar que el producto se generó completo
-  if (!contenido || contenido.length < 5000) {
-    throw new Error(`Producto generado incompleto (${contenido?.length || 0} chars). Abortando para no publicar contenido roto.`);
+  // Validar que el producto se generó completo y con estructura HTML real
+  const productoValido = contenido &&
+    contenido.length >= 5000 &&
+    contenido.includes('</html>') &&
+    contenido.includes('<section') &&
+    contenido.split('<section').length >= 4;
+  if (!productoValido) {
+    throw new Error(`Producto generado incompleto o sin estructura (${contenido?.length || 0} chars). Abortando para no publicar contenido roto.`);
   }
 
   // Crear producto en Stripe
@@ -318,7 +354,7 @@ Incluye: hero, beneficios, precio con botón de compra, 2 testimonios, garantía
 PROHIBIDO: No incluyas módulos, temario, curriculum, índice ni secciones de "lo que aprenderás" — eso es parte del producto entregable, no de la landing de venta.
 IMPORTANTE: El HTML debe estar 100% completo, desde <!DOCTYPE> hasta </html> sin cortar nada.
 Devuelve SOLO HTML desde <!DOCTYPE> hasta </html>.
-`, 'Experto en landing pages de alta conversión para mercado hispano.', 'publisher', 16000);
+`, 'Experto en landing pages de alta conversión para mercado hispano.', 'publisher', 16000, MODEL_SONNET);
 
   // Inyectar Meta Pixel
   const metaPixel = `<!-- Meta Pixel Code -->
@@ -343,9 +379,13 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
     .replace(/```html\n?/g, '').replace(/```\n?/g, '').trim()
     .replace('</head>', `${metaPixel}\n</head>`);
 
-  // Validar que la landing page se generó completa
-  if (!htmlLimpio || htmlLimpio.length < 3000) {
-    throw new Error(`Landing page incompleta (${htmlLimpio?.length || 0} chars). Abortando para no publicar página rota.`);
+  // Validar que la landing page se generó completa y con estructura HTML real
+  const landingValida = htmlLimpio &&
+    htmlLimpio.length >= 3000 &&
+    htmlLimpio.includes('</html>') &&
+    htmlLimpio.includes('<body');
+  if (!landingValida) {
+    throw new Error(`Landing page incompleta o sin estructura (${htmlLimpio?.length || 0} chars). Abortando para no publicar página rota.`);
   }
 
   // Desplegar landing y producto en un solo proyecto Vercel
@@ -398,9 +438,10 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
   );
 
   // Lanzar campaña Meta Ads automáticamente
-  lanzarCampanaParaProducto(experimento).catch(e =>
-    console.error('[AdsManager] Error en background:', e.message)
-  );
+  lanzarCampanaParaProducto(experimento).catch(async (e) => {
+    console.error('[AdsManager] Error en background:', e.message);
+    await alerta.errorCritico('ads-manager', `⚠️ Campaña Meta Ads falló para "${experimento.nombre}":\n${e.message}\n\nUsa <b>RELANZMETA</b> para reintentarlo.`).catch(() => {});
+  });
 
   return { url, productoUrl, experimento, stripeData };
 }
@@ -458,7 +499,9 @@ function iniciarCrons() {
 
   // Cada 5 segundos — leer comandos de Telegram (respuesta rápida)
   setInterval(async () => {
-    await leerComandosTelegram();
+    if (telegramPollingActivo) return; // evita acumulación si Telegram está lento
+    telegramPollingActivo = true;
+    try { await leerComandosTelegram(); } finally { telegramPollingActivo = false; }
   }, 5000);
 
   // Cada 6 horas — validar campañas de Meta Ads
@@ -467,23 +510,23 @@ function iniciarCrons() {
     try { await validarCampanas(); } catch (err) { console.error('[Cron] Error validando campañas:', err.message); }
   });
 
-  // Cada día a las 9am — lanzar nuevo experimento
+  // Cada día a las 9am hora local — lanzar nuevo experimento
   cron.schedule('0 9 * * *', async () => {
     console.log('[Cron] Lanzando experimento diario...');
     await lanzarExperimento();
-  });
+  }, { timezone: 'America/New_York' });
 
-  // Cada día a las 8pm — reporte diario
+  // Cada día a las 8pm hora local — reporte diario
   cron.schedule('0 20 * * *', async () => {
     console.log('[Cron] Generando reporte diario...');
     await brain.generarResumenDiario();
-  });
+  }, { timezone: 'America/New_York' });
 
-  // Cada día a medianoche — resetear contador de gasto Claude
+  // Cada día a medianoche hora local — resetear contador de gasto Claude
   cron.schedule('0 0 * * *', () => {
     resetCostoHoy();
     console.log('[Cron] Contador de gasto Claude reseteado para nuevo día.');
-  });
+  }, { timezone: 'America/New_York' });
 
   console.log('✅ Crons activos: pagos (1h), carritos abandonados (30min), comandos (5seg), experimento (9am), reporte (8pm)');
 }
