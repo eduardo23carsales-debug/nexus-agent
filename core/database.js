@@ -125,6 +125,16 @@ export const db = {
     return data;
   },
 
+  async getDigitalLeadPorEmailYFuente(email, fuente) {
+    const { data } = await supabase
+      .from('digital_leads')
+      .select('id')
+      .eq('email', email)
+      .eq('fuente', fuente)
+      .maybeSingle();
+    return data;
+  },
+
   // ════════════════════════════════════
   // MOTOR 2 — LEADS B2B (agencia)
   // ════════════════════════════════════

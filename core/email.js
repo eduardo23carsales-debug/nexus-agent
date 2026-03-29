@@ -180,6 +180,184 @@ export const email = {
     return entregados;
   },
 
+  // ── Detecta carritos abandonados y envía secuencia de 2 emails ──
+  async procesarCarritosAbandonados() {
+    const Stripe = (await import('stripe')).default;
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+    const ahora = Math.floor(Date.now() / 1000);
+    const hace26h = ahora - (26 * 60 * 60);
+
+    // Sesiones de Stripe de las últimas 26h (cubre ventana de ambos emails)
+    const sesiones = await stripe.checkout.sessions.list({
+      limit: 100,
+      created: { gte: hace26h }
+    });
+
+    // Solo las que tienen email del cliente pero no completaron el pago
+    const abandonadas = sesiones.data.filter(s =>
+      s.payment_status === 'unpaid' && s.customer_details?.email
+    );
+
+    if (!abandonadas.length) return 0;
+
+    // Cargar experimentos recientes para resolver el nombre del producto
+    const { data: exps } = await db.supabase
+      .from('experiments')
+      .select('id, nombre, precio, stripe_payment_link, producto_url')
+      .not('stripe_payment_link', 'is', null)
+      .order('fecha_inicio', { ascending: false })
+      .limit(20);
+
+    let enviados = 0;
+
+    for (const sesion of abandonadas) {
+      const emailCliente = sesion.customer_details.email;
+      const nombreCliente = sesion.customer_details.name?.split(' ')[0] || '';
+      const edadHoras = (ahora - sesion.created) / 3600;
+
+      try {
+        // Si ya compró, saltar
+        const comprador = await db.getCustomerPorEmail(emailCliente);
+        if (comprador) continue;
+
+        // Resolver producto desde el payment link de la sesión
+        const exp = exps?.find(e =>
+          sesion.payment_link && e.stripe_payment_link?.includes(sesion.payment_link)
+        ) || exps?.[0];
+        if (!exp) continue;
+
+        if (edadHoras >= 2 && edadHoras < 24) {
+          // Email 1 — ¿Tuviste algún problema?
+          const yaEnviado = await db.getDigitalLeadPorEmailYFuente(emailCliente, 'abandono_1');
+          if (yaEnviado) continue;
+
+          await this._enviarAbandonoEmail1({
+            para: emailCliente,
+            nombre: nombreCliente,
+            producto: exp.nombre,
+            precio: exp.precio,
+            linkPago: exp.stripe_payment_link
+          });
+          await db.crearDigitalLead(emailCliente, exp.id, 'abandono_1');
+          enviados++;
+
+        } else if (edadHoras >= 24) {
+          // Email 2 — Urgencia / última oportunidad
+          const yaEnviado = await db.getDigitalLeadPorEmailYFuente(emailCliente, 'abandono_2');
+          if (yaEnviado) continue;
+
+          await this._enviarAbandonoEmail2({
+            para: emailCliente,
+            nombre: nombreCliente,
+            producto: exp.nombre,
+            precio: exp.precio,
+            linkPago: exp.stripe_payment_link
+          });
+          await db.crearDigitalLead(emailCliente, exp.id, 'abandono_2');
+          enviados++;
+        }
+
+      } catch (err) {
+        console.warn(`[Email] Abandono error para ${emailCliente}: ${err.message}`);
+      }
+    }
+
+    if (enviados > 0) console.log(`[Email] ${enviados} emails de carrito abandonado enviados`);
+    return enviados;
+  },
+
+  async _enviarAbandonoEmail1({ para, nombre, producto, precio, linkPago }) {
+    const saludo = nombre ? `Hola <strong style="color:#00ff88;">${nombre}</strong>` : 'Hola';
+    const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0f0f0f;">
+  <div style="max-width:600px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;border:1px solid #222;">
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:40px 32px;text-align:center;border-bottom:3px solid #f0a500;">
+      <h1 style="color:#fff;margin:0;font-size:1.5em;">¿Tuviste algún problema?</h1>
+    </div>
+    <div style="padding:40px 32px;">
+      <p style="font-size:1.1em;color:#e0e0e0;margin:0 0 16px;">${saludo},</p>
+      <p style="color:#aaa;line-height:1.8;margin:0 0 24px;">
+        Notamos que empezaste a adquirir <strong style="color:#fff;">${producto}</strong> pero no completaste tu compra.
+        ¿Ocurrió algo? Si hubo algún problema técnico o tienes dudas, responde este email y te ayudamos de inmediato.
+      </p>
+      <p style="color:#aaa;line-height:1.8;margin:0 0 32px;">
+        Si simplemente se interrumpió, puedes continuar tu compra desde aquí:
+      </p>
+      <div style="text-align:center;margin:32px 0;">
+        <a href="${linkPago}" style="background:#f0a500;color:#000;padding:18px 40px;font-size:1.1em;font-weight:bold;text-decoration:none;border-radius:8px;display:inline-block;">
+          Completar mi compra — $${precio}
+        </a>
+      </div>
+      <p style="color:#666;font-size:0.9em;text-align:center;">¿Tienes dudas? Responde este email y te contestamos hoy.</p>
+    </div>
+    <div style="background:#111;padding:24px 32px;text-align:center;border-top:1px solid #222;">
+      <p style="color:#444;font-size:0.8em;margin:0;">${FROM_NAME} · Si no fuiste tú, ignora este mensaje.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const { error } = await resend.emails.send({
+      from: `${FROM_NAME} <${FROM}>`,
+      to: para,
+      subject: `¿Tuviste algún problema con tu compra de "${producto}"?`,
+      html
+    });
+    if (error) throw new Error(error.message);
+    console.log(`[Email] Abandono email 1 enviado a ${para}`);
+  },
+
+  async _enviarAbandonoEmail2({ para, nombre, producto, precio, linkPago }) {
+    const saludo = nombre ? `Hola <strong style="color:#00ff88;">${nombre}</strong>` : 'Hola';
+    const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0f0f0f;">
+  <div style="max-width:600px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;border:1px solid #222;">
+    <div style="background:linear-gradient(135deg,#2e1a1a,#3e1616);padding:40px 32px;text-align:center;border-bottom:3px solid #ff4444;">
+      <p style="color:#ff4444;font-size:0.85em;font-weight:bold;margin:0 0 8px;letter-spacing:2px;">ÚLTIMA OPORTUNIDAD</p>
+      <h1 style="color:#fff;margin:0;font-size:1.5em;">⏰ Tu acceso a "${producto}" sigue disponible</h1>
+    </div>
+    <div style="padding:40px 32px;">
+      <p style="font-size:1.1em;color:#e0e0e0;margin:0 0 16px;">${saludo},</p>
+      <p style="color:#aaa;line-height:1.8;margin:0 0 24px;">
+        Ayer casi adquiriste <strong style="color:#fff;">${producto}</strong>. Miles de latinos ya están usando este recurso para
+        mejorar su situación — y tú lo dejaste ir por $${precio}.
+      </p>
+      <p style="color:#aaa;line-height:1.8;margin:0 0 32px;">
+        No sabemos cuánto tiempo más estará disponible a este precio. Si lo necesitas, es ahora.
+      </p>
+      <div style="text-align:center;margin:32px 0;">
+        <a href="${linkPago}" style="background:#ff4444;color:#fff;padding:18px 40px;font-size:1.15em;font-weight:bold;text-decoration:none;border-radius:8px;display:inline-block;">
+          Quiero mi acceso ahora — $${precio}
+        </a>
+      </div>
+      <div style="background:#1a0d0d;border:1px solid #ff4444;border-radius:8px;padding:16px;text-align:center;">
+        <p style="margin:0;color:#ff8888;font-size:0.9em;">⚠️ Este es el último recordatorio que te enviaremos.</p>
+      </div>
+    </div>
+    <div style="background:#111;padding:24px 32px;text-align:center;border-top:1px solid #222;">
+      <p style="color:#444;font-size:0.8em;margin:0;">${FROM_NAME} · Si no fuiste tú, ignora este mensaje.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const { error } = await resend.emails.send({
+      from: `${FROM_NAME} <${FROM}>`,
+      to: para,
+      subject: `⏰ Última oportunidad — "${producto}" por $${precio}`,
+      html
+    });
+    if (error) throw new Error(error.message);
+    console.log(`[Email] Abandono email 2 enviado a ${para}`);
+  },
+
   // ── Ping — verifica que Resend funcione ──
   async ping() {
     // Solo verifica que el cliente esté inicializado

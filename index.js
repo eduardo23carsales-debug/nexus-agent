@@ -420,6 +420,15 @@ function iniciarCrons() {
     }
   });
 
+  // Cada 30 minutos — detectar carritos abandonados y enviar emails
+  cron.schedule('*/30 * * * *', async () => {
+    try {
+      await email.procesarCarritosAbandonados();
+    } catch (err) {
+      console.error('[Cron] Error carritos abandonados:', err.message);
+    }
+  });
+
   // Cada 5 segundos — leer comandos de Telegram (respuesta rápida)
   setInterval(async () => {
     await leerComandosTelegram();
@@ -449,7 +458,7 @@ function iniciarCrons() {
     console.log('[Cron] Contador de gasto Claude reseteado para nuevo día.');
   });
 
-  console.log('✅ Crons activos: pagos (1h), comandos (5seg), experimento (9am), reporte (8pm)');
+  console.log('✅ Crons activos: pagos (1h), carritos abandonados (30min), comandos (5seg), experimento (9am), reporte (8pm)');
 }
 
 // ════════════════════════════════════
