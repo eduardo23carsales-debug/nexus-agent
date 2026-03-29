@@ -17,22 +17,25 @@ export async function lanzarCampanaParaProducto(experimento) {
     // 1. Preflight — verifica token, Ad Account y Page antes de intentar publicar
     await metaAds.preflight();
 
-    // 2. Construir audiencia con IA
+    const formato = experimento.formato_ad || 'feed';
+
+    // 2. Construir audiencia con IA (copy adaptado al formato)
     const audiencia = await construirAudiencia({
       nicho: experimento.nicho,
       nombre_producto: experimento.nombre,
       precio: experimento.precio,
       cliente_ideal: experimento.descripcion,
       problema_que_resuelve: experimento.descripcion
-    });
+    }, formato);
 
-    // 3. Lanzar campaña en Meta
+    // 3. Lanzar campaña en Meta con formato correcto
     const campanaData = await metaAds.crearCampana({
       nombre: experimento.nombre,
       landingUrl: experimento.url,
       presupuestoDiario: PRESUPUESTO_DIARIO,
       nicho: experimento.nicho,
-      audiencia
+      audiencia,
+      formato
     });
 
     // 4. Guardar en DB
@@ -52,13 +55,15 @@ export async function lanzarCampanaParaProducto(experimento) {
     });
 
     // 5. Notificar
+    const formatoLabel = formato === 'stories' ? '📱 Instagram Stories (9:16 vertical)' : '🖥 Facebook/Instagram Feed (1:1)';
     await enviar(
       `📢 <b>CAMPAÑA META ADS LANZADA</b>\n\n` +
       `<b>Producto:</b> ${experimento.nombre}\n` +
       `💰 Presupuesto: $${PRESUPUESTO_DIARIO / 100}/día\n` +
+      `${formatoLabel}\n` +
       `🖼 Imágenes: ${campanaData.imagenes || 1} variantes (dolor / transformación / comunidad)\n` +
-      `📝 Copy A (dolor): "${audiencia.copy}"\n` +
-      (audiencia.copy_b ? `📝 Copy B (transform.): "${audiencia.copy_b}"\n` : '') +
+      `📝 Copy A: "${audiencia.copy}"\n` +
+      (audiencia.copy_b ? `📝 Copy B: "${audiencia.copy_b}"\n` : '') +
       `🎯 Total anuncios: ${campanaData.total_ads || 1}\n` +
       `⏳ Decisión en 72 horas — Meta elige el ganador`
     );

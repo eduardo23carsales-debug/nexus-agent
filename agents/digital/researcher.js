@@ -44,6 +44,10 @@ Analiza estos factores para elegir el mejor nicho:
 4. Poca competencia directa en español
 5. Problema real y urgente que resuelve
 
+Para el campo formato_ad_recomendado usa esta lógica:
+- "stories": nichos de urgencia/supervivencia (documentos, inmigración, trabajo, licencias, crédito, precio $17-$47) — CTR 61% mayor, CPC $1.83
+- "feed": nichos de transformación/aspiración (negocios, inversión, tecnología, cursos premium, precio $47-$97) — mayor consideración antes de comprar
+
 Tipos de productos posibles:
 - Pack de prompts de IA en español ($17-47)
 - Plantilla Notion/Excel para negocio ($17-37)
@@ -73,7 +77,9 @@ Devuelve JSON con TODOS estos campos — son críticos para generar contenido es
   ],
   "ejemplo_exito": "caso real o tipo de persona del mercado hispano que logró resultados con esto, con números específicos",
   "score": 85,
-  "razon": "por qué este nicho ahora mismo"
+  "razon": "por qué este nicho ahora mismo",
+  "formato_ad_recomendado": "stories|feed",
+  "razon_formato": "por qué este formato para este nicho específico"
 }
 `, SYSTEM, 'researcher');
 

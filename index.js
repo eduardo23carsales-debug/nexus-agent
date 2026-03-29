@@ -355,6 +355,7 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
     stripe_product_id: stripeData.stripe_product_id,
     stripe_payment_link: stripeData.stripe_payment_link,
     precio: nicho.precio,
+    formato_ad: nicho.formato_ad_recomendado || 'feed',
     estado: 'corriendo',
     contenido_producto: contenido,
     landing_html: htmlLimpio,
