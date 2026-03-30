@@ -463,18 +463,20 @@ async function doLogin() {
   btn.textContent = 'Verificando...';
   document.getElementById('login-error').classList.add('hidden');
 
-  const ctrl = new AbortController();
-  const timeout = setTimeout(() => ctrl.abort(), 8000);
+  const errEl = document.getElementById('login-error');
 
   try {
-    const r = await fetch('/api/ping', {
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 10000);
+
+    // Mandar clave por header Y query param para máxima compatibilidad
+    const r = await fetch(`/api/ping?secret=${encodeURIComponent(input)}`, {
       headers: { 'X-Dashboard-Secret': input },
       signal: ctrl.signal
     });
     clearTimeout(timeout);
-    if (r.status === 401) {
-      document.getElementById('login-error').classList.remove('hidden');
-    } else if (r.ok) {
+
+    if (r.ok) {
       SECRET = input;
       sessionStorage.setItem('nx_s', SECRET);
       document.getElementById('login-screen').classList.add('hidden');
@@ -482,16 +484,19 @@ async function doLogin() {
       cargarTodo();
       iniciarAutoRefresh();
       return;
+    } else if (r.status === 401) {
+      errEl.textContent = 'Clave incorrecta';
     } else {
-      document.getElementById('login-error').textContent = 'Error del servidor (' + r.status + ')';
-      document.getElementById('login-error').classList.remove('hidden');
+      errEl.textContent = 'Error del servidor (' + r.status + ') — revisa los logs de Railway';
     }
   } catch(e) {
-    clearTimeout(timeout);
-    const msg = e.name === 'AbortError' ? 'Tiempo de espera agotado — Railway puede estar reiniciando' : 'Sin conexión con el servidor';
-    document.getElementById('login-error').textContent = msg;
-    document.getElementById('login-error').classList.remove('hidden');
+    if (e.name === 'AbortError') {
+      errEl.textContent = 'Sin respuesta del servidor (10s) — Railway puede estar reiniciando, espera 1 min';
+    } else {
+      errEl.textContent = 'No se pudo conectar: ' + e.message;
+    }
   }
+  errEl.classList.remove('hidden');
   btn.disabled = false;
   btn.textContent = 'Entrar';
 }

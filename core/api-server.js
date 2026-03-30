@@ -20,8 +20,7 @@ const DASHBOARD_SECRET = process.env.DASHBOARD_SECRET || 'nexus2024';
 
 // ── Autenticación simple ─────────────────────────────────────
 function auth(req, res, next) {
-  // Solo aceptar header — el query param expone el secret en logs y URLs
-  const secret = req.headers['x-dashboard-secret'];
+  const secret = req.headers['x-dashboard-secret'] || req.query.secret;
   if (secret !== DASHBOARD_SECRET) {
     return res.status(401).json({ error: 'No autorizado' });
   }
