@@ -33,6 +33,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// ── Ping — solo verifica auth, sin llamadas externas ────────
+app.get('/api/ping', auth, (req, res) => {
+  res.json({ ok: true, ts: new Date().toISOString() });
+});
+
 // ── Servir dashboard HTML ────────────────────────────────────
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../dashboard/index.html'));

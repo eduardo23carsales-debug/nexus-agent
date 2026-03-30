@@ -462,8 +462,16 @@ async function doLogin() {
   btn.disabled = true;
   btn.textContent = 'Verificando...';
   document.getElementById('login-error').classList.add('hidden');
+
+  const ctrl = new AbortController();
+  const timeout = setTimeout(() => ctrl.abort(), 8000);
+
   try {
-    const r = await fetch('/api/estado', { headers: { 'X-Dashboard-Secret': input } });
+    const r = await fetch('/api/ping', {
+      headers: { 'X-Dashboard-Secret': input },
+      signal: ctrl.signal
+    });
+    clearTimeout(timeout);
     if (r.status === 401) {
       document.getElementById('login-error').classList.remove('hidden');
     } else if (r.ok) {
@@ -475,9 +483,13 @@ async function doLogin() {
       iniciarAutoRefresh();
       return;
     } else {
+      document.getElementById('login-error').textContent = 'Error del servidor (' + r.status + ')';
       document.getElementById('login-error').classList.remove('hidden');
     }
   } catch(e) {
+    clearTimeout(timeout);
+    const msg = e.name === 'AbortError' ? 'Tiempo de espera agotado — Railway puede estar reiniciando' : 'Sin conexión con el servidor';
+    document.getElementById('login-error').textContent = msg;
     document.getElementById('login-error').classList.remove('hidden');
   }
   btn.disabled = false;
