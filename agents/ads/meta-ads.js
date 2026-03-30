@@ -79,15 +79,15 @@ async function generarImagenesVariantes(nombre, nicho, formato = 'feed') {
   const variantes = [
     {
       etiqueta: 'A (dolor)',
-      prompt: `Professional ad image ${orientacion} for a Spanish-language digital product. Product: "${nombre}". Niche: ${nicho}. PAIN ANGLE: show a stressed, worried Hispanic person facing a problem. Urgent mood. Bold red and orange colors. No text in the image. High quality, suitable for Hispanic audience on social media.`
+      prompt: `Eye-catching Facebook/Instagram ad image ${orientacion} for the Hispanic market in USA. Product: "${nombre}". Niche: ${nicho}. PAIN ANGLE: show a stressed, frustrated Hispanic person facing their biggest problem. Urgent, tense mood. Bold red and dark orange colors with high contrast. IMPORTANT: Add a bold white text overlay in Spanish with a short 3-5 word pain hook (e.g. "¿Cansado de no avanzar?"). Text must be large, readable, centered. Photorealistic style, professional ad quality.`
     },
     {
       etiqueta: 'B (transformación)',
-      prompt: `Professional ad image ${orientacion} for a Spanish-language digital product. Product: "${nombre}". Niche: ${nicho}. TRANSFORMATION ANGLE: show a happy, successful Hispanic person celebrating results. Optimistic mood. Bold green and gold colors. No text in the image. High quality, suitable for Hispanic audience on social media.`
+      prompt: `Eye-catching Facebook/Instagram ad image ${orientacion} for the Hispanic market in USA. Product: "${nombre}". Niche: ${nicho}. TRANSFORMATION ANGLE: show a confident, successful Hispanic person celebrating real results — smiling, holding money or achievement. Optimistic mood. Bold green and gold colors with high contrast. IMPORTANT: Add a bold white text overlay in Spanish with a short 3-5 word success hook (e.g. "Tu momento es ahora"). Text must be large, readable, centered. Photorealistic style, professional ad quality.`
     },
     {
       etiqueta: 'C (comunidad)',
-      prompt: `Professional ad image ${orientacion} for a Spanish-language digital product. Product: "${nombre}". Niche: ${nicho}. SOCIAL PROOF ANGLE: show a group of happy Latinos who already achieved success together. Trust and community mood. Bold blue and white colors. No text in the image. High quality, suitable for Hispanic audience on social media.`
+      prompt: `Eye-catching Facebook/Instagram ad image ${orientacion} for the Hispanic market in USA. Product: "${nombre}". Niche: ${nicho}. SOCIAL PROOF ANGLE: show a group of 3-4 happy Latinos celebrating success together — team feeling, authentic community. Trust and warmth. Bold blue and white colors with high contrast. IMPORTANT: Add a bold white text overlay in Spanish with a short 3-5 word social proof hook (e.g. "Miles ya lo lograron"). Text must be large, readable, centered. Photorealistic style, professional ad quality.`
     }
   ];
 
@@ -160,9 +160,9 @@ export const metaAds = {
         const linkData = {
           link: landingUrl,
           message: audiencia.copy,
-          name: nombre,
+          name: audiencia.headline || nombre,   // headline generado por IA, más clickable
           description: audiencia.descripcion,
-          call_to_action: { type: 'LEARN_MORE', value: { link: landingUrl } },
+          call_to_action: { type: 'GET_OFFER', value: { link: landingUrl } },
           image_hash: imageHashes[i]
         };
         const creative = await metaPost(`/${AD_ACCOUNT}/adcreatives`, {
@@ -199,9 +199,9 @@ export const metaAds = {
         const linkDataB = {
           link: landingUrl,
           message: audiencia.copy_b,
-          name: nombre,
+          name: audiencia.headline || nombre,
           description: audiencia.descripcion,
-          call_to_action: { type: 'LEARN_MORE', value: { link: landingUrl } },
+          call_to_action: { type: 'GET_OFFER', value: { link: landingUrl } },
           image_hash: imageHashes[0]
         };
         const creativeB = await metaPost(`/${AD_ACCOUNT}/adcreatives`, {
@@ -241,8 +241,19 @@ export const metaAds = {
       geo_locations: {
         countries: ['US']
       },
-      targeting_automation: { advantage_audience: 0 }
+      // Idioma español — filtra solo hispanohablantes en USA
+      locales: [6],
+      // Advantage+ Audience — Meta usa su propio ML para encontrar compradores
+      // Es el método de mejor rendimiento actual (2025)
+      targeting_automation: { advantage_audience: 1 }
     };
+
+    // Intereses como sugerencias para Advantage+ (Meta los usa como punto de partida)
+    if (audiencia.intereses?.length > 0) {
+      base.flexible_spec = [{
+        interests: audiencia.intereses.map(i => ({ name: i }))
+      }];
+    }
 
     if (formato === 'stories') {
       // Instagram Stories — placement específico, CPC $1.83 vs $3.35 Feed
