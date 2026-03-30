@@ -58,7 +58,7 @@ async function agregarTextoAImagen(b64, texto) {
     const meta = await sharp(inputBuffer).metadata();
     const w = meta.width || 1024;
     const h = meta.height || 1024;
-    const fontSize = Math.floor(w * 0.058);
+    const fontSize = Math.floor(w * 0.048);
     const barH = Math.floor(h * 0.22);
     const barY = h - barH;
 
@@ -385,7 +385,7 @@ export const metaAds = {
     if (OPENAI_KEY) {
       try {
         // Hook: tomar las primeras palabras completas de la oferta (máx 5 palabras)
-        const hookLeadCamp = oferta.trim().split(/\s+/).slice(0, 5).join(' ');
+        const hookLeadCamp = oferta.trim().split(/\s+/).slice(0, 4).join(' ');
         imageHash = await generarYSubirUnaImagen(
           `Photorealistic Facebook ad image for the Hispanic market in USA. Offer: "${oferta}". Create a highly specific, eye-catching scene that EXACTLY represents this offer — if it's a car, show that exact car model and color; if it's a house, show that type of property; if it's a service, show the result. Miami Florida lifestyle, professional advertising quality. NO TEXT, NO WORDS, NO LETTERS, NO NUMBERS anywhere — only the visual scene.`,
           'LeadCamp', '1024x1024',
