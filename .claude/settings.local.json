@@ -8,7 +8,13 @@
       "WebSearch",
       "Bash(/tmp/field_trace.txt:*)",
       "Read(//tmp/**)",
-      "Bash(grep -r \"app\\\\.get\\\\|app\\\\.post\\\\|app\\\\.put\\\\|app\\\\.delete\" core/ agents/ --include=*.js)"
+      "Bash(grep -r \"app\\\\.get\\\\|app\\\\.post\\\\|app\\\\.put\\\\|app\\\\.delete\" core/ agents/ --include=*.js)",
+      "Bash(grep -r \"facebook\\\\|meta\\\\|instagram\\\\|ads_manager\\\\|ad_account\" C:devbot_opciones_Ultimo --include=*.py -l)",
+      "Bash(grep -r \"ads\\\\|marketing\\\\|impressions\\\\|click\\\\|spend\\\\|roas\\\\|facebook\\\\|meta\\\\|instagram\" C:devbot_opciones_Ultimo --include=*.py -i)",
+      "Bash(find C:devbot_opciones_Ultimo -maxdepth 1 -type f \\\\\\(-name README* -o -name *.md \\\\\\) -exec head -50 {} +)",
+      "Bash(grep -r \"REQUEST_NEW_CONTENT_ITEM\\\\|campaign\\\\|SPENT\\\\|CLICKS\\\\|IMPRESSIONS\\\\|ROAS\\\\|CTR\" C:devbot_opciones_Ultimo --include=*.py -i)",
+      "Bash(find 'C:\\\\dev\\\\agentes de hacer dinero' -type f -name *.py)",
+      "Bash(xargs grep:*)"
     ]
   }
 }

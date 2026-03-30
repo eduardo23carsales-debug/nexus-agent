@@ -59,6 +59,41 @@ async function evaluarCampana(campana) {
 
   console.log(`[CampaignValidator] ${campana.nombre} — Gasto: $${metricas.spend} | ROAS: ${roas.toFixed(2)}x | Ventas: ${metricas.conversiones}`);
 
+  // Si lleva más de 6h con $0 y 0 impresiones, verificar que existe en Meta
+  if (horasActiva > 6 && metricas.spend === 0 && metricas.impressions === 0) {
+    const estado = await metaAds.verificarEstadoCampana(campana.campaign_id_externo);
+    if (!estado.existe) {
+      await supabase.from('campaigns').update({
+        estado: 'muerto',
+        decision: 'matar',
+        razon_decision: 'Campaña no encontrada en Meta — posiblemente rechazada durante revisión',
+        fecha_decision: new Date().toISOString()
+      }).eq('id', campana.id);
+      await enviar(
+        `⚠️ <b>CAMPAÑA FANTASMA DETECTADA</b>\n\n` +
+        `<b>Producto:</b> ${campana.nombre}\n` +
+        `❌ No existe en Meta Ads (ID: ${campana.campaign_id_externo})\n` +
+        `🔴 Marcada como inactiva automáticamente`
+      );
+      return;
+    }
+    if (estado.effective_status === 'DISAPPROVED' || estado.effective_status === 'PAUSED') {
+      await supabase.from('campaigns').update({
+        estado: 'muerto',
+        decision: 'matar',
+        razon_decision: `Meta reporta estado: ${estado.effective_status}`,
+        fecha_decision: new Date().toISOString()
+      }).eq('id', campana.id);
+      await enviar(
+        `⚠️ <b>CAMPAÑA ${estado.effective_status}</b>\n\n` +
+        `<b>Producto:</b> ${campana.nombre}\n` +
+        `❌ Meta rechazó o pausó esta campaña\n` +
+        `🔴 Marcada como inactiva`
+      );
+      return;
+    }
+  }
+
   // Solo tomar decisiones después de 72h o si ya gastó mucho sin ventas
   const listo_para_decidir = horasActiva >= HORAS_DECISION;
   const gasto_sin_ventas = metricas.spend >= GASTO_MAX_SIN_VENTAS && metricas.conversiones === 0;

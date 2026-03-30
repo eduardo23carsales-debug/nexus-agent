@@ -280,6 +280,18 @@ export const metaAds = {
     }
   },
 
+  // ── Verificar que una campaña existe y su estado en Meta ─
+  async verificarEstadoCampana(campaignId) {
+    try {
+      const data = await metaGet(`/${campaignId}`, {
+        fields: 'id,status,effective_status'
+      });
+      return { existe: true, status: data.status, effective_status: data.effective_status };
+    } catch (err) {
+      return { existe: false, error: err.message };
+    }
+  },
+
   // ── Pausar campaña ───────────────────────────────────────
   async pausarCampana(campaignId) {
     await metaPost(`/${campaignId}`, { status: 'PAUSED' });
