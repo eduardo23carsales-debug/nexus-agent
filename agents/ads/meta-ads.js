@@ -113,7 +113,7 @@ async function generarYSubirUnaImagen(prompt, etiqueta, size = '1024x1024', text
 }
 
 // ── Generar 3 variantes de imagen en paralelo ────────────────
-async function generarImagenesVariantes(nombre, nicho, formato = 'feed') {
+async function generarImagenesVariantes(nombre, nicho, formato = 'feed', audiencia = null) {
   if (!OPENAI_KEY) {
     console.warn('[MetaAds] OPENAI_API_KEY no configurado — sin imágenes');
     return [];
@@ -123,20 +123,25 @@ async function generarImagenesVariantes(nombre, nicho, formato = 'feed') {
   const size = formato === 'stories' ? '1024x1792' : '1024x1024';
   const orientacion = formato === 'stories' ? 'vertical 9:16 for Instagram Stories' : 'square 1:1 for Facebook Feed';
 
+  // Hooks específicos al producto — del audience builder si existen, si no genéricos del nicho
+  const hookDolor = audiencia?.hook || `¿Cansado con ${nicho}?`;
+  const hookTransform = audiencia?.headline ? `¡${audiencia.headline}!` : '¡Tu momento es AHORA!';
+  const hookComunidad = 'Miles ya lo lograron';
+
   const variantes = [
     {
       etiqueta: 'A (dolor)',
-      hook: '¿Cansado de no avanzar?',
+      hook: hookDolor,
       prompt: `Photorealistic Facebook/Instagram ad image ${orientacion} for the Hispanic market in USA. Product: "${nombre}". Niche: ${nicho}. PAIN ANGLE: show a stressed, frustrated Latino person facing their biggest problem related to this niche. Urgent, tense mood. Bold red and dark orange color palette. High contrast, professional advertising quality. NO TEXT, NO WORDS, NO LETTERS anywhere in the image — only the scene.`
     },
     {
       etiqueta: 'B (transformación)',
-      hook: '¡Tu momento es AHORA!',
+      hook: hookTransform,
       prompt: `Photorealistic Facebook/Instagram ad image ${orientacion} for the Hispanic market in USA. Product: "${nombre}". Niche: ${nicho}. TRANSFORMATION ANGLE: show a confident, successful Latino person celebrating real results — smiling, with visible signs of achievement related to this niche. Optimistic mood. Bold green and gold color palette. High contrast, professional advertising quality. NO TEXT, NO WORDS, NO LETTERS anywhere in the image — only the scene.`
     },
     {
       etiqueta: 'C (comunidad)',
-      hook: 'Miles ya lo lograron',
+      hook: hookComunidad,
       prompt: `Photorealistic Facebook/Instagram ad image ${orientacion} for the Hispanic market in USA. Product: "${nombre}". Niche: ${nicho}. SOCIAL PROOF ANGLE: show a group of 3-4 happy Latino people celebrating success together, authentic community feeling related to this niche. Trust and warmth. Bold blue and white color palette. High contrast, professional advertising quality. NO TEXT, NO WORDS, NO LETTERS anywhere in the image — only the scene.`
     }
   ];
@@ -165,7 +170,7 @@ export const metaAds = {
     console.log(`[MetaAds] v9 — Campaña A/B para: ${nombre} | formato: ${formato} | PAGE_ID=${PAGE_ID}`);
 
     // 1. Generar 3 variantes de imagen en paralelo con el tamaño correcto
-    const imageHashes = await generarImagenesVariantes(nombre, nicho, formato);
+    const imageHashes = await generarImagenesVariantes(nombre, nicho, formato, audiencia);
 
     // 2. Crear campaña con CBO — presupuesto en campaña, Meta distribuye entre adsets
     const campana = await metaPost(`/${AD_ACCOUNT}/campaigns`, {
@@ -379,10 +384,12 @@ export const metaAds = {
     let imageHash = null;
     if (OPENAI_KEY) {
       try {
+        // Hook: tomar las primeras palabras completas de la oferta (máx 5 palabras)
+        const hookLeadCamp = oferta.trim().split(/\s+/).slice(0, 5).join(' ');
         imageHash = await generarYSubirUnaImagen(
-          `Photorealistic Facebook ad image for the Hispanic market in USA. Offer: "${oferta}". Create a highly specific, eye-catching scene that EXACTLY represents this offer — if it's a car, show that exact car model; if it's a house, show that type of property; if it's a service, show the result. Miami Florida lifestyle, professional advertising quality. NO TEXT, NO WORDS, NO LETTERS, NO NUMBERS anywhere — only the visual scene.`,
+          `Photorealistic Facebook ad image for the Hispanic market in USA. Offer: "${oferta}". Create a highly specific, eye-catching scene that EXACTLY represents this offer — if it's a car, show that exact car model and color; if it's a house, show that type of property; if it's a service, show the result. Miami Florida lifestyle, professional advertising quality. NO TEXT, NO WORDS, NO LETTERS, NO NUMBERS anywhere — only the visual scene.`,
           'LeadCamp', '1024x1024',
-          oferta.slice(0, 35) // primeras palabras de la oferta como hook
+          hookLeadCamp
         );
       } catch (e) {
         console.warn('[MetaAds] LeadCamp imagen falló (no crítico):', e.message);
