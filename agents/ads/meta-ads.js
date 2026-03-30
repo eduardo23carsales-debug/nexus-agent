@@ -50,14 +50,61 @@ async function metaGet(endpoint, params = {}) {
   }
 }
 
+// ── Agregar texto en español sobre la imagen (programático, no DALL-E) ──
+async function agregarTextoAImagen(b64, texto) {
+  try {
+    const { default: sharp } = await import('sharp');
+    const inputBuffer = Buffer.from(b64, 'base64');
+    const meta = await sharp(inputBuffer).metadata();
+    const w = meta.width || 1024;
+    const h = meta.height || 1024;
+    const fontSize = Math.floor(w * 0.058);
+    const barH = Math.floor(h * 0.22);
+    const barY = h - barH;
+
+    // Escapar caracteres especiales XML
+    const textoSeguro = texto
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+    const svg = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="${barY}" width="${w}" height="${barH}" fill="rgba(0,0,0,0.72)"/>
+      <text x="${w / 2}" y="${barY + barH * 0.55}"
+        font-family="Arial Black, Arial, Helvetica, sans-serif"
+        font-size="${fontSize}" font-weight="900" fill="white"
+        text-anchor="middle" dominant-baseline="middle"
+        style="filter:drop-shadow(2px 2px 4px rgba(0,0,0,0.9))"
+      >${textoSeguro}</text>
+    </svg>`;
+
+    const outputBuffer = await sharp(inputBuffer)
+      .composite([{ input: Buffer.from(svg), blend: 'over' }])
+      .jpeg({ quality: 90 })
+      .toBuffer();
+
+    return outputBuffer.toString('base64');
+  } catch (err) {
+    console.warn(`[MetaAds] agregarTextoAImagen falló — usando imagen sin texto: ${err.message}`);
+    return b64; // fallback: imagen original sin texto
+  }
+}
+
 // ── Generar una imagen con DALL-E 3 y subirla a Meta ──────────
-async function generarYSubirUnaImagen(prompt, etiqueta, size = '1024x1024') {
+async function generarYSubirUnaImagen(prompt, etiqueta, size = '1024x1024', textoOverlay = null) {
   const dalleRes = await axios.post(
     'https://api.openai.com/v1/images/generations',
     { model: 'dall-e-3', prompt, n: 1, size, response_format: 'b64_json' },
     { headers: { Authorization: `Bearer ${OPENAI_KEY}` }, timeout: 90000 }
   );
-  const b64 = dalleRes.data.data[0].b64_json;
+  let b64 = dalleRes.data.data[0].b64_json;
+
+  // Si hay texto para overlay, agregarlo programáticamente (no depender de DALL-E para texto)
+  if (textoOverlay) {
+    b64 = await agregarTextoAImagen(b64, textoOverlay);
+  }
+
   const uploadRes = await metaPost(`/${AD_ACCOUNT}/adimages`, { bytes: b64 });
   const imageHash = Object.values(uploadRes.images || {})[0]?.hash;
   if (!imageHash) throw new Error('No se obtuvo hash de imagen');
@@ -79,21 +126,24 @@ async function generarImagenesVariantes(nombre, nicho, formato = 'feed') {
   const variantes = [
     {
       etiqueta: 'A (dolor)',
-      prompt: `Eye-catching Facebook/Instagram ad image ${orientacion} for the Hispanic market in USA. Product: "${nombre}". Niche: ${nicho}. PAIN ANGLE: show a stressed, frustrated Hispanic person facing their biggest problem. Urgent, tense mood. Bold red and dark orange colors with high contrast. IMPORTANT: Add a bold white text overlay in Spanish with a short 3-5 word pain hook (e.g. "¿Cansado de no avanzar?"). Text must be large, readable, centered. Photorealistic style, professional ad quality.`
+      hook: '¿Cansado de no avanzar?',
+      prompt: `Photorealistic Facebook/Instagram ad image ${orientacion} for the Hispanic market in USA. Product: "${nombre}". Niche: ${nicho}. PAIN ANGLE: show a stressed, frustrated Latino person facing their biggest problem related to this niche. Urgent, tense mood. Bold red and dark orange color palette. High contrast, professional advertising quality. NO TEXT, NO WORDS, NO LETTERS anywhere in the image — only the scene.`
     },
     {
       etiqueta: 'B (transformación)',
-      prompt: `Eye-catching Facebook/Instagram ad image ${orientacion} for the Hispanic market in USA. Product: "${nombre}". Niche: ${nicho}. TRANSFORMATION ANGLE: show a confident, successful Hispanic person celebrating real results — smiling, holding money or achievement. Optimistic mood. Bold green and gold colors with high contrast. IMPORTANT: Add a bold white text overlay in Spanish with a short 3-5 word success hook (e.g. "Tu momento es ahora"). Text must be large, readable, centered. Photorealistic style, professional ad quality.`
+      hook: '¡Tu momento es AHORA!',
+      prompt: `Photorealistic Facebook/Instagram ad image ${orientacion} for the Hispanic market in USA. Product: "${nombre}". Niche: ${nicho}. TRANSFORMATION ANGLE: show a confident, successful Latino person celebrating real results — smiling, with visible signs of achievement related to this niche. Optimistic mood. Bold green and gold color palette. High contrast, professional advertising quality. NO TEXT, NO WORDS, NO LETTERS anywhere in the image — only the scene.`
     },
     {
       etiqueta: 'C (comunidad)',
-      prompt: `Eye-catching Facebook/Instagram ad image ${orientacion} for the Hispanic market in USA. Product: "${nombre}". Niche: ${nicho}. SOCIAL PROOF ANGLE: show a group of 3-4 happy Latinos celebrating success together — team feeling, authentic community. Trust and warmth. Bold blue and white colors with high contrast. IMPORTANT: Add a bold white text overlay in Spanish with a short 3-5 word social proof hook (e.g. "Miles ya lo lograron"). Text must be large, readable, centered. Photorealistic style, professional ad quality.`
+      hook: 'Miles ya lo lograron',
+      prompt: `Photorealistic Facebook/Instagram ad image ${orientacion} for the Hispanic market in USA. Product: "${nombre}". Niche: ${nicho}. SOCIAL PROOF ANGLE: show a group of 3-4 happy Latino people celebrating success together, authentic community feeling related to this niche. Trust and warmth. Bold blue and white color palette. High contrast, professional advertising quality. NO TEXT, NO WORDS, NO LETTERS anywhere in the image — only the scene.`
     }
   ];
 
   console.log(`[MetaAds] Generando 3 variantes ${size} en paralelo con DALL-E 3...`);
   const results = await Promise.allSettled(
-    variantes.map(v => generarYSubirUnaImagen(v.prompt, v.etiqueta, size))
+    variantes.map(v => generarYSubirUnaImagen(v.prompt, v.etiqueta, size, v.hook))
   );
 
   const hashes = results
@@ -330,8 +380,9 @@ export const metaAds = {
     if (OPENAI_KEY) {
       try {
         imageHash = await generarYSubirUnaImagen(
-          `Professional advertising image for this offer targeting Hispanic market in USA: "${oferta}". Eye-catching, professional, Miami Florida vibe. No text in the image.`,
-          'LeadCamp', '1024x1024'
+          `Photorealistic Facebook ad image for the Hispanic market in USA. Offer: "${oferta}". Create a highly specific, eye-catching scene that EXACTLY represents this offer — if it's a car, show that exact car model; if it's a house, show that type of property; if it's a service, show the result. Miami Florida lifestyle, professional advertising quality. NO TEXT, NO WORDS, NO LETTERS, NO NUMBERS anywhere — only the visual scene.`,
+          'LeadCamp', '1024x1024',
+          oferta.slice(0, 35) // primeras palabras de la oferta como hook
         );
       } catch (e) {
         console.warn('[MetaAds] LeadCamp imagen falló (no crítico):', e.message);

@@ -49,8 +49,9 @@ Fecha actual: ${new Date().toLocaleDateString('es-MX', { month: 'long', year: 'n
 NICHOS QUE YA FUNCIONARON (replicar/mejorar):
 ${ganadoresTexto}
 
-NICHOS A EVITAR (ya fallaron o fueron rechazados):
+NICHOS RECHAZADOS — NO SUGERIR NI NINGUNA VARIACIÓN DEL MISMO TEMA:
 ${blacklistTexto}
+CRÍTICO: Si un tema aparece en la lista de arriba, evita TODA variación del mismo. Ejemplo: si "fotografía con IA" está rechazado, no sugieras "fotos para eventos con IA", "edición de fotos con inteligencia artificial", etc. El tema completo está descartado.
 ${evitar}
 
 Para cada candidato evalúa honestamente: urgencia del problema, búsqueda activa en español,

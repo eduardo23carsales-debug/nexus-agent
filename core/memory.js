@@ -81,11 +81,21 @@ export const memory = {
 
   // Guarda un nicho rechazado manualmente por Eduardo
   async rechazarNicho(nicho) {
+    const nombre = nicho.nicho || nicho;
+    const subgrupo = nicho.subgrupo_latino ? ` | Subgrupo: ${nicho.subgrupo_latino}` : '';
+    // Extraer palabras clave del tema para que Claude evite variaciones del mismo tema
+    const palabrasClave = nombre.toLowerCase()
+      .replace(/[^a-záéíóúüñ\s]/gi, '')
+      .split(' ')
+      .filter(w => w.length > 3)
+      .slice(0, 5)
+      .join(', ');
+
     await db.guardarMemoria({
       tipo: 'aprendizaje',
       categoria: 'digital',
-      contenido: `[EVITAR] Nicho rechazado manualmente: "${nicho.nicho || nicho}" — tipo ${nicho.tipo || '?'} a $${nicho.precio || '?'}. Motivo: rechazado por Eduardo.`,
-      confianza: 1.0 // máxima confianza — decisión humana
+      contenido: `[EVITAR] "${nombre}" (${nicho.tipo || '?'} $${nicho.precio || '?'})${subgrupo} — Palabras clave del tema: ${palabrasClave}. Evitar CUALQUIER variación de este tema.`,
+      confianza: 1.0
     });
   },
 
