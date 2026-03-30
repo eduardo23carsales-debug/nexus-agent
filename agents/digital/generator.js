@@ -252,6 +252,10 @@ th { color: var(--accent); padding: 12px 16px; text-align: left; font-size: 0.82
 td { padding: 11px 16px; border-top: 1px solid var(--border); color: #C8CEDC; font-size: 0.9em; vertical-align: top; }
 tbody tr:hover { background: var(--surface2); }
 
+/* ── SCROLL HORIZONTAL GLOBAL — tablas, certificados, cualquier contenido ancho ── */
+.tab-panel { overflow-x: auto; }
+.card { overflow-x: auto; }
+
 /* ── TABLE ACTIONS ── */
 .table-actions { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
 .tbl-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted);
