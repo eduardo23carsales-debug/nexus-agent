@@ -7,674 +7,854 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = {
-  theme: {
-    extend: {
-      colors: {
-        neon: '#00ff88',
-        dark: '#0a0a0f',
-        card: '#0f0f1a',
-        border: '#1a1a2e'
-      }
-    }
-  }
+  theme: { extend: { colors: { neon: '#00ff88', dark: '#0a0a0f', card: '#0f0f1a' } } }
 }
 </script>
 <style>
-  body { background: #0a0a0f; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
-  .card { background: #0f0f1a; border: 1px solid #1a1a2e; border-radius: 12px; }
-  .neon { color: #00ff88; }
-  .neon-border { border-color: #00ff88; }
-  .badge-green  { background: rgba(0,255,136,0.15); color: #00ff88; border: 1px solid rgba(0,255,136,0.3); }
-  .badge-yellow { background: rgba(255,200,0,0.15); color: #ffc800; border: 1px solid rgba(255,200,0,0.3); }
-  .badge-red    { background: rgba(255,50,50,0.15);  color: #ff4444; border: 1px solid rgba(255,50,50,0.3); }
-  .badge-gray   { background: rgba(150,150,150,0.15);color: #999;    border: 1px solid rgba(150,150,150,0.3); }
-  .badge-blue   { background: rgba(50,100,255,0.15); color: #6699ff; border: 1px solid rgba(50,100,255,0.3); }
-  .badge-purple { background: rgba(160,80,255,0.15); color: #cc88ff; border: 1px solid rgba(160,80,255,0.3); }
-  .badge-orange { background: rgba(255,140,0,0.15);  color: #ffaa44; border: 1px solid rgba(255,140,0,0.3); }
-  .progress-bg  { background: #1a1a2e; border-radius: 99px; }
-  .progress-bar { background: linear-gradient(90deg, #00ff88, #00cc66); border-radius: 99px; transition: width 0.6s ease; }
-  .progress-warn { background: linear-gradient(90deg, #ffc800, #ff8800); }
-  .progress-danger { background: linear-gradient(90deg, #ff4444, #cc0000); }
-  .pulse { animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-  .table-row:hover { background: rgba(0,255,136,0.04); }
-  .glow { box-shadow: 0 0 20px rgba(0,255,136,0.15); }
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: #0a0a0f; }
-  ::-webkit-scrollbar-thumb { background: #1a1a2e; border-radius: 2px; }
-  .spinner { border: 2px solid #1a1a2e; border-top: 2px solid #00ff88; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  #login-screen { background: #0a0a0f; }
-  .btn-sync { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.25); color: #00ff88; transition: all 0.2s; }
-  .btn-sync:hover { background: rgba(0,255,136,0.18); border-color: rgba(0,255,136,0.5); }
-  .btn-sync:disabled { opacity: 0.4; cursor: not-allowed; }
-  .mini-kpi { background: #0d0d17; border: 1px solid #151525; border-radius: 10px; }
-  .btn-row { font-size: 11px; padding: 2px 7px; border-radius: 5px; border: 1px solid; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
-  .btn-row:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-row-sync  { border-color: rgba(100,150,255,0.4); color: #6699ff; background: rgba(100,150,255,0.08); }
-  .btn-row-sync:hover  { background: rgba(100,150,255,0.18); }
-  .btn-row-pause { border-color: rgba(255,200,0,0.4);  color: #ffc800; background: rgba(255,200,0,0.08); }
-  .btn-row-pause:hover { background: rgba(255,200,0,0.18); }
-  .btn-row-play  { border-color: rgba(0,255,136,0.4);  color: #00ff88; background: rgba(0,255,136,0.08); }
-  .btn-row-play:hover  { background: rgba(0,255,136,0.18); }
-  .btn-row-del   { border-color: rgba(255,50,50,0.4);  color: #ff6666; background: rgba(255,50,50,0.08); }
-  .btn-row-del:hover   { background: rgba(255,50,50,0.18); }
-  .confirm-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; display:flex; align-items:center; justify-content:center; }
-  .confirm-box { background:#0f0f1a; border:1px solid #2a1a1a; border-radius:12px; padding:28px 32px; max-width:380px; width:90%; text-align:center; }
+body { background: #0a0a0f; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; }
+.card { background: #0f0f1a; border: 1px solid #1a1a2e; border-radius: 12px; }
+.neon { color: #00ff88; }
+.badge-green  { background: rgba(0,255,136,0.13); color: #00ff88;  border: 1px solid rgba(0,255,136,0.28); }
+.badge-yellow { background: rgba(255,200,0,0.13);  color: #ffc800; border: 1px solid rgba(255,200,0,0.28); }
+.badge-red    { background: rgba(255,50,50,0.13);   color: #ff4444; border: 1px solid rgba(255,50,50,0.28); }
+.badge-gray   { background: rgba(150,150,150,0.13); color: #888;    border: 1px solid rgba(150,150,150,0.25); }
+.badge-blue   { background: rgba(50,100,255,0.13);  color: #6699ff; border: 1px solid rgba(50,100,255,0.28); }
+.badge-purple { background: rgba(160,80,255,0.13);  color: #cc88ff; border: 1px solid rgba(160,80,255,0.28); }
+.badge-orange { background: rgba(255,140,0,0.13);   color: #ffaa44; border: 1px solid rgba(255,140,0,0.28); }
+.progress-bg  { background: #1a1a2e; border-radius: 99px; }
+.progress-bar { background: linear-gradient(90deg, #00ff88, #00cc66); border-radius: 99px; transition: width 0.6s ease; }
+.prog-warn    { background: linear-gradient(90deg, #ffc800, #ff8800) !important; }
+.prog-danger  { background: linear-gradient(90deg, #ff4444, #cc0000) !important; }
+.pulse { animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.glow { box-shadow: 0 0 22px rgba(0,255,136,0.12); }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: #0a0a0f; }
+::-webkit-scrollbar-thumb { background: #1a1a2e; border-radius: 2px; }
+.spinner { border: 2px solid #1a1a2e; border-top: 2px solid #00ff88; border-radius: 50%;
+           width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Buttons */
+.btn { font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid; cursor: pointer;
+       transition: all 0.15s; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-green  { border-color: rgba(0,255,136,0.35);   color: #00ff88; background: rgba(0,255,136,0.07); }
+.btn-green:not(:disabled):hover  { background: rgba(0,255,136,0.18); }
+.btn-blue   { border-color: rgba(100,150,255,0.35);  color: #6699ff; background: rgba(100,150,255,0.07); }
+.btn-blue:not(:disabled):hover   { background: rgba(100,150,255,0.18); }
+.btn-purple { border-color: rgba(180,100,255,0.35);  color: #cc88ff; background: rgba(180,100,255,0.07); }
+.btn-purple:not(:disabled):hover { background: rgba(180,100,255,0.18); }
+.btn-yellow { border-color: rgba(255,200,0,0.35);    color: #ffc800; background: rgba(255,200,0,0.07); }
+.btn-yellow:not(:disabled):hover { background: rgba(255,200,0,0.18); }
+.btn-red    { border-color: rgba(255,50,50,0.35);    color: #ff6666; background: rgba(255,50,50,0.07); }
+.btn-red:not(:disabled):hover    { background: rgba(255,50,50,0.18); }
+.btn-gray   { border-color: #333; color: #666; background: transparent; }
+.btn-gray:not(:disabled):hover   { color: #aaa; border-color: #444; }
+
+/* Row buttons (smaller) */
+.rbtn { font-size: 11px; padding: 2px 7px; border-radius: 5px; border: 1px solid; cursor: pointer;
+        transition: all 0.15s; white-space: nowrap; }
+.rbtn:disabled { opacity: 0.35; cursor: not-allowed; }
+.rbtn-blue   { border-color: rgba(100,150,255,0.35); color: #6699ff; background: rgba(100,150,255,0.07); }
+.rbtn-blue:not(:disabled):hover { background: rgba(100,150,255,0.2); }
+.rbtn-purple { border-color: rgba(180,100,255,0.35); color: #cc88ff; background: rgba(180,100,255,0.07); }
+.rbtn-purple:not(:disabled):hover { background: rgba(180,100,255,0.2); }
+.rbtn-yellow { border-color: rgba(255,200,0,0.35);   color: #ffc800; background: rgba(255,200,0,0.07); }
+.rbtn-yellow:not(:disabled):hover { background: rgba(255,200,0,0.2); }
+.rbtn-green  { border-color: rgba(0,255,136,0.35);   color: #00ff88; background: rgba(0,255,136,0.07); }
+.rbtn-green:not(:disabled):hover { background: rgba(0,255,136,0.2); }
+.rbtn-red    { border-color: rgba(255,50,50,0.35);   color: #ff6666; background: rgba(255,50,50,0.07); }
+.rbtn-red:not(:disabled):hover { background: rgba(255,50,50,0.2); }
+
+/* Filter tabs */
+.ftab { font-size: 12px; padding: 4px 12px; border-radius: 99px; border: 1px solid #1a1a2e;
+        color: #555; background: #0d0d17; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.ftab:hover { color: #888; border-color: #2a2a3e; }
+.ftab.on       { background: rgba(0,255,136,0.1);   border-color: rgba(0,255,136,0.3);   color: #00ff88; }
+.ftab.on-red   { background: rgba(255,50,50,0.1);   border-color: rgba(255,50,50,0.3);   color: #ff5555; }
+.ftab.on-yel   { background: rgba(255,200,0,0.1);   border-color: rgba(255,200,0,0.3);   color: #ffc800; }
+.ftab.on-pur   { background: rgba(180,80,255,0.1);  border-color: rgba(180,80,255,0.3);  color: #cc88ff; }
+
+/* Table */
+.tr-base:hover  { background: rgba(255,255,255,0.02); }
+.tr-selected    { background: rgba(0,255,136,0.05) !important; }
+.cb { width: 14px; height: 14px; accent-color: #00ff88; cursor: pointer; }
+
+/* Modal */
+.modal-bg  { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100;
+             display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+.modal-box { background: #0f0f1a; border: 1px solid #2a2040; border-radius: 14px;
+             padding: 28px 30px; max-width: 420px; width: 93%; text-align: center; }
+
+/* Bulk bar */
+.bulk-bar { background: rgba(0,255,136,0.05); border: 1px solid rgba(0,255,136,0.18); border-radius: 8px; padding: 8px 14px; }
+
+/* Tooltip */
+.tip { position: relative; display: inline-block; }
+.tip:hover .tip-box { display: block; }
+.tip-box { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+           background: #131326; border: 1px solid #2a2a4e; color: #bbb; font-size: 11px;
+           padding: 6px 10px; border-radius: 7px; z-index: 60; white-space: nowrap;
+           max-width: 220px; white-space: normal; text-align: left; line-height: 1.5; pointer-events: none; }
+
+/* Log fail row */
+.log-fail { border-left: 2px solid rgba(255,60,60,0.35); background: rgba(255,0,0,0.025); }
+
+/* Mini KPI */
+.mini-kpi { background: #0d0d17; border: 1px solid #151525; border-radius: 10px; }
+
+/* Sticky header */
+#hdr { background: rgba(10,10,15,0.92); backdrop-filter: blur(8px); }
 </style>
 </head>
 <body class="min-h-screen text-white">
 
-<!-- ════════════════ CONFIRM MODAL ════════════════ -->
-<div id="confirm-overlay" class="confirm-overlay hidden">
-  <div class="confirm-box">
-    <div id="confirm-icon" class="text-3xl mb-3">⚠️</div>
-    <div id="confirm-msg" class="text-white font-semibold mb-2">¿Confirmar acción?</div>
-    <div id="confirm-sub" class="text-gray-500 text-sm mb-6"></div>
-    <div class="flex gap-3 justify-center">
-      <button onclick="confirmCancel()" class="px-5 py-2 rounded-lg border border-gray-700 text-gray-400 hover:text-white transition text-sm">Cancelar</button>
-      <button id="confirm-ok-btn" class="px-5 py-2 rounded-lg bg-red-900 border border-red-700 text-red-200 hover:bg-red-800 transition text-sm font-semibold">Confirmar</button>
-    </div>
+<!-- ═══════════════ MODAL ═══════════════ -->
+<div id="modal" class="modal-bg hidden">
+  <div class="modal-box">
+    <div id="m-icon" class="text-3xl mb-3"></div>
+    <div id="m-title" class="text-white font-bold mb-1.5 text-base"></div>
+    <div id="m-sub" class="text-gray-500 text-sm mb-6 leading-relaxed"></div>
+    <div id="m-btns" class="flex gap-2 justify-center flex-wrap"></div>
   </div>
 </div>
 
-<!-- ════════════════ LOGIN SCREEN ════════════════ -->
-<div id="login-screen" class="fixed inset-0 flex items-center justify-center z-50">
+<!-- ═══════════════ LOGIN ═══════════════ -->
+<div id="login-screen" class="fixed inset-0 flex items-center justify-content-center z-50" style="background:#0a0a0f; display:flex; align-items:center; justify-content:center;">
   <div class="card p-8 w-full max-w-sm glow">
-    <div class="text-center mb-6">
+    <div class="text-center mb-7">
       <div class="text-3xl font-black neon mb-1">⚡ NEXUS</div>
-      <div class="text-gray-400 text-sm">Dashboard de Administración</div>
+      <div class="text-gray-600 text-sm">Dashboard de Administración</div>
     </div>
     <input id="secret-input" type="password" placeholder="Clave de acceso..."
-      class="w-full bg-dark border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-neon mb-4 focus:neon-border"
+      class="w-full bg-dark border border-gray-800 rounded-lg px-4 py-3 text-white placeholder-gray-700 focus:outline-none focus:border-green-700 mb-4"
       onkeydown="if(event.key==='Enter')doLogin()">
-    <button onclick="doLogin()" class="w-full bg-neon text-black font-bold py-3 rounded-lg hover:bg-green-400 transition">
+    <button onclick="doLogin()" id="login-btn"
+      class="w-full bg-green-500 text-black font-bold py-3 rounded-lg hover:bg-green-400 transition">
       Entrar
     </button>
     <div id="login-error" class="text-red-400 text-sm text-center mt-3 hidden">Clave incorrecta</div>
   </div>
 </div>
 
-<!-- ════════════════ MAIN DASHBOARD ════════════════ -->
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
 <div id="dashboard" class="hidden min-h-screen">
 
   <!-- HEADER -->
-  <header class="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+  <header id="hdr" class="border-b border-gray-900 px-5 py-3 flex items-center justify-between sticky top-0 z-40">
     <div class="flex items-center gap-3">
-      <span class="text-2xl font-black neon">⚡ NEXUS</span>
-      <span class="text-gray-500 text-sm">Agent Dashboard v4.1</span>
+      <span class="text-xl font-black neon">⚡ NEXUS</span>
+      <span class="text-gray-700 text-xs hidden sm:block">Admin v5.0</span>
     </div>
     <div class="flex items-center gap-3">
-      <div id="sistema-status" class="flex items-center gap-2 text-sm">
-        <span id="status-dot" class="w-2 h-2 rounded-full bg-gray-500"></span>
-        <span id="status-text" class="text-gray-500">Conectando...</span>
+      <div class="flex items-center gap-2">
+        <span id="status-dot" class="w-2 h-2 rounded-full bg-gray-700"></span>
+        <span id="status-txt" class="text-gray-600 text-xs">Conectando...</span>
       </div>
-      <div id="last-update" class="text-gray-600 text-xs hidden sm:block"></div>
-      <div id="refresh-spinner" class="spinner hidden"></div>
-      <button onclick="cargarTodo()" class="text-xs text-gray-500 hover:text-neon transition px-3 py-1 border border-gray-800 rounded-md hover:border-green-800">
-        ↻ Refresh
-      </button>
+      <span id="countdown" class="text-gray-700 text-xs font-mono hidden sm:block"></span>
+      <span id="spin-hdr" class="spinner hidden"></span>
+      <button onclick="cargarTodo()" class="btn btn-gray text-xs">↻ Refresh</button>
     </div>
   </header>
 
-  <div class="p-4 sm:p-6 max-w-screen-2xl mx-auto space-y-5">
+  <div class="p-4 sm:p-5 max-w-screen-2xl mx-auto space-y-4">
 
-    <!-- ── FILA 1: TARJETAS PRINCIPALES ── -->
-    <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+    <!-- ROW 1: KPI CARDS -->
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-3">
 
       <!-- Claude API -->
-      <div class="card p-4 sm:p-5 space-y-3">
+      <div class="card p-4 space-y-3">
         <div class="flex items-center justify-between">
-          <div class="text-xs text-gray-500 uppercase tracking-wider">Claude API</div>
-          <div class="text-lg">🤖</div>
+          <div class="text-xs text-gray-600 uppercase tracking-wider">Claude API</div>
+          <span>🤖</span>
         </div>
         <div class="flex items-end gap-2">
-          <span id="claude-restante" class="text-xl sm:text-2xl font-bold text-white">—</span>
-          <span class="text-gray-500 text-xs sm:text-sm mb-0.5">restante hoy</span>
+          <span id="c-rest" class="text-2xl font-bold">—</span>
+          <span class="text-gray-600 text-xs mb-0.5">restante hoy</span>
         </div>
-        <div class="progress-bg h-1.5">
-          <div id="claude-bar" class="progress-bar h-1.5" style="width:0%"></div>
+        <div class="progress-bg h-1.5"><div id="c-bar" class="progress-bar h-1.5" style="width:0%"></div></div>
+        <div class="flex justify-between text-xs text-gray-700">
+          <span>Gastado: <span id="c-gasto" class="text-gray-500">—</span> <span id="c-lim" class="text-gray-700"></span></span>
+          <span id="c-pct" class="text-gray-600">0%</span>
         </div>
-        <div class="flex justify-between text-xs text-gray-600">
-          <span>Gastado: <span id="claude-gasto" class="text-gray-400">—</span> <span id="claude-limite" class="text-gray-700"></span></span>
-          <span id="claude-pct" class="text-gray-400">0%</span>
-        </div>
-        <div class="text-xs text-gray-600">Este mes: <span id="claude-mes" class="text-gray-400">—</span></div>
+        <div class="text-xs text-gray-700">Este mes: <span id="c-mes" class="text-gray-500">—</span></div>
       </div>
 
       <!-- Meta Ads -->
-      <div class="card p-4 sm:p-5 space-y-3">
+      <div class="card p-4 space-y-3">
         <div class="flex items-center justify-between">
-          <div class="text-xs text-gray-500 uppercase tracking-wider">Meta Ads</div>
-          <div class="text-lg">📢</div>
+          <div class="text-xs text-gray-600 uppercase tracking-wider">Meta Ads</div>
+          <span>📢</span>
         </div>
-        <div>
-          <div class="flex items-baseline gap-2">
-            <span id="meta-gasto-card" class="text-xl sm:text-2xl font-bold text-white">—</span>
-            <span class="text-gray-500 text-xs sm:text-sm">gastado</span>
-          </div>
-          <div class="text-xs text-gray-600 mt-1">
-            <span id="meta-activas" class="text-gray-400">—</span> campañas activas
-          </div>
+        <div class="flex items-baseline gap-2">
+          <span id="m-gasto" class="text-2xl font-bold">—</span>
+          <span class="text-gray-600 text-xs">gastado mes</span>
         </div>
-        <div id="meta-error" class="text-xs text-red-400 hidden"></div>
+        <div class="text-xs text-gray-700">
+          <span id="m-activas" class="text-gray-400">—</span> campañas activas
+          <span id="m-fuente" class="ml-1 text-gray-700 text-xs"></span>
+        </div>
+        <div id="m-err" class="text-xs text-red-400 hidden"></div>
       </div>
 
       <!-- Stripe -->
-      <div class="card p-4 sm:p-5 space-y-3">
+      <div class="card p-4 space-y-3">
         <div class="flex items-center justify-between">
-          <div class="text-xs text-gray-500 uppercase tracking-wider">Stripe</div>
-          <div class="text-lg">💳</div>
+          <div class="text-xs text-gray-600 uppercase tracking-wider">Stripe</div>
+          <span>💳</span>
         </div>
-        <div>
-          <div class="flex items-baseline gap-2">
-            <span id="stripe-disponible" class="text-xl sm:text-2xl font-bold text-white">—</span>
-            <span class="text-gray-500 text-xs sm:text-sm">disponible</span>
-          </div>
-          <div class="text-xs text-gray-600 mt-1">
-            Pendiente: <span id="stripe-pendiente" class="text-gray-400">—</span>
-          </div>
+        <div class="flex items-baseline gap-2">
+          <span id="s-disp" class="text-2xl font-bold">—</span>
+          <span class="text-gray-600 text-xs">disponible</span>
         </div>
-        <div id="stripe-error" class="text-xs text-red-400 hidden"></div>
+        <div class="text-xs text-gray-700">Pendiente: <span id="s-pend" class="text-gray-500">—</span></div>
+        <div id="s-err" class="text-xs text-red-400 hidden"></div>
       </div>
 
-      <!-- Revenue Total -->
-      <div class="card p-4 sm:p-5 space-y-3 border-green-900">
+      <!-- Revenue -->
+      <div class="card p-4 space-y-3">
         <div class="flex items-center justify-between">
-          <div class="text-xs text-gray-500 uppercase tracking-wider">Revenue Total</div>
-          <div class="text-lg">💰</div>
+          <div class="text-xs text-gray-600 uppercase tracking-wider">Revenue Total</div>
+          <span>💰</span>
         </div>
-        <div>
-          <div class="flex items-baseline gap-2">
-            <span id="revenue-total" class="text-xl sm:text-2xl font-bold neon">—</span>
-            <span class="text-gray-500 text-xs sm:text-sm">neto</span>
-          </div>
-          <div class="text-xs text-gray-600 mt-1 space-x-2">
-            <span>Digital: <span id="revenue-digital" class="text-gray-400">—</span></span>
-            <span>Leads: <span id="revenue-leads" class="text-gray-400">—</span></span>
-          </div>
+        <div class="flex items-baseline gap-2">
+          <span id="r-total" class="text-2xl font-bold neon">—</span>
+          <span class="text-gray-600 text-xs">neto</span>
+        </div>
+        <div class="text-xs text-gray-700 space-x-2">
+          <span>Digital: <span id="r-dig" class="text-gray-500">—</span></span>
+          <span>Leads: <span id="r-leads" class="text-gray-500">—</span></span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-600">Gastos:</span>
-          <span id="gastos-total" class="text-xs text-red-400 font-medium">—</span>
-          <span id="exp-activos" class="text-xs badge-green px-2 py-0.5 rounded-full font-bold ml-auto">—</span>
+          <span class="text-xs text-gray-700">Gastos:</span>
+          <span id="r-gastos" class="text-xs text-red-400 font-medium">—</span>
+          <span id="r-exp" class="text-xs badge-green px-2 py-0.5 rounded-full font-bold ml-auto">—</span>
         </div>
       </div>
     </div>
 
-    <!-- ── FILA 2: EMAIL FUNNEL KPIs ── -->
-    <div class="card p-4 sm:p-5">
+    <!-- ROW 2: EMAIL FUNNEL -->
+    <div class="card p-4">
       <div class="flex items-center justify-between mb-3">
-        <h2 class="font-bold text-gray-200 text-sm">📧 Email Funnel</h2>
-        <span class="text-xs text-gray-600">emails y conversiones</span>
+        <h2 class="font-semibold text-gray-300 text-sm">📧 Email Funnel</h2>
+        <span class="text-xs text-gray-700">conversiones y abandono</span>
       </div>
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div class="mini-kpi p-3">
           <div class="text-xs text-gray-600 mb-1">Productos entregados</div>
-          <div id="email-entregados" class="text-xl font-bold neon">—</div>
+          <div id="e-ent" class="text-xl font-bold neon">—</div>
           <div class="text-xs text-gray-700 mt-0.5">vía email</div>
         </div>
         <div class="mini-kpi p-3">
-          <div class="text-xs text-gray-600 mb-1">Email abandono #1</div>
-          <div id="email-abandono1" class="text-xl font-bold text-yellow-400">—</div>
+          <div class="text-xs text-gray-600 mb-1">Abandono #1</div>
+          <div id="e-ab1" class="text-xl font-bold text-yellow-400">—</div>
           <div class="text-xs text-gray-700 mt-0.5">enviados (2h)</div>
         </div>
         <div class="mini-kpi p-3">
-          <div class="text-xs text-gray-600 mb-1">Email abandono #2</div>
-          <div id="email-abandono2" class="text-xl font-bold text-orange-400">—</div>
+          <div class="text-xs text-gray-600 mb-1">Abandono #2</div>
+          <div id="e-ab2" class="text-xl font-bold text-orange-400">—</div>
           <div class="text-xs text-gray-700 mt-0.5">enviados (24h)</div>
         </div>
         <div class="mini-kpi p-3">
           <div class="text-xs text-gray-600 mb-1">Total clientes</div>
-          <div id="email-clientes" class="text-xl font-bold text-blue-400">—</div>
+          <div id="e-cli" class="text-xl font-bold text-blue-400">—</div>
           <div class="text-xs text-gray-700 mt-0.5">en base de datos</div>
         </div>
       </div>
     </div>
 
-    <!-- ── FILA 3: CAMPAÑAS ── -->
-    <div class="card p-4 sm:p-5">
-      <div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <div class="flex items-center gap-3">
-          <h2 class="font-bold text-gray-200">📊 Campañas — Performance Live</h2>
-          <span id="campanias-count" class="text-xs text-gray-600"></span>
+    <!-- ROW 3: CAMPAÑAS -->
+    <div class="card p-4">
+
+      <!-- Header + acciones globales -->
+      <div class="flex items-start justify-between gap-3 mb-3 flex-wrap">
+        <div>
+          <h2 class="font-semibold text-gray-200">📊 Campañas — Performance</h2>
+          <div id="camp-stats" class="text-xs mt-1 hidden flex gap-2 flex-wrap"></div>
         </div>
-        <button id="btn-sync-meta" onclick="sincronizarMeta()" class="btn-sync text-xs px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5">
-          <span id="sync-icon">⟳</span> Sincronizar Meta
-        </button>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="sincronizarMeta()" id="btn-sync-meta" class="btn btn-green">
+            <span id="sync-icon-meta">⟳</span> Sincronizar Meta
+          </button>
+          <button onclick="limpiarMuertas()" id="btn-limpiar" class="btn btn-red">
+            🗑 Limpiar Muertas
+          </button>
+        </div>
       </div>
-      <div id="campanias-empty" class="text-center py-10 text-gray-600 hidden">
-        <div class="text-3xl mb-2">📭</div>
-        <div>No hay campañas activas todavía</div>
-        <div class="text-xs mt-1">Las campañas aparecen aquí cuando publicas un producto</div>
+
+      <!-- Filter tabs -->
+      <div class="flex gap-1.5 flex-wrap mb-3" id="filter-tabs">
+        <button onclick="setFiltro('all')"     class="ftab on"  data-f="all">Todas <span id="ft-all"     class="text-gray-700 text-xs"></span></button>
+        <button onclick="setFiltro('activo')"  class="ftab"     data-f="activo">Activas <span id="ft-activo"  class="text-gray-700 text-xs"></span></button>
+        <button onclick="setFiltro('pausado')" class="ftab"     data-f="pausado">Pausadas <span id="ft-pausado" class="text-gray-700 text-xs"></span></button>
+        <button onclick="setFiltro('muerto')"  class="ftab"     data-f="muerto">Muertas <span id="ft-muerto"  class="text-gray-700 text-xs"></span></button>
+        <button onclick="setFiltro('huerfana')" class="ftab"    data-f="huerfana">Huérfanas <span id="ft-huerfana" class="text-gray-700 text-xs"></span></button>
       </div>
-      <div id="campanias-loading" class="text-center py-8 text-gray-600">
+
+      <!-- Bulk action bar -->
+      <div id="bulk-bar" class="bulk-bar flex items-center justify-between gap-3 mb-3 hidden">
+        <span class="text-sm text-gray-300"><span id="bulk-count">0</span> seleccionadas</span>
+        <div class="flex gap-2">
+          <button onclick="deselectAll()" class="btn btn-gray text-xs">Deseleccionar</button>
+          <button onclick="borrarSeleccionadas()" class="btn btn-red text-xs">🗑 Borrar BD</button>
+        </div>
+      </div>
+
+      <!-- Loading / empty / table -->
+      <div id="camp-loading" class="text-center py-10 text-gray-600">
         <div class="spinner mx-auto mb-2"></div>
         <div class="text-sm">Cargando campañas...</div>
       </div>
-      <div id="campanias-table" class="hidden overflow-x-auto">
-        <table class="w-full text-sm">
+      <div id="camp-empty" class="text-center py-12 text-gray-700 hidden">
+        <div class="text-3xl mb-2">📭</div>
+        <div class="font-medium">Sin campañas en esta categoría</div>
+        <div class="text-xs mt-1 text-gray-800">Cambia el filtro o publica un nuevo producto</div>
+      </div>
+      <div id="camp-wrap" class="hidden overflow-x-auto">
+        <table class="w-full text-sm" style="min-width:960px">
           <thead>
-            <tr class="text-left text-gray-600 border-b border-gray-800">
-              <th class="pb-3 pr-3 font-medium">#</th>
-              <th class="pb-3 pr-3 font-medium">Producto</th>
-              <th class="pb-3 pr-3 font-medium">Formato</th>
-              <th class="pb-3 pr-3 font-medium">Estado</th>
-              <th class="pb-3 pr-3 font-medium text-right">ROAS</th>
-              <th class="pb-3 pr-3 font-medium text-right">Gasto</th>
-              <th class="pb-3 pr-3 font-medium text-right">Revenue</th>
-              <th class="pb-3 pr-3 font-medium text-right">Ventas</th>
-              <th class="pb-3 pr-3 font-medium text-right">Impr.</th>
-              <th class="pb-3 pr-3 font-medium text-right">Clicks</th>
-              <th class="pb-3 pr-3 font-medium text-right">CTR</th>
-              <th class="pb-3 pr-3 font-medium text-right">CPC</th>
-              <th class="pb-3 font-medium text-right">Acciones</th>
+            <tr class="text-left text-gray-700 border-b border-gray-900 text-xs">
+              <th class="pb-2 pr-2 w-6"><input type="checkbox" class="cb" onchange="toggleSelectAll(this)" title="Seleccionar todo"></th>
+              <th class="pb-2 pr-3 w-6">#</th>
+              <th class="pb-2 pr-4">Campaña</th>
+              <th class="pb-2 pr-3 text-center w-10">Meta</th>
+              <th class="pb-2 pr-3">Estado</th>
+              <th class="pb-2 pr-3 text-right">ROAS</th>
+              <th class="pb-2 pr-3 text-right">Gasto</th>
+              <th class="pb-2 pr-3 text-right">Revenue</th>
+              <th class="pb-2 pr-3 text-right">Ventas</th>
+              <th class="pb-2 pr-3 text-right">CTR</th>
+              <th class="pb-2 pr-3 text-right">CPA</th>
+              <th class="pb-2 pr-3 text-right">Días</th>
+              <th class="pb-2 text-right">Acciones</th>
             </tr>
           </thead>
-          <tbody id="campanias-tbody"></tbody>
+          <tbody id="camp-tbody"></tbody>
         </table>
       </div>
     </div>
 
-    <!-- ── FILA 4: PRODUCTOS + LOGS ── -->
+    <!-- ROW 4: PRODUCTOS + LOGS -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
 
-      <!-- Productos Ranking -->
-      <div class="card p-4 sm:p-5">
+      <!-- Productos -->
+      <div class="card p-4">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="font-bold text-gray-200">🚀 Productos — Ranking por Revenue</h2>
-          <span id="productos-count" class="text-xs text-gray-600"></span>
+          <h2 class="font-semibold text-gray-200">🚀 Productos — Ranking por Revenue</h2>
+          <span id="prod-count" class="text-xs text-gray-600"></span>
         </div>
-        <div id="productos-loading" class="text-center py-8 text-gray-600">
-          <div class="spinner mx-auto mb-2"></div>
-          <div class="text-sm">Cargando productos...</div>
+        <div id="prod-loading" class="text-center py-8 text-gray-700">
+          <div class="spinner mx-auto mb-2"></div><div class="text-sm">Cargando...</div>
         </div>
-        <div id="productos-empty" class="text-center py-10 text-gray-600 hidden">
-          <div class="text-3xl mb-2">📦</div>
-          <div>Sin productos todavía</div>
+        <div id="prod-empty" class="text-center py-10 text-gray-700 hidden">
+          <div class="text-3xl mb-2">📦</div><div>Sin productos todavía</div>
         </div>
-        <div id="productos-list" class="hidden space-y-2 max-h-96 overflow-y-auto pr-1"></div>
+        <div id="prod-list" class="hidden space-y-1.5 max-h-96 overflow-y-auto pr-1"></div>
       </div>
 
-      <!-- Activity Log -->
-      <div class="card p-4 sm:p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="font-bold text-gray-200">📋 Actividad Reciente</h2>
-          <span class="text-xs text-gray-600">últimas 30 acciones</span>
+      <!-- Logs -->
+      <div class="card p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-semibold text-gray-200">📋 Actividad del Sistema</h2>
+          <div class="flex gap-1.5">
+            <button onclick="setFiltroLogs('all')"   class="ftab on text-xs"  data-lt="all">Todas</button>
+            <button onclick="setFiltroLogs('error')" class="ftab text-xs"     data-lt="error">Solo errores</button>
+          </div>
         </div>
-        <div id="logs-loading" class="text-center py-8 text-gray-600">
-          <div class="spinner mx-auto mb-2"></div>
-          <div class="text-sm">Cargando logs...</div>
+        <div id="logs-loading" class="text-center py-8 text-gray-700">
+          <div class="spinner mx-auto mb-2"></div><div class="text-sm">Cargando...</div>
         </div>
-        <div id="logs-list" class="hidden space-y-1 max-h-96 overflow-y-auto pr-1"></div>
+        <div id="logs-list" class="hidden space-y-0.5 max-h-96 overflow-y-auto pr-1"></div>
       </div>
     </div>
 
   </div>
 
-  <!-- Footer -->
-  <footer class="text-center py-4 text-gray-700 text-xs border-t border-gray-900">
-    NEXUS AGENT v4.1 — Auto-refresh cada 30s
+  <footer class="text-center py-4 text-gray-800 text-xs border-t border-gray-900 mt-2">
+    NEXUS AGENT v5.0 — Auto-refresh cada 30s
   </footer>
 </div>
 
 <script>
-// ════════════════════════════════════
+// ═══════════════════════════════════════
 // CONFIG
-// ════════════════════════════════════
-let SECRET = '';
-const REFRESH_INTERVAL = 30000;
-let refreshTimer = null;
+// ═══════════════════════════════════════
+let SECRET = sessionStorage.getItem('nx_s') || '';
+let refreshTimer  = null;
+let countdownInt  = null;
+let countdownSec  = 30;
 
-const urlParams = new URLSearchParams(window.location.search);
-const urlSecret = urlParams.get('secret');
-if (urlSecret) {
-  SECRET = urlSecret;
+// Data cache
+let campanias    = [];
+let filtroEstado = 'all';
+let metaVerify   = {};  // { [camp_uuid]: { existe, estado_meta } }
+let logsData     = [];
+let filtroLogs   = 'all';
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function H() { return { 'X-Dashboard-Secret': SECRET }; }
+
+async function api(url, opts = {}) {
+  const r = await fetch(url, { ...opts, headers: { 'X-Dashboard-Secret': SECRET, ...(opts.headers || {}) } });
+  if (r.status === 401) {
+    SECRET = '';
+    sessionStorage.removeItem('nx_s');
+    location.reload();
+    throw new Error('No autorizado');
+  }
+  return r;
+}
+
+function fmt$(n)  { return (n == null || n === '') ? '—' : '$' + parseFloat(n).toFixed(2); }
+function fmtN(n)  { return n > 0 ? parseInt(n).toLocaleString('es') : '—'; }
+function esc(s)   { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+function diasDesde(fechaStr) {
+  if (!fechaStr) return null;
+  return Math.max(0, Math.floor((Date.now() - new Date(fechaStr).getTime()) / 86400000));
+}
+
+// ═══════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════
+let _mResolve = null;
+
+function showModal({ icon, title, sub, btns }) {
+  return new Promise(resolve => {
+    _mResolve = resolve;
+    document.getElementById('m-icon').textContent  = icon;
+    document.getElementById('m-title').textContent = title;
+    document.getElementById('m-sub').textContent   = sub || '';
+    document.getElementById('m-btns').innerHTML = btns.map(b =>
+      `<button class="btn ${b.cls || 'btn-gray'} text-sm px-5 py-2 rounded-lg"
+        onclick="resolveModal(${JSON.stringify(b.val)})">${b.label}</button>`
+    ).join('');
+    document.getElementById('modal').classList.remove('hidden');
+  });
+}
+
+function resolveModal(val) {
+  document.getElementById('modal').classList.add('hidden');
+  if (_mResolve) { _mResolve(val); _mResolve = null; }
+}
+
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) resolveModal(null);
+});
+
+// ═══════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════
+if (SECRET) {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
   cargarTodo();
   iniciarAutoRefresh();
 }
 
-function doLogin() {
+async function doLogin() {
   const input = document.getElementById('secret-input').value.trim();
   if (!input) return;
-  SECRET = input;
-  fetch(`/api/estado?secret=${SECRET}`)
-    .then(r => {
-      if (r.status === 401) {
-        document.getElementById('login-error').classList.remove('hidden');
-        SECRET = '';
-      } else {
-        history.replaceState(null, '', `?secret=${SECRET}`);
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('dashboard').classList.remove('hidden');
-        cargarTodo();
-        iniciarAutoRefresh();
-      }
-    })
-    .catch(() => {
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true;
+  btn.textContent = 'Verificando...';
+  document.getElementById('login-error').classList.add('hidden');
+  try {
+    const r = await fetch('/api/estado', { headers: { 'X-Dashboard-Secret': input } });
+    if (r.status === 401) {
       document.getElementById('login-error').classList.remove('hidden');
-    });
+    } else if (r.ok) {
+      SECRET = input;
+      sessionStorage.setItem('nx_s', SECRET);
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      cargarTodo();
+      iniciarAutoRefresh();
+      return;
+    } else {
+      document.getElementById('login-error').classList.remove('hidden');
+    }
+  } catch(e) {
+    document.getElementById('login-error').classList.remove('hidden');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Entrar';
 }
 
-// ════════════════════════════════════
-// AUTO REFRESH
-// ════════════════════════════════════
+// ═══════════════════════════════════════
+// AUTO REFRESH + COUNTDOWN
+// ═══════════════════════════════════════
 function iniciarAutoRefresh() {
   clearInterval(refreshTimer);
-  refreshTimer = setInterval(cargarTodo, REFRESH_INTERVAL);
+  clearInterval(countdownInt);
+  countdownSec = 30;
+  refreshTimer = setInterval(cargarTodo, 30000);
+  countdownInt = setInterval(() => {
+    countdownSec = Math.max(0, countdownSec - 1);
+    if (countdownSec <= 0) countdownSec = 30;
+    const el = document.getElementById('countdown');
+    if (el) el.textContent = `↻ ${countdownSec}s`;
+    document.getElementById('countdown').classList.remove('hidden');
+  }, 1000);
 }
 
-// ════════════════════════════════════
+// ═══════════════════════════════════════
 // CARGA PRINCIPAL
-// ════════════════════════════════════
+// ═══════════════════════════════════════
 async function cargarTodo() {
-  document.getElementById('refresh-spinner').classList.remove('hidden');
+  document.getElementById('spin-hdr').classList.remove('hidden');
+  countdownSec = 30;
   try {
-    await Promise.all([
-      cargarEstado(),
-      cargarCampanias(),
-      cargarEmails(),
-      cargarProductos(),
-      cargarLogs()
-    ]);
+    await Promise.all([ cargarEstado(), cargarCampanias(), cargarEmails(), cargarProductos(), cargarLogs() ]);
   } finally {
-    document.getElementById('refresh-spinner').classList.add('hidden');
+    document.getElementById('spin-hdr').classList.add('hidden');
   }
 }
 
-// ── Estado general ───────────────────────────────────────────
+// ═══════════════════════════════════════
+// ESTADO GENERAL
+// ═══════════════════════════════════════
 async function cargarEstado() {
   try {
-    const r = await fetch(`/api/estado?secret=${SECRET}`);
-    if (!r.ok) throw new Error('Error ' + r.status);
+    const r = await api('/api/estado');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
 
+    const now = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('status-dot').className = 'w-2 h-2 rounded-full bg-green-400 pulse';
-    document.getElementById('status-text').textContent = 'Online';
-    document.getElementById('status-text').className = 'text-green-400 text-sm';
-    document.getElementById('last-update').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es');
-    document.getElementById('last-update').classList.remove('hidden');
+    document.getElementById('status-txt').textContent = `Online · ${now}`;
+    document.getElementById('status-txt').className = 'text-green-500 text-xs';
 
-    // Claude API
+    // Claude
     const c = d.claude;
-    document.getElementById('claude-restante').textContent = `$${c.restante_hoy}`;
-    document.getElementById('claude-gasto').textContent = `$${c.gasto_hoy}`;
-    document.getElementById('claude-limite').textContent = `/ $${c.limite}`;
-    document.getElementById('claude-pct').textContent = `${c.porcentaje}%`;
-    document.getElementById('claude-mes').textContent = `$${c.gasto_mes}`;
-    const bar = document.getElementById('claude-bar');
-    bar.style.width = `${c.porcentaje}%`;
-    bar.className = 'progress-bar h-1.5';
-    if (c.porcentaje >= 90) bar.classList.add('progress-danger');
-    else if (c.porcentaje >= 70) bar.classList.add('progress-warn');
+    document.getElementById('c-rest').textContent  = fmt$(c.restante_hoy);
+    document.getElementById('c-gasto').textContent = fmt$(c.gasto_hoy);
+    document.getElementById('c-lim').textContent   = `/ ${fmt$(c.limite)}`;
+    document.getElementById('c-pct').textContent   = c.porcentaje + '%';
+    document.getElementById('c-mes').textContent   = fmt$(c.gasto_mes);
+    const bar = document.getElementById('c-bar');
+    bar.style.width = c.porcentaje + '%';
+    bar.className = 'progress-bar h-1.5' + (c.porcentaje >= 90 ? ' prog-danger' : c.porcentaje >= 70 ? ' prog-warn' : '');
 
-    // Meta Ads
+    // Meta
     const m = d.meta;
     if (m.error) {
-      document.getElementById('meta-gasto-card').textContent = 'Error';
-      document.getElementById('meta-error').textContent = m.error.slice(0, 60);
-      document.getElementById('meta-error').classList.remove('hidden');
+      document.getElementById('m-gasto').textContent = 'Error';
+      document.getElementById('m-err').textContent = m.error.slice(0, 80);
+      document.getElementById('m-err').classList.remove('hidden');
     } else {
-      document.getElementById('meta-gasto-card').textContent = `$${m.gasto_mes ?? '0.00'}`;
-      document.getElementById('meta-activas').textContent = m.campanas_activas ?? 0;
-      document.getElementById('meta-error').classList.add('hidden');
+      document.getElementById('m-gasto').textContent   = fmt$(m.gasto_mes ?? 0);
+      document.getElementById('m-activas').textContent = m.campanas_activas ?? 0;
+      document.getElementById('m-fuente').textContent  = m.fuente === 'meta_api' ? '(live)' : '(BD cache)';
+      document.getElementById('m-err').classList.add('hidden');
     }
 
     // Stripe
     const s = d.stripe;
     if (s.error) {
-      document.getElementById('stripe-disponible').textContent = 'Error';
-      document.getElementById('stripe-error').textContent = s.error.slice(0, 60);
-      document.getElementById('stripe-error').classList.remove('hidden');
+      document.getElementById('s-disp').textContent = 'Error';
+      document.getElementById('s-err').textContent  = s.error.slice(0, 80);
+      document.getElementById('s-err').classList.remove('hidden');
     } else {
-      document.getElementById('stripe-disponible').textContent = s.disponible != null ? `$${s.disponible}` : '—';
-      document.getElementById('stripe-pendiente').textContent = s.pendiente != null ? `$${s.pendiente}` : '—';
-      document.getElementById('stripe-error').classList.add('hidden');
+      document.getElementById('s-disp').textContent = s.disponible != null ? fmt$(s.disponible) : '—';
+      document.getElementById('s-pend').textContent = s.pendiente  != null ? fmt$(s.pendiente)  : '—';
+      document.getElementById('s-err').classList.add('hidden');
     }
 
     // Revenue
     const sis = d.sistema;
-    document.getElementById('revenue-total').textContent = `$${sis.revenue_total}`;
-    document.getElementById('revenue-digital').textContent = `$${sis.revenue_digital}`;
-    document.getElementById('revenue-leads').textContent = `$${sis.revenue_leads}`;
-    document.getElementById('gastos-total').textContent = `$${sis.gastos_totales}`;
-    document.getElementById('exp-activos').textContent = `${sis.experimentos_activos} activos`;
+    document.getElementById('r-total').textContent  = fmt$(sis.revenue_total);
+    document.getElementById('r-dig').textContent    = fmt$(sis.revenue_digital);
+    document.getElementById('r-leads').textContent  = fmt$(sis.revenue_leads);
+    document.getElementById('r-gastos').textContent = fmt$(sis.gastos_totales);
+    document.getElementById('r-exp').textContent    = sis.experimentos_activos + ' activos';
 
-  } catch (e) {
+  } catch(e) {
     document.getElementById('status-dot').className = 'w-2 h-2 rounded-full bg-red-500';
-    document.getElementById('status-text').textContent = 'Sin conexión';
-    document.getElementById('status-text').className = 'text-red-400 text-sm';
-    console.error('Error cargando estado:', e);
+    document.getElementById('status-txt').textContent = 'Sin conexión';
+    document.getElementById('status-txt').className = 'text-red-400 text-xs';
+    console.error('estado:', e);
   }
 }
 
-// ── Email Funnel ─────────────────────────────────────────────
+// ═══════════════════════════════════════
+// EMAILS
+// ═══════════════════════════════════════
 async function cargarEmails() {
   try {
-    const r = await fetch(`/api/emails?secret=${SECRET}`);
+    const r = await api('/api/emails');
     if (!r.ok) return;
     const d = await r.json();
-    document.getElementById('email-entregados').textContent = d.productos_entregados ?? 0;
-    document.getElementById('email-abandono1').textContent = d.abandono_email1 ?? 0;
-    document.getElementById('email-abandono2').textContent = d.abandono_email2 ?? 0;
-    document.getElementById('email-clientes').textContent = d.total_clientes ?? 0;
-  } catch (e) {
-    console.error('Error cargando emails:', e);
+    document.getElementById('e-ent').textContent = d.productos_entregados ?? 0;
+    document.getElementById('e-ab1').textContent = d.abandono_email1      ?? 0;
+    document.getElementById('e-ab2').textContent = d.abandono_email2      ?? 0;
+    document.getElementById('e-cli').textContent = d.total_clientes        ?? 0;
+  } catch(e) { console.error('emails:', e); }
+}
+
+// ═══════════════════════════════════════
+// CAMPAÑAS — CARGA + RENDER
+// ═══════════════════════════════════════
+async function cargarCampanias() {
+  try {
+    const r = await api('/api/campanias');
+    const data = await r.json();
+    campanias = Array.isArray(data) ? data : [];
+    document.getElementById('camp-loading').classList.add('hidden');
+    actualizarTabs();
+    renderCampanias();
+  } catch(e) {
+    document.getElementById('camp-loading').classList.add('hidden');
+    console.error('campañas:', e);
   }
 }
 
-// ── Sincronizar Meta Live ────────────────────────────────────
+function actualizarTabs() {
+  const cnt = { all: campanias.length, activo: 0, pausado: 0, muerto: 0, huerfana: 0 };
+  campanias.forEach(c => {
+    const e = (c.estado || '').toLowerCase();
+    if (e === 'activo' || e === 'escalando') cnt.activo++;
+    if (e === 'pausado' || e === 'pausada')  cnt.pausado++;
+    if (e === 'muerto'  || e === 'muerta')   cnt.muerto++;
+    if (!c.campaign_id_externo)               cnt.huerfana++;
+  });
+
+  Object.entries(cnt).forEach(([k, n]) => {
+    const el = document.getElementById('ft-' + k);
+    if (el) el.textContent = n > 0 ? `(${n})` : '';
+  });
+
+  // Stats bar
+  const stats = document.getElementById('camp-stats');
+  const parts = [
+    cnt.activo   ? `<span class="text-green-500 font-medium">${cnt.activo} activas</span>`  : '',
+    cnt.pausado  ? `<span class="text-yellow-500">${cnt.pausado} pausadas</span>`            : '',
+    cnt.muerto   ? `<span class="text-red-500">${cnt.muerto} muertas</span>`                 : '',
+    cnt.huerfana ? `<span class="text-purple-400">${cnt.huerfana} huérfanas</span>`          : ''
+  ].filter(Boolean);
+  if (parts.length) {
+    stats.innerHTML = parts.join('<span class="text-gray-800 mx-1">·</span>');
+    stats.classList.remove('hidden');
+  }
+}
+
+function setFiltro(f) {
+  filtroEstado = f;
+  document.querySelectorAll('#filter-tabs .ftab').forEach(btn => {
+    const on = btn.dataset.f === f;
+    btn.className = 'ftab' + (on
+      ? (f === 'muerto' ? ' on-red' : f === 'pausado' ? ' on-yel' : f === 'huerfana' ? ' on-pur' : ' on')
+      : '');
+  });
+  renderCampanias();
+}
+
+function renderCampanias() {
+  let data = campanias;
+
+  if (filtroEstado === 'activo') {
+    data = data.filter(c => c.estado === 'activo' || c.estado === 'escalando');
+  } else if (filtroEstado === 'pausado') {
+    data = data.filter(c => c.estado === 'pausado' || c.estado === 'pausada');
+  } else if (filtroEstado === 'muerto') {
+    data = data.filter(c => c.estado === 'muerto' || c.estado === 'muerta');
+  } else if (filtroEstado === 'huerfana') {
+    data = data.filter(c => !c.campaign_id_externo);
+  }
+
+  data = [...data].sort((a, b) => (parseFloat(b.roas) || 0) - (parseFloat(a.roas) || 0));
+
+  if (!data.length) {
+    document.getElementById('camp-empty').classList.remove('hidden');
+    document.getElementById('camp-wrap').classList.add('hidden');
+    return;
+  }
+
+  document.getElementById('camp-empty').classList.add('hidden');
+  document.getElementById('camp-wrap').classList.remove('hidden');
+  document.getElementById('camp-tbody').innerHTML = data.map((c, i) => campRow(c, i)).join('');
+  updateBulkBar();
+}
+
+function campRow(c, i) {
+  const roas   = parseFloat(c.roas   || 0);
+  const gasto  = parseFloat(c.gasto_total || 0);
+  const rev    = parseFloat(c.revenue_generado || 0);
+  const ventas = parseInt(c.conversiones || 0);
+  const ctr    = parseFloat(c.ctr || 0);
+  const cpa    = parseFloat(c.cpa || 0);
+  const dias   = diasDesde(c.fecha_inicio);
+  const estado = (c.estado || '').toLowerCase();
+
+  const roasBadge  = roas >= 2 ? 'badge-green' : roas >= 1 ? 'badge-yellow' : roas > 0 ? 'badge-red' : 'badge-gray';
+  const roasTxt    = roas > 0 ? roas.toFixed(2) + 'x' : '—';
+  const estBadge   = { activo:'badge-green', escalando:'badge-blue', pausado:'badge-yellow', pausada:'badge-yellow', muerto:'badge-red', muerta:'badge-red' }[estado] || 'badge-gray';
+  const estaActiva = estado === 'activo' || estado === 'escalando';
+  const estaPausada = estado === 'pausado' || estado === 'pausada';
+  const estaMuerta  = estado === 'muerto'  || estado === 'muerta';
+
+  // Indicador Meta
+  const v = metaVerify[c.id];
+  let metaIcon, metaTip;
+  if (!c.campaign_id_externo) {
+    metaIcon = '👻';
+    metaTip  = 'Sin ID en Meta — campaña huérfana (fallo al crear o entrada manual)';
+  } else if (v) {
+    metaIcon = v.existe ? '<span style="color:#00ff88;font-weight:bold">✓</span>' : '<span style="color:#ff5555;font-weight:bold">✗</span>';
+    metaTip  = v.existe
+      ? `Verificada en Meta · ${v.estado_meta || 'estado desconocido'}`
+      : 'No encontrada en Meta — puede haber sido eliminada manualmente';
+  } else {
+    metaIcon = '<span style="color:#444">⚡</span>';
+    metaTip  = `Tiene ID en Meta: ...${c.campaign_id_externo.slice(-8)} · Haz clic en 🔍 para verificar`;
+  }
+
+  // Formato
+  const fmt = (c.formato || c.tipo_formato || '').toLowerCase();
+  const fmtBadge = fmt === 'stories'
+    ? '<span class="badge-purple text-xs px-1.5 py-0.5 rounded-full">📱</span>'
+    : fmt === 'feed'
+    ? '<span class="badge-blue text-xs px-1.5 py-0.5 rounded-full">🖼</span>'
+    : '';
+
+  const syncTs = c.fecha_ultimo_update
+    ? new Date(c.fecha_ultimo_update).toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' })
+    : null;
+
+  const presupTxt = c.presupuesto_diario
+    ? `<span class="text-gray-700 text-xs">${fmt$(c.presupuesto_diario / 100)}/d</span>`
+    : '';
+
+  const razon = c.razon_decision ? esc(c.razon_decision.slice(0, 90)) : '';
+  const nombreDisp = esc(c.nombre_producto || c.nombre || 'Sin nombre');
+  const idSafe = esc(c.id);
+  const nombreJs = (c.nombre_producto || c.nombre || 'Sin nombre').replace(/\\/g,'').replace(/'/g,'');
+  const tieneId = !!c.campaign_id_externo;
+  const metaIdSafe = esc(c.campaign_id_externo || '');
+
+  return `
+<tr id="tr-${idSafe}" class="tr-base border-b border-gray-900/50">
+  <td class="py-2.5 pr-2">
+    <input type="checkbox" class="cb camp-cb" data-id="${idSafe}" onchange="updateBulkBar()">
+  </td>
+  <td class="py-2.5 pr-3 text-gray-600 text-xs">${i + 1}</td>
+  <td class="py-2.5 pr-4 max-w-xs">
+    <div class="flex items-center gap-1.5 flex-wrap">
+      <span class="text-sm font-medium text-white">${nombreDisp}</span>
+      ${fmtBadge}
+      ${presupTxt}
+    </div>
+    <div class="text-xs text-gray-600 mt-0.5">
+      ${esc(c.nicho || '')}${syncTs ? ` · sync ${syncTs}` : ''}
+    </div>
+    ${razon ? `<div class="text-xs text-gray-700 italic mt-0.5 max-w-xs truncate" title="${razon}">${razon}</div>` : ''}
+  </td>
+  <td class="py-2.5 pr-3 text-center">
+    <div class="tip">${metaIcon}<div class="tip-box">${metaTip}</div></div>
+  </td>
+  <td class="py-2.5 pr-3">
+    <span class="${estBadge} text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap">${c.estado || '—'}</span>
+  </td>
+  <td class="py-2.5 pr-3 text-right">
+    <span class="${roasBadge} text-xs px-2 py-0.5 rounded-full font-bold">${roasTxt}</span>
+  </td>
+  <td class="py-2.5 pr-3 text-right text-gray-300 text-sm">${gasto > 0 ? fmt$(gasto) : '—'}</td>
+  <td class="py-2.5 pr-3 text-right text-sm ${rev > 0 ? 'text-green-400 font-medium' : 'text-gray-700'}">${rev > 0 ? fmt$(rev) : '—'}</td>
+  <td class="py-2.5 pr-3 text-right text-sm ${ventas > 0 ? 'text-green-300' : 'text-gray-700'}">${ventas > 0 ? ventas : '—'}</td>
+  <td class="py-2.5 pr-3 text-right text-gray-500 text-xs">${ctr > 0 ? ctr.toFixed(2) + '%' : '—'}</td>
+  <td class="py-2.5 pr-3 text-right text-gray-500 text-xs">${cpa > 0 ? fmt$(cpa) : '—'}</td>
+  <td class="py-2.5 pr-3 text-right text-gray-600 text-xs">${dias !== null ? dias + 'd' : '—'}</td>
+  <td class="py-2.5 text-right">
+    <div class="flex gap-1 justify-end">
+      <button onclick="syncCampana('${idSafe}', this)" class="rbtn rbtn-blue" title="Sync desde Meta">⟳</button>
+      ${tieneId ? `<button onclick="verificarCampana('${idSafe}', this)" class="rbtn rbtn-purple" title="Verificar si existe en Meta">🔍</button>` : ''}
+      ${estaActiva  ? `<button onclick="pausarCampana('${idSafe}', this)"  class="rbtn rbtn-yellow" title="Pausar en Meta">⏸</button>` : ''}
+      ${estaPausada || estaMuerta ? `<button onclick="activarCampana('${idSafe}', this)" class="rbtn rbtn-green" title="Reactivar en Meta">▶</button>` : ''}
+      <button onclick="borrarCampana('${idSafe}', '${nombreJs}', ${tieneId})" class="rbtn rbtn-red" title="Eliminar">✕</button>
+    </div>
+  </td>
+</tr>`;
+}
+
+// ═══════════════════════════════════════
+// SINCRONIZAR META GLOBAL
+// ═══════════════════════════════════════
 async function sincronizarMeta() {
-  const btn = document.getElementById('btn-sync-meta');
-  const icon = document.getElementById('sync-icon');
+  const btn  = document.getElementById('btn-sync-meta');
+  const icon = document.getElementById('sync-icon-meta');
   btn.disabled = true;
-  icon.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:1.5px;"></span>';
+  icon.innerHTML = '<span class="spinner" style="width:11px;height:11px;border-width:1.5px"></span>';
   try {
-    const r = await fetch(`/api/meta-sincronizar?secret=${SECRET}`, { method: 'POST' });
+    const r = await api('/api/meta-sincronizar', { method: 'POST' });
     if (r.ok) {
       icon.textContent = '✓';
-      btn.style.color = '#00ff88';
-      setTimeout(() => {
-        icon.textContent = '⟳';
-        btn.style.color = '';
-        cargarCampanias();
-      }, 1500);
+      setTimeout(() => { icon.textContent = '⟳'; btn.disabled = false; cargarCampanias(); }, 1500);
     } else {
       icon.textContent = '✗';
-      btn.style.color = '#ff4444';
-      setTimeout(() => { icon.textContent = '⟳'; btn.style.color = ''; }, 2000);
+      setTimeout(() => { icon.textContent = '⟳'; btn.disabled = false; }, 2000);
     }
   } catch(e) {
     icon.textContent = '✗';
-    setTimeout(() => { icon.textContent = '⟳'; btn.style.color = ''; }, 2000);
-  } finally {
-    btn.disabled = false;
+    setTimeout(() => { icon.textContent = '⟳'; btn.disabled = false; }, 2000);
   }
 }
 
-// ── Campañas ─────────────────────────────────────────────────
-async function cargarCampanias() {
-  try {
-    const r = await fetch(`/api/campanias?secret=${SECRET}`);
-    const data = await r.json();
-
-    document.getElementById('campanias-loading').classList.add('hidden');
-
-    if (!data.length) {
-      document.getElementById('campanias-empty').classList.remove('hidden');
-      document.getElementById('campanias-table').classList.add('hidden');
-      return;
-    }
-
-    document.getElementById('campanias-empty').classList.add('hidden');
-    document.getElementById('campanias-table').classList.remove('hidden');
-    document.getElementById('campanias-count').textContent = `${data.length} campañas`;
-
-    // Ordenar por ROAS desc
-    data.sort((a, b) => (parseFloat(b.roas) || 0) - (parseFloat(a.roas) || 0));
-
-    const tbody = document.getElementById('campanias-tbody');
-    tbody.innerHTML = data.map((c, i) => {
-      const roas = parseFloat(c.roas || 0);
-      const roasBadge = roas >= 2 ? 'badge-green' : roas >= 1 ? 'badge-yellow' : roas > 0 ? 'badge-red' : 'badge-gray';
-      const roasText = roas > 0 ? `${roas.toFixed(2)}x` : '—';
-      const estadoBadge = {
-        activo: 'badge-green', activa: 'badge-green', escalando: 'badge-blue',
-        pausado: 'badge-yellow', pausada: 'badge-yellow', muerto: 'badge-red', muerta: 'badge-red'
-      }[c.estado] || 'badge-gray';
-
-      const gasto = parseFloat(c.gasto_total || 0);
-      const revenue = parseFloat(c.revenue_generado || c.revenue || 0);
-      const conversiones = parseInt(c.conversiones || 0);
-      const impresiones = parseInt(c.impresiones || 0);
-      const clicks = parseInt(c.clicks || 0);
-      const ctr = parseFloat(c.ctr || 0);
-      const cpc = clicks > 0 ? (gasto / clicks) : 0;
-
-      // Formato badge (feed o stories)
-      const fmt = (c.formato || c.tipo_formato || '').toLowerCase();
-      const formatoBadge = fmt === 'stories'
-        ? '<span class="badge-purple text-xs px-2 py-0.5 rounded-full">📱 Stories</span>'
-        : fmt === 'feed'
-        ? '<span class="badge-blue text-xs px-2 py-0.5 rounded-full">🖼 Feed</span>'
-        : '<span class="text-gray-700 text-xs">—</span>';
-
-      const fechaCorta = c.fecha_inicio
-        ? new Date(c.fecha_inicio).toLocaleDateString('es', { month:'short', day:'numeric' })
-        : '';
-
-      const estaActiva = c.estado === 'activo' || c.estado === 'escalando';
-      const estaPausada = c.estado === 'pausado' || c.estado === 'pausada' || c.estado === 'muerto' || c.estado === 'muerta';
-      const updateTs = c.fecha_ultimo_update
-        ? new Date(c.fecha_ultimo_update).toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' })
-        : null;
-
-      return `
-        <tr id="row-${c.id}" class="table-row border-b border-gray-900">
-          <td class="py-3 pr-3 text-gray-600">${i+1}</td>
-          <td class="py-3 pr-3">
-            <div class="font-medium text-white text-sm">${c.nombre_producto || c.nombre || 'Sin nombre'}</div>
-            <div class="text-xs text-gray-600">${c.nicho || ''} ${fechaCorta ? '· '+fechaCorta : ''}${updateTs ? ' · sync '+updateTs : ''}</div>
-          </td>
-          <td class="py-3 pr-3">${formatoBadge}</td>
-          <td class="py-3 pr-3">
-            <span class="${estadoBadge} text-xs px-2 py-0.5 rounded-full font-medium">${c.estado || '—'}</span>
-          </td>
-          <td class="py-3 pr-3 text-right">
-            <span class="${roasBadge} text-xs px-2 py-0.5 rounded-full font-bold">${roasText}</span>
-          </td>
-          <td class="py-3 pr-3 text-right text-gray-300">$${gasto.toFixed(2)}</td>
-          <td class="py-3 pr-3 text-right ${revenue > 0 ? 'text-green-400 font-medium' : 'text-gray-600'}">$${revenue.toFixed(2)}</td>
-          <td class="py-3 pr-3 text-right ${conversiones > 0 ? 'text-green-300' : 'text-gray-600'}">${conversiones}</td>
-          <td class="py-3 pr-3 text-right text-gray-500">${impresiones > 0 ? impresiones.toLocaleString() : '—'}</td>
-          <td class="py-3 pr-3 text-right text-gray-400">${clicks > 0 ? clicks.toLocaleString() : '—'}</td>
-          <td class="py-3 pr-3 text-right text-gray-500">${ctr > 0 ? ctr.toFixed(2)+'%' : '—'}</td>
-          <td class="py-3 pr-3 text-right text-gray-500">${cpc > 0 ? '$'+cpc.toFixed(2) : '—'}</td>
-          <td class="py-3 text-right">
-            <div class="flex gap-1 justify-end">
-              <button onclick="syncCampana('${c.id}', this)" class="btn-row btn-row-sync" title="Actualizar datos de Meta">⟳</button>
-              ${estaActiva
-                ? `<button onclick="pausarCampana('${c.id}', this)" class="btn-row btn-row-pause" title="Pausar en Meta">⏸</button>`
-                : estaPausada
-                ? `<button onclick="activarCampana('${c.id}', this)" class="btn-row btn-row-play" title="Reactivar en Meta">▶</button>`
-                : ''}
-              <button onclick="borrarCampana('${c.id}', '${(c.nombre_producto || c.nombre || '').replace(/'/g, '')}', this)" class="btn-row btn-row-del" title="Eliminar de la BD">✕</button>
-            </div>
-          </td>
-        </tr>`;
-    }).join('');
-  } catch (e) {
-    console.error('Error cargando campañas:', e);
-  }
-}
-
-// ── Productos ────────────────────────────────────────────────
-async function cargarProductos() {
-  try {
-    const r = await fetch(`/api/productos?secret=${SECRET}`);
-    const data = await r.json();
-
-    document.getElementById('productos-loading').classList.add('hidden');
-
-    if (!data.length) {
-      document.getElementById('productos-empty').classList.remove('hidden');
-      document.getElementById('productos-list').classList.add('hidden');
-      return;
-    }
-
-    document.getElementById('productos-empty').classList.add('hidden');
-    document.getElementById('productos-list').classList.remove('hidden');
-    document.getElementById('productos-count').textContent = `${data.length} productos`;
-
-    const list = document.getElementById('productos-list');
-    list.innerHTML = data.map((p, i) => {
-      const revenue = p.metricas?.revenue || 0;
-      const ventas = p.metricas?.ventas || p.metricas?.conversiones || 0;
-      const estadoBadge = {
-        corriendo: 'badge-green', vivo: 'badge-green', escalando: 'badge-blue',
-        muerto: 'badge-red', pausado: 'badge-yellow'
-      }[p.estado] || 'badge-gray';
-      const tipoBadge = {
-        guia_pdf: '📄', mini_curso: '🎓', prompts: '💬', toolkit: '🛠️', plantilla: '📋'
-      }[p.tipo] || '📦';
-      const rankIcon = i < 3 ? ['🥇','🥈','🥉'][i] : `${i+1}`;
-      const rankColor = i === 0 ? 'text-yellow-400' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-amber-600' : 'text-gray-700';
-      return `
-        <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-900/40 transition group">
-          <span class="${rankColor} font-bold text-sm w-5 text-center">${rankIcon}</span>
-          <span class="text-base">${tipoBadge}</span>
-          <div class="flex-1 min-w-0">
-            <div class="text-sm font-medium text-white truncate">${p.nombre}</div>
-            <div class="flex items-center gap-2 mt-0.5 flex-wrap">
-              <span class="text-xs text-gray-600">${p.nicho || ''}</span>
-              <span class="${estadoBadge} text-xs px-1.5 py-0.5 rounded-full">${p.estado}</span>
-              ${p.precio ? `<span class="text-xs text-gray-700">$${p.precio}</span>` : ''}
-            </div>
-          </div>
-          <div class="text-right">
-            <div class="${revenue > 0 ? 'text-green-400 font-bold' : 'text-gray-600'} text-sm">$${revenue.toFixed(2)}</div>
-            <div class="text-xs text-gray-600">${ventas} ventas</div>
-          </div>
-          ${p.url ? `<a href="${p.url}" target="_blank" class="text-gray-700 hover:text-neon transition text-xs opacity-0 group-hover:opacity-100" title="Ver landing">↗</a>` : ''}
-        </div>`;
-    }).join('');
-  } catch (e) {
-    console.error('Error cargando productos:', e);
-  }
-}
-
-// ════════════════════════════════════
-// ACCIONES DE CAMPAÑA
-// ════════════════════════════════════
-
+// ═══════════════════════════════════════
+// SYNC UNA CAMPAÑA
+// ═══════════════════════════════════════
 async function syncCampana(id, btn) {
-  const original = btn.textContent;
+  const orig = btn.textContent;
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner" style="width:10px;height:10px;border-width:1.5px;vertical-align:middle"></span>';
+  btn.innerHTML = '<span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span>';
   try {
-    const r = await fetch(`/api/campania/${id}/sync?secret=${SECRET}`, { method: 'POST' });
+    const r = await api(`/api/campania/${id}/sync`, { method: 'POST' });
     const d = await r.json();
     if (d.ok) {
       btn.textContent = '✓';
       btn.style.color = '#00ff88';
-      setTimeout(() => { btn.textContent = original; btn.style.color = ''; btn.disabled = false; cargarCampanias(); }, 1200);
-    } else {
-      throw new Error(d.error);
-    }
+      setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.disabled = false; cargarCampanias(); }, 1200);
+    } else throw new Error(d.error);
   } catch(e) {
     btn.textContent = '✗';
-    btn.style.color = '#ff4444';
     btn.title = e.message;
-    setTimeout(() => { btn.textContent = original; btn.style.color = ''; btn.disabled = false; }, 2500);
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
   }
 }
 
+// ═══════════════════════════════════════
+// VERIFICAR EN META
+// ═══════════════════════════════════════
+async function verificarCampana(id, btn) {
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span>';
+  try {
+    const r = await api(`/api/campania/${id}/verificar`, { method: 'POST' });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+
+    metaVerify[id] = { existe: d.existe, estado_meta: d.estado_meta };
+
+    btn.textContent = d.existe ? '✓' : '✗';
+    btn.style.color = d.existe ? '#00ff88' : '#ff5555';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.disabled = false; renderCampanias(); }, 1500);
+  } catch(e) {
+    btn.textContent = '!';
+    btn.title = e.message;
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
+  }
+}
+
+// ═══════════════════════════════════════
+// PAUSAR / ACTIVAR
+// ═══════════════════════════════════════
 async function pausarCampana(id, btn) {
   btn.disabled = true;
   try {
-    const r = await fetch(`/api/campania/${id}/pausar?secret=${SECRET}`, { method: 'POST' });
+    const r = await api(`/api/campania/${id}/pausar`, { method: 'POST' });
     const d = await r.json();
     if (d.ok) cargarCampanias();
     else { btn.disabled = false; alert('Error: ' + d.error); }
@@ -684,96 +864,269 @@ async function pausarCampana(id, btn) {
 async function activarCampana(id, btn) {
   btn.disabled = true;
   try {
-    const r = await fetch(`/api/campania/${id}/activar?secret=${SECRET}`, { method: 'POST' });
+    const r = await api(`/api/campania/${id}/activar`, { method: 'POST' });
     const d = await r.json();
     if (d.ok) cargarCampanias();
     else { btn.disabled = false; alert('Error: ' + d.error); }
   } catch(e) { btn.disabled = false; }
 }
 
-// ── Confirm modal ────────────────────────────────────────────
-let _confirmResolve = null;
+// ═══════════════════════════════════════
+// BORRAR CAMPAÑA (modal con opciones)
+// ═══════════════════════════════════════
+async function borrarCampana(id, nombre, tieneMetaId) {
+  const btns = [
+    { label: 'Cancelar',    val: null,   cls: 'btn-gray'   },
+    { label: 'Solo BD',     val: 'bd',   cls: 'btn-yellow' },
+  ];
+  if (tieneMetaId) {
+    btns.push({ label: 'BD + Meta (archivar)', val: 'meta', cls: 'btn-red' });
+  }
 
-function showConfirm(icon, msg, sub, okLabel = 'Confirmar', okClass = 'bg-red-900 border-red-700 text-red-200') {
-  return new Promise(resolve => {
-    _confirmResolve = resolve;
-    document.getElementById('confirm-icon').textContent = icon;
-    document.getElementById('confirm-msg').textContent = msg;
-    document.getElementById('confirm-sub').textContent = sub;
-    const btn = document.getElementById('confirm-ok-btn');
-    btn.textContent = okLabel;
-    btn.className = `px-5 py-2 rounded-lg border transition text-sm font-semibold ${okClass}`;
-    document.getElementById('confirm-overlay').classList.remove('hidden');
+  const choice = await showModal({
+    icon: '🗑️',
+    title: `Borrar "${nombre}"`,
+    sub: tieneMetaId
+      ? '"Solo BD" quita el registro local. "BD + Meta" archiva la campaña en Meta Ads también.'
+      : 'Esta campaña no tiene ID en Meta. Se borrará solo de la base de datos.',
+    btns
   });
-}
 
-function confirmCancel() {
-  document.getElementById('confirm-overlay').classList.add('hidden');
-  if (_confirmResolve) _confirmResolve(false);
-}
+  if (!choice) return;
 
-document.getElementById('confirm-ok-btn').onclick = () => {
-  document.getElementById('confirm-overlay').classList.add('hidden');
-  if (_confirmResolve) _confirmResolve(true);
-};
+  const endpoint = choice === 'meta' ? `/api/campania/${id}/meta` : `/api/campania/${id}`;
 
-async function borrarCampana(id, nombre, btn) {
-  const ok = await showConfirm('🗑️', `¿Eliminar "${nombre}"?`, 'Se borra solo de la BD. No afecta Meta Ads.', 'Eliminar', 'bg-red-900 border-red-700 text-red-200');
-  if (!ok) return;
-  btn.disabled = true;
   try {
-    const r = await fetch(`/api/campania/${id}?secret=${SECRET}`, { method: 'DELETE' });
+    const r = await api(endpoint, { method: 'DELETE' });
     const d = await r.json();
     if (d.ok) {
-      const row = document.getElementById(`row-${id}`);
+      const row = document.getElementById(`tr-${id}`);
       if (row) row.remove();
+      campanias = campanias.filter(c => c.id !== id);
+      actualizarTabs();
+      updateBulkBar();
     } else {
       alert('Error: ' + d.error);
-      btn.disabled = false;
     }
-  } catch(e) { btn.disabled = false; }
+  } catch(e) { alert('Error: ' + e.message); }
 }
 
-// ── Logs ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════
+// LIMPIAR MUERTAS
+// ═══════════════════════════════════════
+async function limpiarMuertas() {
+  const muertas = campanias.filter(c => c.estado === 'muerto' || c.estado === 'muerta').length;
+
+  if (!muertas) {
+    await showModal({ icon: '✅', title: 'No hay campañas muertas', sub: 'Nada que limpiar.',
+      btns: [{ label: 'OK', val: null, cls: 'btn-gray' }] });
+    return;
+  }
+
+  const ok = await showModal({
+    icon: '🗑️',
+    title: `Limpiar ${muertas} campaña${muertas > 1 ? 's' : ''} muerta${muertas > 1 ? 's' : ''}`,
+    sub: 'Se eliminarán de la base de datos. Meta Ads no se modifica.',
+    btns: [
+      { label: 'Cancelar', val: null, cls: 'btn-gray' },
+      { label: `Borrar ${muertas}`, val: true, cls: 'btn-red' }
+    ]
+  });
+
+  if (!ok) return;
+
+  const btn = document.getElementById('btn-limpiar');
+  btn.disabled = true;
+  try {
+    const r = await api('/api/campanias/limpiar?estado=muerto,muerta', { method: 'DELETE' });
+    const d = await r.json();
+    if (d.ok) {
+      await cargarCampanias();
+    } else {
+      alert('Error: ' + d.error);
+    }
+  } catch(e) { alert('Error: ' + e.message); }
+  finally { btn.disabled = false; }
+}
+
+// ═══════════════════════════════════════
+// BULK SELECT
+// ═══════════════════════════════════════
+function toggleSelectAll(masterCb) {
+  document.querySelectorAll('.camp-cb').forEach(cb => { cb.checked = masterCb.checked; });
+  updateBulkBar();
+}
+
+function deselectAll() {
+  document.querySelectorAll('.camp-cb, thead input[type=checkbox]').forEach(cb => { cb.checked = false; });
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const selected = [...document.querySelectorAll('.camp-cb:checked')];
+
+  // Resaltar filas seleccionadas
+  document.querySelectorAll('.camp-cb').forEach(cb => {
+    const row = document.getElementById('tr-' + cb.dataset.id);
+    if (row) row.classList.toggle('tr-selected', cb.checked);
+  });
+
+  const bar = document.getElementById('bulk-bar');
+  if (selected.length > 0) {
+    bar.classList.remove('hidden');
+    document.getElementById('bulk-count').textContent = selected.length;
+  } else {
+    bar.classList.add('hidden');
+  }
+}
+
+async function borrarSeleccionadas() {
+  const cbs = [...document.querySelectorAll('.camp-cb:checked')];
+  if (!cbs.length) return;
+
+  const ok = await showModal({
+    icon: '🗑️',
+    title: `Borrar ${cbs.length} campaña${cbs.length > 1 ? 's' : ''} de la BD`,
+    sub: 'Solo se eliminarán de la base de datos local. Meta Ads no se modifica.',
+    btns: [
+      { label: 'Cancelar', val: null, cls: 'btn-gray' },
+      { label: `Borrar ${cbs.length}`, val: true, cls: 'btn-red' }
+    ]
+  });
+
+  if (!ok) return;
+
+  for (const cb of cbs) {
+    const id = cb.dataset.id;
+    try {
+      const r = await api(`/api/campania/${id}`, { method: 'DELETE' });
+      const d = await r.json();
+      if (d.ok) {
+        const row = document.getElementById('tr-' + id);
+        if (row) row.remove();
+        campanias = campanias.filter(c => c.id !== id);
+      }
+    } catch(e) { /* skip */ }
+  }
+
+  actualizarTabs();
+  deselectAll();
+}
+
+// ═══════════════════════════════════════
+// PRODUCTOS
+// ═══════════════════════════════════════
+async function cargarProductos() {
+  try {
+    const r = await api('/api/productos');
+    const data = await r.json();
+    document.getElementById('prod-loading').classList.add('hidden');
+
+    if (!data.length) {
+      document.getElementById('prod-empty').classList.remove('hidden');
+      document.getElementById('prod-list').classList.add('hidden');
+      return;
+    }
+
+    document.getElementById('prod-empty').classList.add('hidden');
+    document.getElementById('prod-list').classList.remove('hidden');
+    document.getElementById('prod-count').textContent = `${data.length} productos`;
+
+    const tipoBadge = { guia_pdf:'📄', mini_curso:'🎓', prompts:'💬', toolkit:'🛠️', plantilla:'📋' };
+    const estBadge  = { corriendo:'badge-green', vivo:'badge-green', escalando:'badge-blue', muerto:'badge-red', pausado:'badge-yellow' };
+
+    document.getElementById('prod-list').innerHTML = data.map((p, i) => {
+      const rev    = p.metricas?.revenue || 0;
+      const ventas = p.metricas?.ventas  || p.metricas?.conversiones || 0;
+      const rank   = i < 3 ? ['🥇','🥈','🥉'][i] : `<span class="text-gray-700">${i+1}</span>`;
+      const eBadge = estBadge[p.estado]  || 'badge-gray';
+      const icon   = tipoBadge[p.tipo]   || '📦';
+      return `
+<div class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-900/40 transition group">
+  <span class="w-5 text-center text-sm">${rank}</span>
+  <span>${icon}</span>
+  <div class="flex-1 min-w-0">
+    <div class="text-sm font-medium text-white truncate">${esc(p.nombre)}</div>
+    <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+      <span class="text-xs text-gray-700">${esc(p.nicho || '')}</span>
+      <span class="${eBadge} text-xs px-1.5 py-0.5 rounded-full">${p.estado}</span>
+      ${p.precio ? `<span class="text-xs text-gray-700">${fmt$(p.precio)}</span>` : ''}
+    </div>
+  </div>
+  <div class="text-right shrink-0">
+    <div class="${rev > 0 ? 'text-green-400 font-bold' : 'text-gray-700'} text-sm">${fmt$(rev)}</div>
+    <div class="text-xs text-gray-700">${ventas} ventas</div>
+  </div>
+  ${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener"
+    class="text-gray-700 hover:text-neon transition text-xs opacity-0 group-hover:opacity-100">↗</a>` : ''}
+</div>`;
+    }).join('');
+  } catch(e) { console.error('productos:', e); }
+}
+
+// ═══════════════════════════════════════
+// LOGS
+// ═══════════════════════════════════════
 async function cargarLogs() {
   try {
-    const r = await fetch(`/api/logs?secret=${SECRET}`);
+    const r = await api('/api/logs');
     const data = await r.json();
-
+    logsData = Array.isArray(data) ? data : [];
     document.getElementById('logs-loading').classList.add('hidden');
-    document.getElementById('logs-list').classList.remove('hidden');
-
-    const list = document.getElementById('logs-list');
-    list.innerHTML = data.map(log => {
-      const ts = new Date(log.created_at);
-      const hora = ts.toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' });
-      const fecha = ts.toLocaleDateString('es', { month:'short', day:'numeric' });
-      const iconos = {
-        researcher: '🔍', generator: '⚙️', publisher: '🚀', 'campaign-validator': '📊',
-        'ads-manager': '📢', sistema: '⚡', claude: '🤖', brain: '🧠', email: '📧'
-      };
-      const icono = iconos[log.agente] || '📋';
-      const statusColor = log.exito ? 'text-green-500' : 'text-red-500';
-      const statusIcon = log.exito ? '✓' : '✗';
-      const costo = log.costo_api ? ` · $${parseFloat(log.costo_api).toFixed(4)}` : '';
-      const dur = log.duracion_ms ? ` · ${(log.duracion_ms/1000).toFixed(1)}s` : '';
-      return `
-        <div class="flex items-start gap-2 py-1.5 px-2 rounded hover:bg-gray-900/30 transition">
-          <span class="text-base mt-0.5">${icono}</span>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="text-xs font-medium text-gray-300">${log.agente}</span>
-              <span class="text-gray-700">·</span>
-              <span class="text-xs text-gray-500 truncate">${log.accion}</span>
-              <span class="${statusColor} text-xs font-bold">${statusIcon}</span>
-            </div>
-            <div class="text-xs text-gray-700">${hora} ${fecha}${dur}${costo}</div>
-          </div>
-        </div>`;
-    }).join('');
-  } catch (e) {
-    console.error('Error cargando logs:', e);
+    renderLogs();
+  } catch(e) {
+    document.getElementById('logs-loading').classList.add('hidden');
+    console.error('logs:', e);
   }
+}
+
+function setFiltroLogs(tipo) {
+  filtroLogs = tipo;
+  document.querySelectorAll('[data-lt]').forEach(btn => {
+    btn.className = btn.dataset.lt === tipo ? 'ftab on text-xs' : 'ftab text-xs';
+  });
+  renderLogs();
+}
+
+function renderLogs() {
+  const data = filtroLogs === 'error' ? logsData.filter(l => !l.exito) : logsData;
+  const list = document.getElementById('logs-list');
+  list.classList.remove('hidden');
+
+  const icons = {
+    researcher:'🔍', generator:'⚙️', publisher:'🚀', 'campaign-validator':'📊',
+    'ads-manager':'📢', sistema:'⚡', claude:'🤖', brain:'🧠', email:'📧'
+  };
+
+  if (!data.length) {
+    list.innerHTML = '<div class="text-center py-6 text-gray-700 text-sm">Sin entradas para mostrar</div>';
+    return;
+  }
+
+  list.innerHTML = data.map(log => {
+    const ts    = new Date(log.created_at);
+    const hora  = ts.toLocaleTimeString('es',  { hour:'2-digit', minute:'2-digit' });
+    const fecha = ts.toLocaleDateString('es',  { month:'short', day:'numeric' });
+    const icono = icons[log.agente] || '📋';
+    const ok    = log.exito;
+    const costo = log.costo_api   ? ` · $${parseFloat(log.costo_api).toFixed(4)}`       : '';
+    const dur   = log.duracion_ms ? ` · ${(log.duracion_ms / 1000).toFixed(1)}s`        : '';
+    const det   = log.detalle     ? `<div class="text-xs text-gray-700 mt-0.5 truncate">${esc(String(log.detalle).slice(0,90))}</div>` : '';
+    return `
+<div class="flex items-start gap-2 py-1.5 px-2 rounded-md hover:bg-gray-900/30 transition ${ok ? '' : 'log-fail'}">
+  <span class="mt-0.5 shrink-0">${icono}</span>
+  <div class="flex-1 min-w-0">
+    <div class="flex items-center gap-1.5 flex-wrap">
+      <span class="text-xs font-medium text-gray-300">${esc(log.agente)}</span>
+      <span class="text-gray-700 text-xs">·</span>
+      <span class="text-xs text-gray-500 truncate">${esc(log.accion)}</span>
+      <span class="${ok ? 'text-green-600' : 'text-red-500'} text-xs font-bold">${ok ? '✓' : '✗'}</span>
+    </div>
+    <div class="text-xs text-gray-700">${hora} ${fecha}${dur}${costo}</div>
+    ${det}
+  </div>
+</div>`;
+  }).join('');
 }
 </script>
 </body>

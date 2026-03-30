@@ -372,17 +372,112 @@ app.get('/api/productos', auth, async (req, res) => {
 });
 
 // ══════════════════════════════════════
-// /api/logs — Últimos 30 logs de agentes
+// /api/logs — Últimos 50 logs de agentes
 // ══════════════════════════════════════
 app.get('/api/logs', auth, async (req, res) => {
   try {
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
     const { data, error } = await supabase
       .from('agent_logs')
-      .select('agente, accion, exito, duracion_ms, costo_api, created_at')
+      .select('agente, accion, detalle, exito, duracion_ms, costo_api, created_at')
       .order('created_at', { ascending: false })
-      .limit(30);
+      .limit(limit);
     if (error) throw error;
     res.json(data || []);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ══════════════════════════════════════
+// /api/campania/:id/verificar — Verifica si la campaña existe en Meta
+// ══════════════════════════════════════
+app.post('/api/campania/:id/verificar', auth, async (req, res) => {
+  try {
+    const { data: camp } = await supabase
+      .from('campaigns').select('campaign_id_externo, nombre').eq('id', req.params.id).single();
+    if (!camp) return res.status(404).json({ error: 'Campaña no encontrada' });
+    if (!camp.campaign_id_externo) return res.json({ existe: false, razon: 'Sin ID externo en BD' });
+
+    const META_TOKEN = process.env.META_ACCESS_TOKEN?.trim();
+    if (!META_TOKEN) return res.status(400).json({ error: 'META_ACCESS_TOKEN no configurado' });
+
+    try {
+      const r = await axios.get(
+        `https://graph.facebook.com/v25.0/${camp.campaign_id_externo}`,
+        { params: { fields: 'id,name,status,effective_status', access_token: META_TOKEN }, timeout: 8000 }
+      );
+      res.json({
+        existe: true,
+        estado_meta: r.data.effective_status || r.data.status,
+        nombre_meta: r.data.name
+      });
+    } catch (metaErr) {
+      const code = metaErr.response?.data?.error?.code;
+      if (code === 100 || code === 803) {
+        res.json({ existe: false, razon: 'No encontrada en Meta Ads' });
+      } else {
+        res.status(500).json({ error: metaErr.response?.data?.error?.message || metaErr.message });
+      }
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ══════════════════════════════════════
+// DELETE /api/campania/:id/meta — Archiva en Meta + elimina de BD
+// ══════════════════════════════════════
+app.delete('/api/campania/:id/meta', auth, async (req, res) => {
+  try {
+    const { data: camp } = await supabase
+      .from('campaigns').select('campaign_id_externo, nombre').eq('id', req.params.id).single();
+    if (!camp) return res.status(404).json({ error: 'Campaña no encontrada' });
+
+    let metaArchivedOk = false;
+    let metaError = null;
+
+    if (camp.campaign_id_externo) {
+      const META_TOKEN = process.env.META_ACCESS_TOKEN?.trim();
+      try {
+        await axios.post(
+          `https://graph.facebook.com/v25.0/${camp.campaign_id_externo}`,
+          null,
+          { params: { status: 'DELETED', access_token: META_TOKEN }, timeout: 8000 }
+        );
+        metaArchivedOk = true;
+      } catch (metaErr) {
+        const code = metaErr.response?.data?.error?.code;
+        metaError = metaErr.response?.data?.error?.message || metaErr.message;
+        // Si ya no existe en Meta (100/803), seguimos borrando de BD
+        if (code !== 100 && code !== 803) {
+          return res.status(500).json({ error: metaError });
+        }
+        metaArchivedOk = false;
+      }
+    }
+
+    const { error } = await supabase.from('campaigns').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true, metaArchivedOk, metaError });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ══════════════════════════════════════
+// DELETE /api/campanias/limpiar — Bulk delete por estado desde BD
+// ══════════════════════════════════════
+app.delete('/api/campanias/limpiar', auth, async (req, res) => {
+  try {
+    const estados = (req.query.estado || 'muerto').split(',').map(s => s.trim()).filter(Boolean);
+    const { data, error } = await supabase
+      .from('campaigns')
+      .delete()
+      .in('estado', estados)
+      .select('id');
+    if (error) throw error;
+    res.json({ ok: true, eliminadas: data?.length || 0 });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
