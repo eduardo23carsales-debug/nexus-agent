@@ -134,7 +134,7 @@ export const metaAds = {
       campaign_id: campana.id,
       // Sin daily_budget — el presupuesto lo controla CBO a nivel campaña
       billing_event: 'IMPRESSIONS',
-      optimization_goal: 'LINK_CLICKS',
+      optimization_goal: 'LANDING_PAGE_VIEWS', // Mejor calidad que LINK_CLICKS — solo cuenta quien carga la página
       bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
       promoted_object: { page_id: PAGE_ID },
       dsa_beneficiary: 'Aprende Gana y Crece IA',
@@ -367,7 +367,7 @@ export const metaAds = {
     const adsetBase = {
       campaign_id: campana.id,
       billing_event: 'IMPRESSIONS',
-      optimization_goal: 'LINK_CLICKS',
+      optimization_goal: 'LANDING_PAGE_VIEWS', // Mejor calidad que LINK_CLICKS — solo cuenta quien carga la página
       bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
       promoted_object: { page_id: PAGE_ID },
       dsa_beneficiary: 'Aprende Gana y Crece IA',
