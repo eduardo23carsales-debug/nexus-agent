@@ -448,6 +448,13 @@ document.getElementById('modal').addEventListener('click', function(e) {
 // ═══════════════════════════════════════
 // LOGIN
 // ═══════════════════════════════════════
+// Auto-login desde ?secret=... en la URL (sin necesitar el formulario)
+const _urlS = new URLSearchParams(window.location.search).get('secret');
+if (_urlS) {
+  SECRET = _urlS;
+  sessionStorage.setItem('nx_s', SECRET);
+  history.replaceState(null, '', '/');
+}
 if (SECRET) {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('dashboard').classList.remove('hidden');
