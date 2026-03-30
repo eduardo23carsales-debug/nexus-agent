@@ -7,7 +7,8 @@
       "Bash(done)",
       "WebSearch",
       "Bash(/tmp/field_trace.txt:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(grep -r \"app\\\\.get\\\\|app\\\\.post\\\\|app\\\\.put\\\\|app\\\\.delete\" core/ agents/ --include=*.js)"
     ]
   }
 }
