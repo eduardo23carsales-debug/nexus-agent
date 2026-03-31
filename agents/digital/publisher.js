@@ -41,7 +41,8 @@ Estructura EXACTA a seguir:
 <div style="background:#111;padding:60px 20px;text-align:center;">
   <h1 style="font-size:2.5em;color:#00ff88;margin-bottom:16px;">[HEADLINE IMPACTANTE]</h1>
   <p style="font-size:1.2em;color:#ccc;max-width:600px;margin:0 auto 32px;">[SUBTITULO]</p>
-  <a href="${stripeLink}" style="background:#00ff88;color:#000;padding:18px 40px;font-size:1.2em;font-weight:bold;text-decoration:none;border-radius:8px;">QUIERO ESTO — $${nicho.precio}</a>
+  <a href="${stripeLink}" class="nexus-cta-btn" style="background:#00ff88;color:#000;padding:18px 40px;font-size:1.2em;font-weight:bold;text-decoration:none;border-radius:8px;display:inline-block;">⚡ SÍ, QUIERO ACCESO AHORA — $${nicho.precio}</a>
+  <p style="color:#ff9900;margin-top:16px;font-size:0.95em;font-weight:bold;">⏰ Precio de lanzamiento — termina en: <span id="nexus-countdown" style="font-family:monospace;">48:00:00</span></p>
 </div>
 
 <!-- PROBLEMA -->
@@ -61,11 +62,12 @@ Estructura EXACTA a seguir:
 <!-- PRECIO -->
 <div style="max-width:500px;margin:60px auto;padding:0 20px;text-align:center;">
   <div style="background:#1a1a1a;border:2px solid #00ff88;border-radius:16px;padding:40px;">
-    <p style="color:#ccc;font-size:1em;margin-bottom:8px;">PRECIO DE LANZAMIENTO</p>
+    <p style="color:#ff9900;font-size:0.9em;font-weight:bold;margin-bottom:4px;">⚠️ PRECIO DE LANZAMIENTO — TERMINA EN:</p>
+    <p style="color:#ff9900;font-size:1.8em;font-weight:bold;font-family:monospace;margin:0 0 12px;" id="nexus-countdown-2">48:00:00</p>
     <p style="color:#00ff88;font-size:3em;font-weight:bold;margin:0;">$${nicho.precio}</p>
     <p style="color:#888;font-size:0.9em;margin:8px 0 24px;">Pago único — Acceso inmediato</p>
-    <a href="${stripeLink}" style="display:block;background:#00ff88;color:#000;padding:18px;font-size:1.2em;font-weight:bold;text-decoration:none;border-radius:8px;">COMPRAR AHORA</a>
-    <p style="color:#888;font-size:0.8em;margin-top:12px;">🔒 Pago seguro con Stripe</p>
+    <a href="${stripeLink}" class="nexus-cta-btn" style="display:block;background:#00ff88;color:#000;padding:18px;font-size:1.2em;font-weight:bold;text-decoration:none;border-radius:8px;">🔓 QUIERO ACCESO AHORA</a>
+    <p style="color:#888;font-size:0.8em;margin-top:12px;">🔒 Pago 100% seguro con Stripe · Garantía 30 días</p>
   </div>
 </div>
 
@@ -85,8 +87,10 @@ Estructura EXACTA a seguir:
 
 <!-- CTA FINAL -->
 <div style="background:#00ff88;padding:60px 20px;text-align:center;">
-  <h2 style="color:#000;font-size:2em;margin-bottom:24px;">[HEADLINE URGENCIA]</h2>
-  <a href="${stripeLink}" style="background:#000;color:#00ff88;padding:18px 40px;font-size:1.2em;font-weight:bold;text-decoration:none;border-radius:8px;">SÍ, LO QUIERO AHORA — $${nicho.precio}</a>
+  <h2 style="color:#000;font-size:2em;margin-bottom:8px;">[HEADLINE URGENCIA]</h2>
+  <p style="color:#004400;margin-bottom:24px;font-weight:bold;">⏰ Precio de $${nicho.precio} termina en: <span id="nexus-countdown-3" style="font-family:monospace;">48:00:00</span></p>
+  <a href="${stripeLink}" class="nexus-cta-btn" style="background:#000;color:#00ff88;padding:18px 40px;font-size:1.2em;font-weight:bold;text-decoration:none;border-radius:8px;display:inline-block;">⚡ ACCESO INMEDIATO — $${nicho.precio}</a>
+  <p style="color:#004400;margin-top:16px;font-size:0.9em;">🔒 Pago seguro · Garantía 30 días · Sin preguntas</p>
 </div>
 
 <!-- FOOTER -->
@@ -135,6 +139,54 @@ src="https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1"/></noscri
   } else {
     console.warn('[Publisher] META_PIXEL_ID no configurado — pixel no inyectado');
   }
+
+  // ── Inyectar countdown + InitiateCheckout pixel al hacer click ──
+  const productoKey = nicho.nombre_producto.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 30);
+  const conversionScript = `
+<!-- Nexus: Countdown + Pixel InitiateCheckout -->
+<script>
+(function() {
+  // Countdown 48h desde primera visita (persiste en localStorage)
+  var key = 'nexus_offer_${productoKey}';
+  var end = parseInt(localStorage.getItem(key) || '0');
+  if (!end || end < Date.now()) {
+    end = Date.now() + 48 * 3600000;
+    localStorage.setItem(key, end);
+  }
+  function pad(n) { return n < 10 ? '0' + n : String(n); }
+  function tick() {
+    var diff = Math.max(0, end - Date.now());
+    var h = Math.floor(diff / 3600000);
+    var m = Math.floor((diff % 3600000) / 60000);
+    var s = Math.floor((diff % 60000) / 1000);
+    var txt = pad(h) + ':' + pad(m) + ':' + pad(s);
+    ['nexus-countdown','nexus-countdown-2','nexus-countdown-3'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = txt;
+    });
+    if (diff > 0) setTimeout(tick, 1000);
+  }
+  tick();
+
+  // InitiateCheckout pixel al hacer click en cualquier botón de pago
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.nexus-cta-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (typeof fbq !== 'undefined') {
+          fbq('track', 'InitiateCheckout', {
+            value: ${nicho.precio},
+            currency: 'USD',
+            content_name: '${nicho.nombre_producto.replace(/'/g, "\\'")}'
+          });
+        }
+      });
+    });
+  });
+})();
+</script>`;
+
+  htmlLimpio = htmlLimpio.replace('</body>', conversionScript + '\n</body>');
+  console.log(`[Publisher] Countdown 48h + pixel InitiateCheckout inyectados`);
 
   return htmlLimpio;
 }

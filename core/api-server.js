@@ -517,6 +517,43 @@ app.post('/webhook/stripe', express.raw({ type: 'application/json' }), async (re
     email.procesarPagosNuevos().catch(err =>
       console.error('[Webhook] Error procesando entrega:', err.message)
     );
+
+    // Disparar evento Purchase a Meta Conversions API (server-side — más confiable que pixel)
+    const pixelId = process.env.META_PIXEL_ID;
+    const metaToken = process.env.META_ACCESS_TOKEN;
+    if (pixelId && metaToken) {
+      try {
+        const session = event.data.object;
+        const amount = (session.amount_total || 0) / 100; // Stripe en centavos
+        const customerEmail = session.customer_details?.email || '';
+        const crypto = await import('crypto');
+        const hashedEmail = customerEmail
+          ? crypto.default.createHash('sha256').update(customerEmail.trim().toLowerCase()).digest('hex')
+          : null;
+
+        const payload = {
+          data: [{
+            event_name: 'Purchase',
+            event_time: Math.floor(Date.now() / 1000),
+            action_source: 'website',
+            user_data: { ...(hashedEmail && { em: [hashedEmail] }) },
+            custom_data: {
+              currency: 'USD',
+              value: amount
+            }
+          }]
+        };
+
+        await axios.post(
+          `https://graph.facebook.com/v20.0/${pixelId}/events?access_token=${metaToken}`,
+          payload,
+          { timeout: 8000 }
+        );
+        console.log(`[Webhook] Meta Purchase event enviado — $${amount}`);
+      } catch (pixelErr) {
+        console.warn('[Webhook] Meta Purchase event falló (no crítico):', pixelErr.message);
+      }
+    }
   }
 });
 
