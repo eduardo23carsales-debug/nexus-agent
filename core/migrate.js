@@ -52,7 +52,7 @@ const MIGRATIONS = [
         fecha_ultimo_update TIMESTAMP DEFAULT NOW()
       );
     `
-  }
+  },
   {
     id: '004_campaigns_landing_views',
     sql: `
