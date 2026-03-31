@@ -553,6 +553,16 @@ function iniciarCrons() {
     try { await leerComandosTelegram(); } finally { telegramPollingActivo = false; }
   }, 5000);
 
+  // Cada 6 horas — secuencia post-compra (días 1, 3, 7, 14)
+  cron.schedule('0 */6 * * *', async () => {
+    try {
+      const enviados = await email.procesarSecuenciaPostCompra();
+      if (enviados > 0) console.log(`[Cron] Secuencia post-compra: ${enviados} emails enviados`);
+    } catch (err) {
+      console.error('[Cron] Error secuencia post-compra:', err.message);
+    }
+  });
+
   // Cada 6 horas — validar campañas de Meta Ads
   cron.schedule('0 */6 * * *', async () => {
     console.log('[Cron] Validando campañas Meta Ads...');

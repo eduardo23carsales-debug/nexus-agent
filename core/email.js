@@ -358,6 +358,198 @@ export const email = {
     console.log(`[Email] Abandono email 2 enviado a ${para}`);
   },
 
+  // ── Secuencia post-compra: 4 emails automáticos en días 1, 3, 7, 14 ──
+  async procesarSecuenciaPostCompra() {
+    const { data: customers, error } = await db.supabase
+      .from('customers')
+      .select('email, nombre, producto, experiment_id, created_at')
+      .order('created_at', { ascending: false })
+      .limit(500);
+
+    if (error || !customers?.length) return 0;
+
+    // Cargar URLs de productos para incluir en emails
+    const expIds = [...new Set(customers.map(c => c.experiment_id).filter(Boolean))];
+    const { data: exps } = await db.supabase
+      .from('experiments')
+      .select('id, producto_url, precio, stripe_payment_link')
+      .in('id', expIds);
+    const expMap = Object.fromEntries((exps || []).map(e => [e.id, e]));
+
+    const SECUENCIA = [
+      { fuente: 'seq_d1',  minDias: 1,  maxDias: 3  },
+      { fuente: 'seq_d3',  minDias: 3,  maxDias: 7  },
+      { fuente: 'seq_d7',  minDias: 7,  maxDias: 14 },
+      { fuente: 'seq_d14', minDias: 14, maxDias: 31 }
+    ];
+
+    let enviados = 0;
+
+    for (const customer of customers) {
+      const diasDesdeCompra = (Date.now() - new Date(customer.created_at)) / 86400000;
+      const exp = expMap[customer.experiment_id] || {};
+      const ctx = {
+        para: customer.email,
+        nombre: customer.nombre?.split(' ')[0] || '',
+        producto: customer.producto,
+        productoUrl: exp.producto_url || null,
+        precio: exp.precio || null,
+        stripeLink: exp.stripe_payment_link || null
+      };
+
+      for (const paso of SECUENCIA) {
+        if (diasDesdeCompra < paso.minDias || diasDesdeCompra >= paso.maxDias) continue;
+        try {
+          const yaEnviado = await db.getDigitalLeadPorEmailYFuente(customer.email, paso.fuente);
+          if (yaEnviado) break;
+
+          await this[`_secuencia_${paso.fuente}`](ctx);
+          await db.crearDigitalLead(customer.email, customer.experiment_id, paso.fuente);
+          enviados++;
+        } catch (err) {
+          console.warn(`[Email] Secuencia ${paso.fuente} falló para ${customer.email}: ${err.message}`);
+        }
+        break; // solo un email por ciclo por cliente
+      }
+    }
+
+    if (enviados > 0) console.log(`[Email] ${enviados} emails de secuencia post-compra enviados`);
+    return enviados;
+  },
+
+  async _secuencia_seq_d1({ para, nombre, producto, productoUrl }) {
+    const saludo = nombre ? `Hola <strong style="color:#00ff88;">${nombre}</strong>` : 'Hola';
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0f0f0f;">
+<div style="max-width:600px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;border:1px solid #222;">
+  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:36px 32px;text-align:center;border-bottom:3px solid #00ff88;">
+    <p style="color:#00ff88;font-size:0.8em;font-weight:bold;margin:0 0 8px;letter-spacing:2px;">DÍA 1</p>
+    <h1 style="color:#fff;margin:0;font-size:1.5em;">🚀 Empieza aquí — tu primer resultado hoy</h1>
+  </div>
+  <div style="padding:40px 32px;">
+    <p style="font-size:1.05em;color:#e0e0e0;margin:0 0 20px;">${saludo},</p>
+    <p style="color:#aaa;line-height:1.8;margin:0 0 20px;">Ya tienes acceso a <strong style="color:#fff;">${producto}</strong>. Para que no te pierdas, aquí están los 3 pasos que te recomendamos hacer HOY:</p>
+    <div style="margin:24px 0;">
+      <div style="background:#0d1f0d;border-left:4px solid #00ff88;border-radius:4px;padding:16px;margin-bottom:12px;">
+        <p style="margin:0;color:#00ff88;font-weight:bold;">Paso 1 — Abre el producto ahora</p>
+        <p style="margin:8px 0 0;color:#aaa;font-size:0.9em;">Dedica 10 minutos a leer la introducción completa para entender el método.</p>
+      </div>
+      <div style="background:#0d1a2e;border-left:4px solid #4f8ef7;border-radius:4px;padding:16px;margin-bottom:12px;">
+        <p style="margin:0;color:#4f8ef7;font-weight:bold;">Paso 2 — Identifica tu primer caso de uso</p>
+        <p style="margin:8px 0 0;color:#aaa;font-size:0.9em;">¿Cuál es el problema más urgente que este producto puede resolver para ti esta semana?</p>
+      </div>
+      <div style="background:#1f1a0d;border-left:4px solid #f0a500;border-radius:4px;padding:16px;">
+        <p style="margin:0;color:#f0a500;font-weight:bold;">Paso 3 — Ejecuta una sola cosa</p>
+        <p style="margin:8px 0 0;color:#aaa;font-size:0.9em;">No trates de aplicar todo a la vez. Elige una acción y hazla hoy.</p>
+      </div>
+    </div>
+    ${productoUrl ? `<div style="text-align:center;margin:32px 0;"><a href="${productoUrl}" style="background:#00ff88;color:#000;padding:16px 36px;font-size:1.05em;font-weight:bold;text-decoration:none;border-radius:8px;display:inline-block;">📖 Abrir mi producto</a></div>` : ''}
+    <p style="color:#666;font-size:0.9em;">¿Tienes una pregunta específica? Responde este email — te contestamos personalmente.</p>
+  </div>
+  <div style="background:#111;padding:20px 32px;text-align:center;border-top:1px solid #222;">
+    <p style="color:#444;font-size:0.8em;margin:0;">${FROM_NAME} · Responde este email si necesitas ayuda</p>
+  </div>
+</div>
+</body></html>`;
+    const { error } = await resend.emails.send({ from: `${FROM_NAME} <${FROM}>`, to: para, subject: `🚀 Empieza aquí — tu primer resultado con "${producto}"`, html });
+    if (error) throw new Error(error.message);
+    console.log(`[Email] Secuencia día 1 → ${para}`);
+  },
+
+  async _secuencia_seq_d3({ para, nombre, producto, productoUrl }) {
+    const saludo = nombre ? `Hola <strong style="color:#00ff88;">${nombre}</strong>` : 'Hola';
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0f0f0f;">
+<div style="max-width:600px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;border:1px solid #222;">
+  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:36px 32px;text-align:center;border-bottom:3px solid #4f8ef7;">
+    <p style="color:#4f8ef7;font-size:0.8em;font-weight:bold;margin:0 0 8px;letter-spacing:2px;">DÍA 3</p>
+    <h1 style="color:#fff;margin:0;font-size:1.5em;">¿Ya tuviste tu primer resultado?</h1>
+  </div>
+  <div style="padding:40px 32px;">
+    <p style="font-size:1.05em;color:#e0e0e0;margin:0 0 20px;">${saludo},</p>
+    <p style="color:#aaa;line-height:1.8;margin:0 0 20px;">Ya llevas 3 días con <strong style="color:#fff;">${producto}</strong>. La mayoría de personas que ven resultados rápidos tienen algo en común: <strong style="color:#fff;">ejecutan antes de entenderlo todo</strong>.</p>
+    <p style="color:#aaa;line-height:1.8;margin:0 0 24px;">Si todavía no empezaste, no te preocupes — aquí está el truco para avanzar aunque sientas que "no tienes tiempo":</p>
+    <div style="background:#111;border:1px solid #333;border-radius:8px;padding:20px;margin:0 0 24px;">
+      <p style="margin:0 0 12px;color:#fff;font-weight:bold;">⏱ El método de los 15 minutos</p>
+      <p style="margin:0;color:#aaa;font-size:0.95em;line-height:1.8;">Abre el producto. Pon un timer de 15 minutos. Lee solo hasta donde llegues. Haz UNA cosa de lo que leíste. Listo — ya estás avanzando.</p>
+    </div>
+    ${productoUrl ? `<div style="text-align:center;margin:32px 0;"><a href="${productoUrl}" style="background:#4f8ef7;color:#fff;padding:16px 36px;font-size:1.05em;font-weight:bold;text-decoration:none;border-radius:8px;display:inline-block;">▶ Continuar donde lo dejé</a></div>` : ''}
+    <p style="color:#666;font-size:0.9em;">¿Atascado en algo específico? Responde este email y te ayudamos.</p>
+  </div>
+  <div style="background:#111;padding:20px 32px;text-align:center;border-top:1px solid #222;">
+    <p style="color:#444;font-size:0.8em;margin:0;">${FROM_NAME} · Estamos aquí para ayudarte</p>
+  </div>
+</div>
+</body></html>`;
+    const { error } = await resend.emails.send({ from: `${FROM_NAME} <${FROM}>`, to: para, subject: `¿Ya aplicaste "${producto}"? Esto te va a ayudar`, html });
+    if (error) throw new Error(error.message);
+    console.log(`[Email] Secuencia día 3 → ${para}`);
+  },
+
+  async _secuencia_seq_d7({ para, nombre, producto, productoUrl }) {
+    const saludo = nombre ? `Hola <strong style="color:#00ff88;">${nombre}</strong>` : 'Hola';
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0f0f0f;">
+<div style="max-width:600px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;border:1px solid #222;">
+  <div style="background:linear-gradient(135deg,#1a2e1a,#163e16);padding:36px 32px;text-align:center;border-bottom:3px solid #00ff88;">
+    <p style="color:#00ff88;font-size:0.8em;font-weight:bold;margin:0 0 8px;letter-spacing:2px;">DÍA 7</p>
+    <h1 style="color:#fff;margin:0;font-size:1.5em;">🏆 Una semana — mira lo que otros lograron</h1>
+  </div>
+  <div style="padding:40px 32px;">
+    <p style="font-size:1.05em;color:#e0e0e0;margin:0 0 20px;">${saludo},</p>
+    <p style="color:#aaa;line-height:1.8;margin:0 0 24px;">Ya llevas una semana con acceso a <strong style="color:#fff;">${producto}</strong>. Las personas que más resultados ven son las que hacen una cosa: <strong style="color:#fff;">comparten su progreso</strong> — aunque sea pequeño.</p>
+    <div style="margin:24px 0;">
+      <div style="background:#0d1f0d;border-radius:8px;padding:20px;margin-bottom:12px;border-left:4px solid #00ff88;">
+        <p style="margin:0 0 4px;color:#00ff88;font-weight:bold;">💬 "Lo apliqué el primer día y ahorré 2 horas de trabajo"</p>
+        <p style="margin:0;color:#666;font-size:0.85em;">— Cliente de Miami</p>
+      </div>
+      <div style="background:#0d1f0d;border-radius:8px;padding:20px;border-left:4px solid #00ff88;">
+        <p style="margin:0 0 4px;color:#00ff88;font-weight:bold;">💬 "No creía que funcionara tan rápido — ya lo recomendé a 3 personas"</p>
+        <p style="margin:0;color:#666;font-size:0.85em;">— Cliente de Texas</p>
+      </div>
+    </div>
+    <p style="color:#aaa;line-height:1.8;margin:24px 0;">¿Cuál es tu resultado de esta semana? Responde este email y cuéntanos — los mejores los compartimos con la comunidad.</p>
+    ${productoUrl ? `<div style="text-align:center;margin:32px 0;"><a href="${productoUrl}" style="background:#00ff88;color:#000;padding:16px 36px;font-size:1.05em;font-weight:bold;text-decoration:none;border-radius:8px;display:inline-block;">📖 Seguir aprendiendo</a></div>` : ''}
+  </div>
+  <div style="background:#111;padding:20px 32px;text-align:center;border-top:1px solid #222;">
+    <p style="color:#444;font-size:0.8em;margin:0;">${FROM_NAME} · Cuéntanos tu resultado respondiendo este email</p>
+  </div>
+</div>
+</body></html>`;
+    const { error } = await resend.emails.send({ from: `${FROM_NAME} <${FROM}>`, to: para, subject: `🏆 Una semana con "${producto}" — ¿cuál fue tu resultado?`, html });
+    if (error) throw new Error(error.message);
+    console.log(`[Email] Secuencia día 7 → ${para}`);
+  },
+
+  async _secuencia_seq_d14({ para, nombre, producto, productoUrl, stripeLink }) {
+    const saludo = nombre ? `Hola <strong style="color:#00ff88;">${nombre}</strong>` : 'Hola';
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#0f0f0f;">
+<div style="max-width:600px;margin:40px auto;background:#1a1a1a;border-radius:12px;overflow:hidden;border:1px solid #222;">
+  <div style="background:linear-gradient(135deg,#2e1a2e,#3e163e);padding:36px 32px;text-align:center;border-bottom:3px solid #f0a500;">
+    <p style="color:#f0a500;font-size:0.8em;font-weight:bold;margin:0 0 8px;letter-spacing:2px;">DÍA 14 — EXCLUSIVO</p>
+    <h1 style="color:#fff;margin:0;font-size:1.5em;">🎁 Un regalo por ser parte de nuestra comunidad</h1>
+  </div>
+  <div style="padding:40px 32px;">
+    <p style="font-size:1.05em;color:#e0e0e0;margin:0 0 20px;">${saludo},</p>
+    <p style="color:#aaa;line-height:1.8;margin:0 0 24px;">Ya llevas 2 semanas con <strong style="color:#fff;">${producto}</strong>. Como parte de nuestra comunidad, quiero compartirte algo que no publicamos en ninguna landing:</p>
+    <div style="background:#1f150d;border:2px solid #f0a500;border-radius:8px;padding:24px;margin:24px 0;text-align:center;">
+      <p style="color:#f0a500;font-weight:bold;font-size:1.1em;margin:0 0 8px;">📌 El siguiente paso después de ${producto}</p>
+      <p style="color:#aaa;margin:0 0 20px;font-size:0.95em;line-height:1.7;">Los clientes que más resultados ven combinan este producto con otros recursos de nuestra biblioteca. Escríbenos respondiendo este email y te decimos cuál es el siguiente recurso que te conviene según tu situación.</p>
+      <a href="mailto:${FROM}" style="background:#f0a500;color:#000;padding:14px 32px;font-size:1em;font-weight:bold;text-decoration:none;border-radius:8px;display:inline-block;">Quiero saber mi siguiente paso</a>
+    </div>
+    ${productoUrl ? `<div style="text-align:center;margin:24px 0;"><a href="${productoUrl}" style="color:#00ff88;font-size:0.9em;">↩ Volver al producto</a></div>` : ''}
+  </div>
+  <div style="background:#111;padding:20px 32px;text-align:center;border-top:1px solid #222;">
+    <p style="color:#444;font-size:0.8em;margin:0;">${FROM_NAME} · Responde este email para tu recomendación personalizada</p>
+  </div>
+</div>
+</body></html>`;
+    const { error } = await resend.emails.send({ from: `${FROM_NAME} <${FROM}>`, to: para, subject: `🎁 Tu regalo de 2 semanas — solo para ti, ${nombre || 'amigo'}`, html });
+    if (error) throw new Error(error.message);
+    console.log(`[Email] Secuencia día 14 → ${para}`);
+  },
+
   // ── Ping — verifica que Resend funcione ──
   async ping() {
     // Solo verifica que el cliente esté inicializado

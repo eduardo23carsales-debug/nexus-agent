@@ -59,6 +59,19 @@ const MIGRATIONS = [
       ALTER TABLE campaigns
       ADD COLUMN IF NOT EXISTS landing_page_views INTEGER DEFAULT 0;
     `
+  },
+  {
+    id: '005_digital_leads',
+    sql: `
+      CREATE TABLE IF NOT EXISTS digital_leads (
+        id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+        email TEXT NOT NULL,
+        experiment_id UUID REFERENCES experiments(id),
+        fuente TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(email, fuente)
+      );
+    `
   }
   // Agrega aquí futuras migraciones
 ];
