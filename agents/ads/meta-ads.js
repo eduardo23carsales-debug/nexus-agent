@@ -125,7 +125,7 @@ async function generarImagenesVariantes(nombre, nicho, formato = 'feed', audienc
 
   // Hooks específicos al producto — del audience builder si existen, si no genéricos del nicho
   const hookDolor = audiencia?.hook || `¿Cansado con ${nicho}?`;
-  const hookTransform = audiencia?.headline ? `¡${audiencia.headline}!` : '¡Tu momento es AHORA!';
+  const hookTransform = audiencia?.hook_b || (audiencia?.headline ? `¡${audiencia.headline}!` : '¡Tu momento es AHORA!');
   const hookComunidad = 'Miles ya lo lograron';
 
   const variantes = [
@@ -332,12 +332,14 @@ export const metaAds = {
 
       const m = data[0];
       const compras = m.actions?.find(a => a.action_type === 'purchase')?.value || 0;
+      const lpViews = m.actions?.find(a => a.action_type === 'landing_page_view')?.value || 0;
 
       return {
         spend: parseFloat(m.spend || 0),
         clicks: parseInt(m.clicks || 0),
         impressions: parseInt(m.impressions || 0),
         conversiones: parseInt(compras),
+        landing_page_views: parseInt(lpViews),  // señal real de la métrica de optimización
         ctr: parseFloat(m.ctr || 0)
       };
     } catch (err) {
@@ -419,7 +421,7 @@ export const metaAds = {
       age_max: 60,
       genders: [1, 2],
       geo_locations: { countries: ['US'] },
-      targeting_automation: { advantage_audience: 0 }
+      targeting_automation: { advantage_audience: 1 }  // Advantage+ ML — mismo que NEXUS campaigns
     };
 
     const adsetBase = {

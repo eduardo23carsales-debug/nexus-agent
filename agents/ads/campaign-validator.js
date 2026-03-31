@@ -9,8 +9,10 @@ import { enviar } from '../../core/telegram.js';
 
 const MIN_ROAS_ESCALAR = 1.5;
 const MAX_ROAS_MATAR = 0.3;
-const GASTO_MAX_SIN_VENTAS = 15; // $15 sin ventas → matar
+const GASTO_MAX_SIN_VENTAS = 30;  // $30 sin ventas → matar (Meta necesita ~6 días a $5/día para aprender)
 const HORAS_DECISION = 72;
+const CTR_MINIMO = 0.3;           // < 0.3% CTR con 2000+ impresiones = creativo malo → matar antes
+const IMPRESIONES_CTR_KILL = 2000;
 
 export async function validarCampanas() {
   console.log('[CampaignValidator] Revisando campañas activas...');
@@ -43,6 +45,7 @@ async function evaluarCampana(campana) {
   const roas = metricas.spend > 0 ? revenue / metricas.spend : 0;
   const cpa = metricas.conversiones > 0 ? metricas.spend / metricas.conversiones : 0;
   const horasActiva = (Date.now() - new Date(campana.fecha_inicio).getTime()) / (1000 * 60 * 60);
+  const ctrBajo = metricas.impressions >= IMPRESIONES_CTR_KILL && metricas.ctr < CTR_MINIMO && metricas.conversiones === 0;
 
   // Actualizar métricas en DB
   await supabase.from('campaigns').update({
@@ -54,6 +57,7 @@ async function evaluarCampana(campana) {
     ctr: metricas.ctr,
     cpa,
     roas,
+    landing_page_views: metricas.landing_page_views || 0,
     fecha_ultimo_update: new Date().toISOString()
   }).eq('id', campana.id);
 
@@ -98,13 +102,14 @@ async function evaluarCampana(campana) {
   const listo_para_decidir = horasActiva >= HORAS_DECISION;
   const gasto_sin_ventas = metricas.spend >= GASTO_MAX_SIN_VENTAS && metricas.conversiones === 0;
 
-  if (!listo_para_decidir && !gasto_sin_ventas) {
+  if (!listo_para_decidir && !gasto_sin_ventas && !ctrBajo) {
     // Actualización de progreso cada 6h
     await enviar(
       `📊 <b>UPDATE CAMPAÑA</b>\n\n` +
       `<b>Producto:</b> ${campana.nombre}\n` +
       `💰 Gastado: $${metricas.spend.toFixed(2)}\n` +
       `👆 Clicks: ${metricas.clicks} | CTR: ${metricas.ctr.toFixed(2)}%\n` +
+      `🌐 Landing views: ${metricas.landing_page_views || 0}\n` +
       `🛒 Ventas: ${metricas.conversiones}\n` +
       `📈 ROAS: ${roas.toFixed(2)}x\n` +
       `⏳ Decisión en: ${Math.max(0, HORAS_DECISION - horasActiva).toFixed(0)}h`
@@ -113,6 +118,27 @@ async function evaluarCampana(campana) {
   }
 
   // ── DECISIONES ──────────────────────────────────────────
+
+  // Kill temprano por CTR bajo — creativo no detiene el scroll
+  if (ctrBajo) {
+    await metaAds.pausarCampana(campana.campaign_id_externo);
+    await supabase.from('campaigns').update({
+      estado: 'muerto',
+      decision: 'matar',
+      razon_decision: `CTR ${metricas.ctr.toFixed(2)}% < ${CTR_MINIMO}% con ${metricas.impressions} impresiones — creativo no convierte`,
+      fecha_decision: new Date().toISOString()
+    }).eq('id', campana.id);
+
+    await enviar(
+      `🚫 <b>KILL POR CTR BAJO</b>\n\n` +
+      `<b>Producto:</b> ${campana.nombre}\n` +
+      `📉 CTR: ${metricas.ctr.toFixed(2)}% (mínimo ${CTR_MINIMO}%)\n` +
+      `👁 Impresiones: ${metricas.impressions} — nadie hace click\n` +
+      `💸 Gastado: $${metricas.spend.toFixed(2)}\n` +
+      `💡 El creativo no detiene el scroll — necesita nuevo ángulo o imagen`
+    );
+    return;
+  }
 
   if (gasto_sin_ventas) {
     // Matar — gastó $15+ sin ninguna venta

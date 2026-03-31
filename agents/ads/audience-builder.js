@@ -51,9 +51,11 @@ Devuelve JSON exactamente así:
   "edad_min": 25,
   "edad_max": 50,
   "intereses": ["interés exacto 1", "interés exacto 2", "interés exacto 3", "interés exacto 4", "interés exacto 5"],
-  "hook": "primera línea que para el scroll",
+  "hook": "primera línea que para el scroll — ángulo del DOLOR, pregunta o cifra impactante",
+  "hook_b": "primera línea alternativa — ángulo de URGENCIA o ESCASEZ, completamente distinta a hook",
   "copy": "VARIANTE A — ángulo del DOLOR con emoji",
   "copy_b": "VARIANTE B — ángulo de RESULTADO con emoji",
+  "objecion_principal": "la excusa #1 que usa este cliente para NO comprar (máx 15 palabras)",
   "descripcion": "descripción corta del producto, máximo 30 caracteres",
   "headline": "título clickable que promete resultado",
   "razon": "por qué esta audiencia y este copy convierten para este nicho específico"

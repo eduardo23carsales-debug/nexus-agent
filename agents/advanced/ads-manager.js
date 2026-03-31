@@ -52,6 +52,7 @@ export async function lanzarCampanaParaProducto(experimento) {
       impresiones: 0,
       clicks: 0,
       conversiones: 0,
+      landing_page_views: 0,
       revenue_generado: 0
     });
 
@@ -63,8 +64,11 @@ export async function lanzarCampanaParaProducto(experimento) {
       `💰 Presupuesto: $${PRESUPUESTO_DIARIO / 100}/día\n` +
       `${formatoLabel}\n` +
       `🖼 Imágenes: ${campanaData.imagenes || 1} variantes (dolor / transformación / comunidad)\n` +
+      `🪝 Hook A: "${audiencia.hook}"\n` +
+      (audiencia.hook_b ? `🪝 Hook B: "${audiencia.hook_b}"\n` : '') +
       `📝 Copy A: "${audiencia.copy}"\n` +
       (audiencia.copy_b ? `📝 Copy B: "${audiencia.copy_b}"\n` : '') +
+      (audiencia.objecion_principal ? `🚧 Objeción #1: "${audiencia.objecion_principal}"\n` : '') +
       `🎯 Total anuncios: ${campanaData.total_ads || 1}\n` +
       `⏳ Decisión en 72 horas — Meta elige el ganador`
     );
@@ -132,6 +136,7 @@ export async function lanzarCampanaLeadCamp({ oferta, landingUrl, whatsappNum })
         impresiones: 0,
         clicks: 0,
         conversiones: 0,
+        landing_page_views: 0,
         revenue_generado: 0
       });
     } catch (dbErr) {

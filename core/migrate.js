@@ -53,6 +53,13 @@ const MIGRATIONS = [
       );
     `
   }
+  {
+    id: '004_campaigns_landing_views',
+    sql: `
+      ALTER TABLE campaigns
+      ADD COLUMN IF NOT EXISTS landing_page_views INTEGER DEFAULT 0;
+    `
+  }
   // Agrega aquí futuras migraciones
 ];
 
