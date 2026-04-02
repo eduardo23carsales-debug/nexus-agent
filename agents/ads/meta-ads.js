@@ -217,7 +217,7 @@ export const metaAds = {
           message: audiencia.copy,
           name: audiencia.headline || nombre,   // headline generado por IA, más clickable
           description: audiencia.descripcion,
-          call_to_action: { type: 'GET_OFFER', value: { link: landingUrl } },
+          call_to_action: { type: 'SHOP_NOW', value: { link: landingUrl } },
           image_hash: imageHashes[i]
         };
         const creative = await metaPost(`/${AD_ACCOUNT}/adcreatives`, {
@@ -256,7 +256,7 @@ export const metaAds = {
           message: audiencia.copy_b,
           name: audiencia.headline || nombre,
           description: audiencia.descripcion,
-          call_to_action: { type: 'GET_OFFER', value: { link: landingUrl } },
+          call_to_action: { type: 'SHOP_NOW', value: { link: landingUrl } },
           image_hash: imageHashes[0]
         };
         const creativeB = await metaPost(`/${AD_ACCOUNT}/adcreatives`, {
@@ -303,12 +303,10 @@ export const metaAds = {
       targeting_automation: { advantage_audience: 1 }
     };
 
-    // Intereses como sugerencias para Advantage+ (Meta los usa como punto de partida)
-    if (audiencia.intereses?.length > 0) {
-      base.flexible_spec = [{
-        interests: audiencia.intereses.map(i => ({ name: i }))
-      }];
-    }
+    // Con Advantage+ activo (advantage_audience: 1) Meta usa su propio ML para encontrar
+    // la audiencia óptima — flexible_spec con intereses por nombre (sin ID) causa error 100.
+    // Referencia: Meta requiere IDs numéricos de su Targeting Search API, no nombres en texto.
+    // Se omite flexible_spec intencionalmente.
 
     if (formato === 'stories') {
       // Instagram Stories — placement específico, CPC $1.83 vs $3.35 Feed
