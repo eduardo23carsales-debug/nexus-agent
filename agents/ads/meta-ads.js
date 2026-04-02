@@ -175,7 +175,7 @@ export const metaAds = {
     // 2. Crear campaña con CBO — presupuesto en campaña, Meta distribuye entre adsets
     const campana = await metaPost(`/${AD_ACCOUNT}/campaigns`, {
       name: `NEXUS | ${nombre} | ${new Date().toISOString().slice(0,10)}`,
-      objective: 'OUTCOME_TRAFFIC',
+      objective: 'OUTCOME_SALES',
       status: 'ACTIVE',
       special_ad_categories: [],
       daily_budget: presupuestoDiario,        // CBO: presupuesto total en la campaña
@@ -189,9 +189,9 @@ export const metaAds = {
       campaign_id: campana.id,
       // Sin daily_budget — el presupuesto lo controla CBO a nivel campaña
       billing_event: 'IMPRESSIONS',
-      optimization_goal: 'LANDING_PAGE_VIEWS', // Mejor calidad que LINK_CLICKS — solo cuenta quien carga la página
+      optimization_goal: 'OFFSITE_CONVERSIONS', // Meta busca compradores reales, no solo visitantes
       bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
-      promoted_object: { page_id: PAGE_ID },
+      promoted_object: { pixel_id: PIXEL_ID, custom_event_type: 'PURCHASE' },
       dsa_beneficiary: 'Aprende Gana y Crece IA',
       dsa_payor: 'Aprende Gana y Crece IA',
       targeting,

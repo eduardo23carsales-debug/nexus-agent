@@ -8,11 +8,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // ── Clientes ─────────────────────────────────────────────
-// anon: operaciones normales de lectura/escritura
-// admin: operaciones privilegiadas (borrar, bypass RLS)
+// Ambos usan service_role key — sistema backend puro, sin usuarios públicos.
+// La service_role bypasses RLS, así que las políticas de seguridad no bloquean nada internamente.
+// La anon key ya no se usa — RLS bloquea el acceso anónimo externo.
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_KEY
 );
 
 const supabaseAdmin = createClient(

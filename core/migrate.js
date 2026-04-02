@@ -72,6 +72,26 @@ const MIGRATIONS = [
         UNIQUE(email, fuente)
       );
     `
+  },
+  {
+    id: '006_enable_rls',
+    sql: `
+      -- Activar RLS en todas las tablas sensibles
+      ALTER TABLE experiments ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE digital_leads ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE agent_logs ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE _migrations ENABLE ROW LEVEL SECURITY;
+
+      -- Eliminar políticas públicas previas si existen
+      DROP POLICY IF EXISTS "public_read" ON experiments;
+      DROP POLICY IF EXISTS "public_read" ON campaigns;
+      DROP POLICY IF EXISTS "public_read" ON digital_leads;
+      DROP POLICY IF EXISTS "public_read" ON agent_logs;
+
+      -- Bloquear acceso anónimo total (sin políticas = acceso denegado para anon)
+      -- La service_role key del backend bypasses RLS automáticamente — no necesita políticas
+    `
   }
   // Agrega aquí futuras migraciones
 ];
