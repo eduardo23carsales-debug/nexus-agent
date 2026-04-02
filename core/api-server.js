@@ -140,7 +140,24 @@ app.get('/api/estado', auth, async (req, res) => {
         .select('gasto_total, estado')
         .eq('plataforma', 'meta');
       const gastoBD = (camps || []).reduce((s, c) => s + (parseFloat(c.gasto_total) || 0), 0);
-      const activas = (camps || []).filter(c => c.estado === 'activo' || c.estado === 'escalando').length;
+
+      // Campañas activas — fuente de verdad: Meta API directa (no la BD)
+      let activas = 0;
+      if (META_TOKEN && META_ACCOUNT) {
+        try {
+          const metaCamps = await axios.get(
+            `https://graph.facebook.com/v25.0/${META_ACCOUNT}/campaigns`,
+            {
+              params: { fields: 'id,effective_status', effective_status: '["ACTIVE"]', limit: 100, access_token: META_TOKEN },
+              timeout: 8000
+            }
+          );
+          activas = (metaCamps.data?.data || []).filter(c => c.effective_status === 'ACTIVE').length;
+        } catch {
+          // Si Meta API falla, contar desde BD como fallback
+          activas = (camps || []).filter(c => c.estado === 'activo' || c.estado === 'escalando').length;
+        }
+      }
 
       const gastoFinal = gastoReal !== null ? gastoReal : gastoBD;
       metaBalance = {
