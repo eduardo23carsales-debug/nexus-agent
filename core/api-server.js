@@ -470,6 +470,54 @@ app.delete('/api/campania/:id/meta', auth, async (req, res) => {
 });
 
 // ══════════════════════════════════════
+// POST /api/campanias/sincronizar-estados — Verifica cada campaña activa contra Meta y marca muertas las que no existen
+// ══════════════════════════════════════
+app.post('/api/campanias/sincronizar-estados', auth, async (req, res) => {
+  try {
+    const META_TOKEN = process.env.META_ACCESS_TOKEN?.trim();
+    if (!META_TOKEN) return res.status(400).json({ error: 'META_ACCESS_TOKEN no configurado' });
+
+    const { data: activas } = await supabase
+      .from('campaigns')
+      .select('id, campaign_id_externo, nombre')
+      .in('estado', ['activo', 'escalando']);
+
+    if (!activas?.length) return res.json({ ok: true, revisadas: 0, marcadas_muertas: 0 });
+
+    let marcadas = 0;
+    for (const camp of activas) {
+      if (!camp.campaign_id_externo) {
+        await supabase.from('campaigns').update({ estado: 'muerto', razon_decision: 'Sin ID externo' }).eq('id', camp.id);
+        marcadas++;
+        continue;
+      }
+      try {
+        await axios.get(
+          `https://graph.facebook.com/v25.0/${camp.campaign_id_externo}`,
+          { params: { fields: 'id,effective_status', access_token: META_TOKEN }, timeout: 8000 }
+        );
+        // Existe en Meta — no hacer nada
+      } catch (metaErr) {
+        const code = metaErr.response?.data?.error?.code;
+        if (code === 100 || code === 803) {
+          // No existe en Meta — marcar muerta en BD
+          await supabase.from('campaigns').update({
+            estado: 'muerto',
+            razon_decision: 'Eliminada directamente desde Meta Ads',
+            fecha_decision: new Date().toISOString()
+          }).eq('id', camp.id);
+          marcadas++;
+        }
+      }
+    }
+
+    res.json({ ok: true, revisadas: activas.length, marcadas_muertas: marcadas });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ══════════════════════════════════════
 // DELETE /api/campanias/limpiar — Bulk delete por estado desde BD
 // ══════════════════════════════════════
 app.delete('/api/campanias/limpiar', auth, async (req, res) => {
