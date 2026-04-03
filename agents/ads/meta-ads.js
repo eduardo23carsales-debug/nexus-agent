@@ -120,8 +120,8 @@ async function generarImagenesVariantes(nombre, nicho, formato = 'feed', audienc
   }
 
   // Stories necesita imagen vertical 9:16, Feed usa cuadrada 1:1
-  const size = formato === 'stories' ? '1024x1792' : '1024x1024';
-  const orientacion = formato === 'stories' ? 'vertical 9:16 for Instagram Stories' : 'square 1:1 for Facebook Feed';
+  const size = '1024x1024'; // Siempre cuadrado — compatible con todos los placements
+  const orientacion = 'square 1:1 for Facebook and Instagram Feed';
 
   // Hooks específicos al producto — del audience builder si existen, si no genéricos del nicho
   const hookDolor = audiencia?.hook || `¿Cansado con ${nicho}?`;
@@ -189,9 +189,9 @@ export const metaAds = {
       campaign_id: campana.id,
       // Sin daily_budget — el presupuesto lo controla CBO a nivel campaña
       billing_event: 'IMPRESSIONS',
-      optimization_goal: 'OFFSITE_CONVERSIONS', // Meta busca compradores reales, no solo visitantes
+      optimization_goal: 'LANDING_PAGE_VIEWS', // LPV funciona desde día 1 sin historial de compras
       bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
-      promoted_object: { pixel_id: PIXEL_ID, custom_event_type: 'PURCHASE' },
+      promoted_object: { pixel_id: PIXEL_ID }, // pixel activo para trackear, sin requerir historial de PURCHASE
       dsa_beneficiary: 'Aprende Gana y Crece IA',
       dsa_payor: 'Aprende Gana y Crece IA',
       targeting,
@@ -290,16 +290,15 @@ export const metaAds = {
   // ── Construir targeting por nicho y formato ──────────────
   construirTargeting(nicho, audiencia, formato = 'feed') {
     const base = {
-      age_min: audiencia.edad_min || 25,
-      age_max: audiencia.edad_max || 55,
+      age_min: 25, // Advantage+ exige exactamente 25 (subcode 1870188)
+      age_max: 65, // Advantage+ exige exactamente 65 (subcode 1870189)
       genders: [1, 2],
       geo_locations: {
         countries: ['US']
       },
-      // Idioma español — filtra solo hispanohablantes en USA
-      locales: [6],
       // Advantage+ Audience — Meta usa su propio ML para encontrar compradores
-      // Es el método de mejor rendimiento actual (2025)
+      // NOTA: locales:[6] incompatible con advantage_audience:1 (subcode 1885097)
+      // Advantage+ ignora locales y lo procesa internamente → se omite.
       targeting_automation: { advantage_audience: 1 }
     };
 
@@ -308,12 +307,8 @@ export const metaAds = {
     // Referencia: Meta requiere IDs numéricos de su Targeting Search API, no nombres en texto.
     // Se omite flexible_spec intencionalmente.
 
-    if (formato === 'stories') {
-      // Instagram Stories — placement específico, CPC $1.83 vs $3.35 Feed
-      base.publisher_platforms = ['instagram'];
-      base.instagram_positions = ['story'];
-    }
-    // Feed: sin restricción de placement → Meta optimiza en todos los placements
+    // Sin restricción de placement → Advantage+ optimiza en todos los placements
+    // (Instagram Stories requiere cuenta de Instagram conectada — se omite para compatibilidad)
 
     return base;
   },
