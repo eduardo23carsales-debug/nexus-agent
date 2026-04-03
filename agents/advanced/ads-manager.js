@@ -4,6 +4,7 @@
 // ════════════════════════════════════
 
 import { metaAds } from '../ads/meta-ads.js';
+import { tiktokAds } from '../ads/tiktok-ads.js';
 import { construirAudiencia } from '../ads/audience-builder.js';
 import { db, supabase } from '../../core/database.js';
 import { enviar } from '../../core/telegram.js';
@@ -73,7 +74,51 @@ export async function lanzarCampanaParaProducto(experimento) {
       `⏳ Decisión en 72 horas — Meta elige el ganador`
     );
 
-    console.log(`[AdsManager] Campaña lanzada exitosamente`);
+    console.log(`[AdsManager] Campaña Meta lanzada exitosamente`);
+
+    // ── TikTok Ads (si está configurado) ────────────────
+    if (process.env.TIKTOK_ACCESS_TOKEN && process.env.TIKTOK_ADVERTISER_ID) {
+      try {
+        console.log('[AdsManager] Lanzando campaña TikTok...');
+        const tiktokData = await tiktokAds.crearCampana({
+          nombre: experimento.nombre,
+          landingUrl: experimento.url,
+          presupuestoDiario: PRESUPUESTO_DIARIO,
+          nicho: experimento.nicho,
+          audiencia
+        });
+
+        await supabase.from('campaigns').insert({
+          experiment_id: experimento.id,
+          plataforma: 'tiktok',
+          campaign_id_externo: tiktokData.campaign_id,
+          adset_id: tiktokData.adset_id,
+          nombre: experimento.nombre,
+          estado: 'activo',
+          presupuesto_diario: PRESUPUESTO_DIARIO,
+          gasto_total: 0,
+          impresiones: 0,
+          clicks: 0,
+          conversiones: 0,
+          landing_page_views: 0,
+          revenue_generado: 0
+        });
+
+        await enviar(
+          `🎵 <b>CAMPAÑA TIKTOK LANZADA</b>\n\n` +
+          `<b>Producto:</b> ${experimento.nombre}\n` +
+          `💰 Presupuesto: $${PRESUPUESTO_DIARIO / 100}/día\n` +
+          `🌎 Targeting: US + MX + CO + AR + CL + PE (español)\n` +
+          `🖼 Imagen: generada con IA ✅\n` +
+          `⚡ CPM típico de TikTok: 40-70% menor que Meta`
+        );
+        console.log('[AdsManager] Campaña TikTok lanzada OK');
+      } catch (tErr) {
+        console.error('[AdsManager] TikTok error (no crítico):', tErr.message);
+        await enviar(`⚠️ <b>TikTok Ads</b>: No se pudo lanzar\nError: ${tErr.message}\n\nMeta Ads sí está activa.`);
+      }
+    }
+
     return campanaData;
 
   } catch (err) {

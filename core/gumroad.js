@@ -12,15 +12,16 @@ const TOKEN = process.env.GUMROAD_ACCESS_TOKEN;
 export const gumroad = {
 
   // ── Crea un producto en Gumroad y devuelve el link de venta ──
-  async crearProducto({ nombre, descripcion, precio }) {
+  async crearProducto({ nombre, descripcion, precio, productoUrl }) {
+    if (!TOKEN) throw new Error('GUMROAD_ACCESS_TOKEN no configurado');
     try {
       const res = await axios.post(`${BASE}/products`, {
         access_token: TOKEN,
         name: nombre,
-        description: descripcion,
+        description: `${descripcion}\n\n✅ Acceso inmediato después de la compra.`,
         price: Math.round(precio * 100), // en centavos
         currency: 'usd',
-        url: 'https://nexusagent.com', // placeholder
+        url: productoUrl || undefined, // URL del producto en Vercel — entregada al comprador
         published: true
       });
 

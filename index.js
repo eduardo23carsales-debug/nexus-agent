@@ -171,6 +171,16 @@ async function leerComandosTelegram() {
           await enviar(`❌ <b>Meta Ads FALLÓ</b>\n\n${e.message}`);
         }
 
+      } else if (texto === 'TESTTIKTOK') {
+        await enviar('🎵 Verificando conexión con TikTok Ads...');
+        try {
+          const { tiktokAds } = await import('./agents/ads/tiktok-ads.js');
+          await tiktokAds.preflight();
+          await enviar('✅ <b>TikTok Ads OK</b>\n\nToken válido y Advertiser accesible.\nListo para lanzar campañas en TikTok.');
+        } catch (e) {
+          await enviar(`❌ <b>TikTok Ads FALLÓ</b>\n\n${e.message}\n\nAsegúrate de tener TIKTOK_ACCESS_TOKEN y TIKTOK_ADVERTISER_ID en Railway.`);
+        }
+
       } else if (texto === 'LANZAR') {
         await enviar('🚀 Lanzando nuevo experimento ahora...');
         lanzarExperimento().catch(e => enviar(`❌ Error: ${e.message}`));
@@ -183,7 +193,7 @@ async function leerComandosTelegram() {
 
       } else if (texto === 'AYUDA' || texto === '/START') {
         await enviar(
-          `⚡ <b>NEXUS AGENT v4.2 — Comandos</b>\n\n` +
+          `⚡ <b>NEXUS AGENT v4.3 — Comandos</b>\n\n` +
           `<b>LANZAR</b> — Busca y presenta el mejor nicho\n` +
           `<b>PUBLICAR</b> — Aprueba el nicho y genera el producto\n` +
           `<b>OTRO</b> — Rechaza el nicho y busca uno diferente\n` +
@@ -191,7 +201,8 @@ async function leerComandosTelegram() {
           `<b>ESTADO</b> — Ver experimentos activos\n` +
           `<b>REPORTE</b> — Reporte financiero\n` +
           `<b>TESTMETA</b> — Verifica conexión Meta Ads\n` +
-          `<b>RELANZMETA</b> — Relanza campaña del último producto\n\n` +
+          `<b>TESTTIKTOK</b> — Verifica conexión TikTok Ads\n` +
+          `<b>RELANZMETA</b> — Relanza campaña Meta del último producto\n\n` +
           `<b>LEADCAMP</b> — Lanza campaña para cualquier oferta tuya\n` +
           `<i>Escribe libre: LEADCAMP + tu oferta + tu página web + WhatsApp (opcional)</i>\n` +
           `<i>Ej: LEADCAMP Elantra 2026 $299/mes Miami https://miweb.com +13055551234</i>\n\n` +
@@ -444,7 +455,7 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
     nicho: nicho.nicho
   });
 
-  // Publicar en Gumroad
+  // Publicar en Gumroad (con URL real del producto en Vercel)
   let gumroadUrl = null;
   try {
     const { gumroad } = await import('./core/gumroad.js');
@@ -452,9 +463,10 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
       nombre: nicho.nombre_producto,
       descripcion: `${nicho.subtitulo}\n\n${nicho.problema_que_resuelve}`,
       precio: nicho.precio,
-      contenido
+      productoUrl
     });
     gumroadUrl = gData.gumroad_url;
+    console.log(`[Gumroad] Publicado: ${gumroadUrl}`);
   } catch (e) {
     console.error('[Gumroad] Error publicando:', e.message);
   }
