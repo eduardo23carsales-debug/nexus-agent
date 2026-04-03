@@ -5,6 +5,7 @@
 
 import { metaAds } from '../ads/meta-ads.js';
 import { tiktokAds } from '../ads/tiktok-ads.js';
+import { googleAds } from '../ads/google-ads.js';
 import { construirAudiencia } from '../ads/audience-builder.js';
 import { db, supabase } from '../../core/database.js';
 import { enviar } from '../../core/telegram.js';
@@ -116,6 +117,51 @@ export async function lanzarCampanaParaProducto(experimento) {
       } catch (tErr) {
         console.error('[AdsManager] TikTok error (no crítico):', tErr.message);
         await enviar(`⚠️ <b>TikTok Ads</b>: No se pudo lanzar\nError: ${tErr.message}\n\nMeta Ads sí está activa.`);
+      }
+    }
+
+    // ── Google Ads (si está configurado) ────────────────
+    if (process.env.GOOGLE_ADS_CUSTOMER_ID && process.env.GOOGLE_ADS_DEVELOPER_TOKEN && process.env.GOOGLE_ADS_REFRESH_TOKEN) {
+      try {
+        console.log('[AdsManager] Lanzando campaña Google Ads Search...');
+        const googleData = await googleAds.crearCampana({
+          nombre: experimento.nombre,
+          landingUrl: experimento.url,
+          presupuestoDiario: PRESUPUESTO_DIARIO,
+          nicho: experimento.nicho,
+          precio: experimento.precio,
+          precioLifetime: experimento.precio + 60
+        });
+
+        await supabase.from('campaigns').insert({
+          experiment_id: experimento.id,
+          plataforma: 'google',
+          campaign_id_externo: googleData.campaign_id,
+          adset_id: googleData.adset_id,
+          nombre: experimento.nombre,
+          estado: 'activo',
+          presupuesto_diario: PRESUPUESTO_DIARIO,
+          gasto_total: 0,
+          impresiones: 0,
+          clicks: 0,
+          conversiones: 0,
+          landing_page_views: 0,
+          revenue_generado: 0
+        });
+
+        await enviar(
+          `🔍 <b>CAMPAÑA GOOGLE ADS LANZADA</b>\n\n` +
+          `<b>Producto:</b> ${experimento.nombre}\n` +
+          `💰 Presupuesto: $${PRESUPUESTO_DIARIO / 100}/día\n` +
+          `🌎 Targeting: US + MX + CO + AR + CL + PE (español)\n` +
+          `🔑 Keywords: ${googleData.keywords} palabras clave generadas con IA\n` +
+          `📝 Anuncio RSA activo en Google Search\n` +
+          `⚡ Tráfico de alta intención — personas buscando activamente`
+        );
+        console.log('[AdsManager] Campaña Google Ads lanzada OK');
+      } catch (gErr) {
+        console.error('[AdsManager] Google Ads error (no crítico):', gErr.message);
+        await enviar(`⚠️ <b>Google Ads</b>: No se pudo lanzar\nError: ${gErr.message}\n\nMeta Ads sí está activa.`);
       }
     }
 

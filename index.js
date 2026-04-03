@@ -181,6 +181,16 @@ async function leerComandosTelegram() {
           await enviar(`❌ <b>TikTok Ads FALLÓ</b>\n\n${e.message}\n\nAsegúrate de tener TIKTOK_ACCESS_TOKEN y TIKTOK_ADVERTISER_ID en Railway.`);
         }
 
+      } else if (texto === 'TESTGOOGLE') {
+        await enviar('🔍 Verificando conexión con Google Ads...');
+        try {
+          const { googleAds } = await import('./agents/ads/google-ads.js');
+          await googleAds.preflight();
+          await enviar('✅ <b>Google Ads OK</b>\n\nCredenciales válidas y cuenta accesible.\nListo para lanzar campañas de Search en Google.');
+        } catch (e) {
+          await enviar(`❌ <b>Google Ads FALLÓ</b>\n\n${e.message}`);
+        }
+
       } else if (texto === 'LANZAR') {
         await enviar('🚀 Lanzando nuevo experimento ahora...');
         lanzarExperimento().catch(e => enviar(`❌ Error: ${e.message}`));
@@ -202,6 +212,7 @@ async function leerComandosTelegram() {
           `<b>REPORTE</b> — Reporte financiero\n` +
           `<b>TESTMETA</b> — Verifica conexión Meta Ads\n` +
           `<b>TESTTIKTOK</b> — Verifica conexión TikTok Ads\n` +
+          `<b>TESTGOOGLE</b> — Verifica conexión Google Ads\n` +
           `<b>RELANZMETA</b> — Relanza campaña Meta del último producto\n\n` +
           `<b>LEADCAMP</b> — Lanza campaña para cualquier oferta tuya\n` +
           `<i>Escribe libre: LEADCAMP + tu oferta + tu página web + WhatsApp (opcional)</i>\n` +
