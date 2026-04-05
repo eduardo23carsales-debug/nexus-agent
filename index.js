@@ -140,7 +140,19 @@ async function leerComandosTelegram() {
       }
 
       // Comandos principales
-      if (texto === 'RELANZMETA') {
+      if (texto === 'REGENERAR') {
+        if (experimentoEnCurso) {
+          await enviar('⚠️ Ya hay un proceso en curso. Espera a que termine.');
+        } else {
+          await enviar('🔄 Regenerando producto del último experimento...');
+          experimentoEnCurso = true;
+          regenerarUltimoProducto().catch(async (e) => {
+            console.error('[Regenerar] Error:', e.message);
+            await alerta.errorCritico('regenerar', e.message);
+          }).finally(() => { experimentoEnCurso = false; });
+        }
+
+      } else if (texto === 'RELANZMETA') {
         await enviar('🔄 Buscando último producto publicado...');
         try {
           const { supabase } = await import('./core/database.js');
@@ -323,6 +335,7 @@ async function leerComandosTelegram() {
           `<b>PUBLICAR</b> — Aprueba el nicho y genera el producto\n` +
           `<b>OTRO</b> — Rechaza el nicho y busca uno diferente\n` +
           `<b>CANCELAR</b> — Cancela sin lanzar nada\n\n` +
+          `<b>REGENERAR</b> — Regenera el producto del último experimento\n` +
           `<b>ESTADO</b> — Ver experimentos activos\n` +
           `<b>REPORTE</b> — Reporte financiero\n` +
           `<b>TESTMETA</b> — Verifica conexión Meta Ads\n` +
@@ -390,6 +403,81 @@ async function leerComandosTelegram() {
       console.error('[Telegram] Error leyendo:', err.message);
     }
   }
+}
+
+// ════════════════════════════════════
+// REGENERAR PRODUCTO DEL ÚLTIMO EXPERIMENTO
+// ════════════════════════════════════
+
+async function regenerarUltimoProducto() {
+  const { supabase } = await import('./core/database.js');
+  const { deploy } = await import('./core/deploy.js');
+
+  // Cargar último experimento
+  const { data: exps } = await supabase
+    .from('experiments')
+    .select('*')
+    .order('fecha_inicio', { ascending: false })
+    .limit(1);
+
+  if (!exps?.length) {
+    await enviar('❌ No hay experimentos publicados todavía.');
+    return;
+  }
+
+  const exp = exps[0];
+  await enviar(`🔄 Regenerando: <b>${exp.nombre}</b>\n\nEsto puede tardar unos minutos...`);
+
+  // Reconstruir objeto nicho desde los datos del experimento
+  const nicho = {
+    nombre_producto: exp.nombre,
+    subtitulo: exp.descripcion,
+    nicho: exp.nicho,
+    tipo: exp.tipo || 'toolkit',
+    precio: exp.precio,
+    cliente_ideal: exp.cliente_ideal || '',
+    problema_que_resuelve: exp.problema_que_resuelve || '',
+    puntos_de_venta: [],
+    herramientas_clave: [],
+    quick_win: '',
+    formato_ad_recomendado: exp.formato_ad || 'feed'
+  };
+
+  // Regenerar contenido del producto con el fix de HTML aplicado
+  const contenido = await generarProducto(nicho);
+
+  const productoValido = contenido &&
+    contenido.length >= 5000 &&
+    contenido.includes('</html>') &&
+    contenido.includes('tab-panel') &&
+    contenido.split('tab-panel').length >= 4;
+
+  if (!productoValido) {
+    throw new Error(`Producto regenerado incompleto (${contenido?.length || 0} chars).`);
+  }
+
+  // Redesplegar en Vercel — mismo proyecto, actualiza el archivo producto/index.html
+  await enviar('🚀 Subiendo producto regenerado a Vercel...');
+  const { landingUrl, productoUrl } = await deploy.publicarCompleto({
+    nombre: exp.nombre,
+    htmlLanding: exp.landing_html,
+    htmlProducto: contenido,
+    nicho: exp.nicho
+  });
+
+  // Actualizar contenido en DB
+  await supabase
+    .from('experiments')
+    .update({ contenido_producto: contenido, producto_url: productoUrl })
+    .eq('id', exp.id);
+
+  await enviar(
+    `✅ <b>Producto regenerado y actualizado</b>\n\n` +
+    `📦 <b>${exp.nombre}</b>\n` +
+    `🌐 Landing: ${landingUrl}\n` +
+    `📦 Producto: ${productoUrl}\n\n` +
+    `Todos los módulos regenerados con el fix de estructura HTML.`
+  );
 }
 
 // ════════════════════════════════════
