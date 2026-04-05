@@ -63,7 +63,9 @@ export const hotmart = {
     const res = await axios.post(`${BASE}/products`, payload, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; NexusAgent/1.0)',
+        'Accept': 'application/json'
       }
     });
 
