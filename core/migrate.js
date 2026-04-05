@@ -92,7 +92,7 @@ const MIGRATIONS = [
       -- Bloquear acceso anónimo total (sin políticas = acceso denegado para anon)
       -- La service_role key del backend bypasses RLS automáticamente — no necesita políticas
     `
-  }
+  },
   {
     id: '007_hotmart_columns',
     sql: `
