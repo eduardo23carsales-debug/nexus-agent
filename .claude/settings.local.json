@@ -14,7 +14,15 @@
       "Bash(find C:devbot_opciones_Ultimo -maxdepth 1 -type f \\\\\\(-name README* -o -name *.md \\\\\\) -exec head -50 {} +)",
       "Bash(grep -r \"REQUEST_NEW_CONTENT_ITEM\\\\|campaign\\\\|SPENT\\\\|CLICKS\\\\|IMPRESSIONS\\\\|ROAS\\\\|CTR\" C:devbot_opciones_Ultimo --include=*.py -i)",
       "Bash(find 'C:\\\\dev\\\\agentes de hacer dinero' -type f -name *.py)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(railway up:*)",
+      "Bash(railway project:*)",
+      "Bash(railway link:*)",
+      "Bash(railway logs:*)",
+      "Bash(railway variables:*)",
+      "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\); console.log\\(JSON.stringify\\(JSON.parse\\(d\\), null, 2\\)\\)\")",
+      "Bash(curl:*)",
+      "Bash(railway run:*)"
     ]
   }
 }

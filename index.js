@@ -191,6 +191,16 @@ async function leerComandosTelegram() {
           await enviar(`❌ <b>Google Ads FALLÓ</b>\n\n${e.message}`);
         }
 
+      } else if (texto === 'TESTHOTMART') {
+        await enviar('🔥 Verificando conexión con Hotmart...');
+        try {
+          const { hotmart } = await import('./core/hotmart.js');
+          const r = await hotmart.ping();
+          await enviar(`✅ <b>Hotmart OK</b>\n\nCredenciales válidas. Productos activos: ${r.productos}\nWebhook URL: https://${process.env.MY_DOMAIN}/webhook/hotmart`);
+        } catch (e) {
+          await enviar(`❌ <b>Hotmart FALLÓ</b>\n\n${e.message}\n\nConfigura en Railway:\n• HOTMART_CLIENT_ID\n• HOTMART_CLIENT_SECRET\n• HOTMART_WEBHOOK_TOKEN (opcional)`);
+        }
+
       } else if (texto === 'LANZAR') {
         await enviar('🚀 Lanzando nuevo experimento ahora...');
         lanzarExperimento().catch(e => enviar(`❌ Error: ${e.message}`));
@@ -213,6 +223,7 @@ async function leerComandosTelegram() {
           `<b>TESTMETA</b> — Verifica conexión Meta Ads\n` +
           `<b>TESTTIKTOK</b> — Verifica conexión TikTok Ads\n` +
           `<b>TESTGOOGLE</b> — Verifica conexión Google Ads\n` +
+          `<b>TESTHOTMART</b> — Verifica conexión Hotmart\n` +
           `<b>RELANZMETA</b> — Relanza campaña Meta del último producto\n\n` +
           `<b>LEADCAMP</b> — Lanza campaña para cualquier oferta tuya\n` +
           `<i>Escribe libre: LEADCAMP + tu oferta + tu página web + WhatsApp (opcional)</i>\n` +
@@ -444,9 +455,29 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
 /></noscript>
 <!-- End Meta Pixel Code -->`;
 
-  const htmlLimpio = html
+  const stripeLink = stripeData.stripe_payment_link;
+
+  let htmlLimpio = html
     .replace(/```html\n?/g, '').replace(/```\n?/g, '').trim()
     .replace('</head>', `${metaPixel}\n</head>`);
+
+  // ── Garantizar que el payment link esté en los botones de compra ──
+  // Claude a veces usa href="#" o href="" como placeholder
+  htmlLimpio = htmlLimpio
+    .replace(/href="#"/g, `href="${stripeLink}"`)
+    .replace(/href=""\s/g, `href="${stripeLink}" `)
+    .replace(/href="\[LINK[^\]]*\]"/gi, `href="${stripeLink}"`)
+    .replace(/href="PAYMENT_LINK"/gi, `href="${stripeLink}"`);
+
+  // Si el link de Stripe sigue sin aparecer, agregar botón fijo flotante
+  if (!htmlLimpio.includes('stripe.com') && !htmlLimpio.includes(stripeLink)) {
+    const stickyBtn = `\n<div style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;text-align:center;padding:0 16px">
+  <a href="${stripeLink}" style="display:inline-block;background:#00ff88;color:#000;font-weight:800;font-size:1.05em;padding:16px 40px;border-radius:50px;text-decoration:none;box-shadow:0 4px 24px rgba(0,255,136,0.45);white-space:nowrap">
+    💳 COMPRAR AHORA — $${nicho.precio}
+  </a>
+</div>`;
+    htmlLimpio = htmlLimpio.replace('</body>', `${stickyBtn}\n</body>`);
+  }
 
   // Validar que la landing page se generó completa y con estructura HTML real
   const landingValida = htmlLimpio &&
@@ -482,6 +513,24 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
     console.error('[Gumroad] Error publicando:', e.message);
   }
 
+  // Publicar en Hotmart (canal adicional de ventas)
+  let hotmartUrl = null;
+  let hotmartId = null;
+  try {
+    const { hotmart } = await import('./core/hotmart.js');
+    const hData = await hotmart.crearProducto({
+      nombre: nicho.nombre_producto,
+      descripcion: `${nicho.subtitulo}\n\n${nicho.problema_que_resuelve}`,
+      precio: nicho.precio,
+      productoUrl
+    });
+    hotmartUrl = hData.hotmart_url;
+    hotmartId = hData.hotmart_id;
+    console.log(`[Hotmart] Publicado: ${hotmartUrl}`);
+  } catch (e) {
+    console.error('[Hotmart] Error publicando:', e.message);
+  }
+
   const experimento = await db.crearExperimento({
     nicho: nicho.nicho,
     tipo: nicho.tipo || 'guia_pdf',
@@ -497,15 +546,19 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
     estado: 'corriendo',
     contenido_producto: contenido,
     landing_html: htmlLimpio,
-    producto_url: productoUrl
+    producto_url: productoUrl,
+    gumroad_url: gumroadUrl,
+    hotmart_id: hotmartId ? String(hotmartId) : null,
+    hotmart_url: hotmartUrl
   });
 
   await enviar(
     `✅ <b>PUBLICADO Y ACTIVO</b>\n━━━━━━━━━━━━━\n` +
     `🌐 Landing: ${url}\n` +
     `📦 Producto: ${productoUrl || 'pendiente'}\n` +
-    `💳 Pago: ${stripeData.stripe_payment_link}` +
+    `💳 Stripe: ${stripeData.stripe_payment_link}` +
     (gumroadUrl ? `\n🛒 Gumroad: ${gumroadUrl}` : '') +
+    (hotmartUrl ? `\n🔥 Hotmart: ${hotmartUrl}` : '') +
     `\n\n⚡ Lanzando campaña Meta Ads...`
   );
 

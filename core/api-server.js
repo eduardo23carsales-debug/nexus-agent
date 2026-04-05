@@ -623,6 +623,37 @@ app.post('/webhook/stripe', express.raw({ type: 'application/json' }), async (re
 });
 
 // ══════════════════════════════════════
+// /webhook/hotmart — Entrega inmediata al comprar en Hotmart
+// Hotmart llama este endpoint en cada venta confirmada
+// ══════════════════════════════════════
+app.post('/webhook/hotmart', express.json(), async (req, res) => {
+  // Hotmart envía un header hottok para verificación básica
+  const hottok = req.headers['hottok'] || req.query.hottok;
+  const expectedToken = process.env.HOTMART_WEBHOOK_TOKEN;
+
+  if (expectedToken && hottok !== expectedToken) {
+    console.warn('[Hotmart Webhook] Token inválido — rechazando');
+    return res.status(401).send('Token inválido');
+  }
+
+  res.status(200).json({ received: true });
+
+  const event = req.body?.event;
+  const data = req.body?.data;
+
+  console.log(`[Hotmart Webhook] Evento recibido: ${event}`);
+
+  if (event === 'PURCHASE_COMPLETE' || event === 'PURCHASE_APPROVED') {
+    try {
+      const { procesarVentaHotmart } = await import('./hotmart.js');
+      await procesarVentaHotmart({ data, event });
+    } catch (err) {
+      console.error('[Hotmart Webhook] Error procesando venta:', err.message);
+    }
+  }
+});
+
+// ══════════════════════════════════════
 // ARRANQUE
 // ══════════════════════════════════════
 export function iniciarAPIServer() {

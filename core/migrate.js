@@ -93,6 +93,15 @@ const MIGRATIONS = [
       -- La service_role key del backend bypasses RLS automáticamente — no necesita políticas
     `
   }
+  {
+    id: '007_hotmart_columns',
+    sql: `
+      ALTER TABLE experiments
+      ADD COLUMN IF NOT EXISTS hotmart_id TEXT,
+      ADD COLUMN IF NOT EXISTS hotmart_url TEXT,
+      ADD COLUMN IF NOT EXISTS gumroad_url TEXT;
+    `
+  }
   // Agrega aquí futuras migraciones
 ];
 

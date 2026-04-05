@@ -115,7 +115,8 @@ export const email = {
 
     const sesiones = await stripe.checkout.sessions.list({
       limit: 50,
-      created: { gte: desde }
+      created: { gte: desde },
+      expand: ['data.payment_link']  // necesario para matching correcto por producto
     });
 
     const pagosPendientes = sesiones.data.filter(s => s.payment_status === 'paid');

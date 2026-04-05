@@ -1,0 +1,634 @@
+PROMPT MAESTRO PARA CLAUDE CODE — SISTEMA AUTOMATIZADO DE TIKTOK ADS
+
+ROL
+Quiero que actúes como arquitecto de software senior + lead engineer de growth systems. Tu tarea es diseñar y construir una plataforma admin propia para automatizar campañas de TikTok Ads de productos digitales primero, y dejar la base lista para luego soportar múltiples productos y eventualmente múltiples clientes/cuentas.
+
+OBJETIVO DEL SISTEMA
+Necesito un sistema centralizado donde yo pueda:
+
+1. Conectar una cuenta de TikTok Ads / Business Center.
+2. Registrar uno o varios productos digitales.
+3. Registrar funnels / landings / checkout links.
+4. Subir y gestionar creativos (videos, copies, hooks, CTA).
+5. Crear campañas automáticamente en TikTok Ads.
+6. Sincronizar métricas de campañas y anuncios.
+7. Recibir eventos de ventas y conversiones.
+8. Ver todo desde un dashboard admin mío.
+9. Definir reglas automáticas para pausar, escalar o duplicar campañas.
+10. Dejar el sistema lo más automatizado posible para que yo solo supervise métricas y haga ajustes simples.
+
+IMPORTANTE
+No quiero un prototipo superficial. Quiero una base profesional, modular, mantenible y escalable.
+Primero debe quedar funcional para MIS productos digitales.
+Luego debe quedar preparada para soportar más productos y más cuentas sin rehacer la arquitectura.
+
+PRINCIPIOS DE DISEÑO
+1. Separar claramente:
+   - lógica de negocio,
+   - integración con TikTok,
+   - tracking y eventos,
+   - automatización,
+   - dashboard,
+   - workers y cron jobs.
+
+2. Todo debe ser:
+   - modular,
+   - escalable,
+   - auditable,
+   - seguro,
+   - fácil de mantener.
+
+3. No mezclar frontend con lógica de automatización.
+
+4. No poner secretos en frontend.
+
+5. El sistema debe usar una base de datos real y guardar histórico para reporting propio.
+
+STACK RECOMENDADO
+Si no hay una razón fuerte en contra, usa este stack:
+
+FRONTEND
+- Next.js
+- TypeScript
+- Tailwind
+- dashboard limpio y funcional
+
+BACKEND
+- FastAPI en Python
+o, si justificas mejor otra opción, NestJS
+- arquitectura modular por dominios
+
+BASE DE DATOS
+- PostgreSQL
+
+COLA / JOBS / WORKERS
+- Redis
+- Celery o equivalente si usas Python
+
+INFRA
+- Docker
+- docker-compose para entorno local
+- variables de entorno seguras
+- estructura preparada para deploy posterior
+
+AUTENTICACIÓN
+- Admin auth simple pero segura
+- JWT o session-based si lo justificas
+- solo 1 admin al principio, pero preparado para múltiples usuarios más adelante
+
+INTEGRACIONES NECESARIAS
+1. TikTok Marketing API
+   - para crear campañas
+   - crear ad groups
+   - crear ads
+   - leer métricas
+   - pausar/activar
+   - eventualmente duplicar o escalar
+
+2. TikTok Pixel / Events API
+   - para capturar conversiones y ventas
+   - deduplicación de eventos cuando aplique
+   - guardar también eventos en nuestra propia base de datos
+
+3. Integración con checkout / sistema de ventas
+   - diseñar una capa genérica para recibir ventas
+   - puede ser webhook primero
+   - que soporte order_id, amount, product_id, currency, status, email hash u otros identificadores útiles
+
+OBJETIVO FUNCIONAL DETALLADO
+Quiero que construyas una PLATAFORMA ADMIN con estas capacidades:
+
+A. MÓDULO DE CUENTAS / CONEXIONES
+- Conectar y guardar credenciales/tokens de TikTok Ads
+- Guardar advertiser_id / ad_account_id / business data
+- Ver estado de conexión
+- Ver si la cuenta está activa o con error
+- Tabla para cuentas publicitarias conectadas
+
+B. MÓDULO DE PRODUCTOS
+Cada producto debe poder tener:
+- nombre
+- descripción
+- tipo (ebook, curso, mentoría, plantilla, etc.)
+- status (activo/inactivo)
+- precio
+- moneda
+- CPA máximo objetivo
+- ROAS mínimo objetivo
+- landing_url
+- checkout_url
+- evento principal (purchase, lead, initiate_checkout)
+- país/mercado
+- notas internas
+
+C. MÓDULO DE CREATIVOS
+Cada creativo debe poder tener:
+- video file o referencia al asset
+- nombre interno
+- hook
+- copy principal
+- CTA
+- angle/tag
+- status
+- fecha de carga
+- relación con producto
+- métricas luego por creativo
+
+D. MÓDULO DE CAMPAÑAS
+Debe permitir:
+- crear campaña para un producto
+- asociar varios creativos
+- crear estructura campaign > ad group > ads
+- asignar presupuesto diario
+- asignar naming convention
+- activar / pausar
+- mostrar estado
+- guardar IDs devueltos por TikTok
+
+E. MÓDULO DE TRACKING Y VENTAS
+Debe:
+- recibir eventos vía webhook o endpoint server-side
+- almacenar:
+  - page_view
+  - view_content
+  - add_to_cart
+  - initiate_checkout
+  - lead
+  - purchase
+- guardar:
+  - event_name
+  - event_time
+  - event_id
+  - order_id
+  - product_id
+  - value
+  - currency
+  - source
+  - metadata útil
+- registrar ventas en tabla separada también
+- permitir reconciliar ventas vs campañas
+
+F. MÓDULO DE ANALYTICS / DASHBOARD
+Dashboard admin con métricas clave:
+- spend
+- impressions
+- clicks
+- CTR
+- CPC
+- CPM
+- conversions
+- purchases
+- revenue
+- CPA
+- ROAS
+- conversion rate
+- profit estimado si se puede
+- top campaigns
+- top creatives
+- top products
+- peores campañas
+- alertas importantes
+
+Filtros mínimos:
+- hoy
+- 7 días
+- 30 días
+- rango personalizado
+- por producto
+- por cuenta
+
+G. MÓDULO DE AUTOMATION ENGINE
+Necesito reglas configurables tipo:
+
+1. Pausa automática:
+- si spend > X y purchases = 0
+- si CTR < mínimo después de cierto volumen
+- si CPA > máximo después de N conversiones
+- si ROAS < mínimo tras cierto gasto
+
+2. Escalado:
+- si purchases >= N
+- y CPA < umbral
+- y ROAS > umbral
+- entonces aumentar presupuesto X%
+
+3. Duplicado:
+- si campaña ganadora supera cierto rendimiento, duplicar ad group o ad
+
+4. Alertas:
+- cuenta desconectada
+- evento de compra cae a cero
+- campaña pausada por regla
+- CPA fuera de control
+- creatives fatigados si se detecta con reglas simples
+
+IMPORTANTE
+No quiero “IA inventada”.
+Primero haz un motor de reglas determinista, robusto y auditable.
+Cada acción automática debe quedar registrada:
+- qué regla la disparó
+- a qué entidad afectó
+- valor antes
+- valor después
+- timestamp
+- resultado exitoso o fallido
+
+H. MÓDULO DE JOBS / WORKERS
+Crear workers o tareas programadas para:
+- sincronizar métricas con TikTok cada X minutos
+- refrescar tokens si aplica
+- evaluar reglas automáticas
+- procesar ventas entrantes
+- enviar alertas
+- recalcular métricas agregadas
+
+I. MÓDULO DE ALERTAS
+Preparar notificaciones por:
+- email
+- Telegram opcional
+- o al menos sistema interno de alertas en dashboard
+
+ARQUITECTURA DE CARPETAS
+Quiero una estructura seria y limpia. Propuesta esperada:
+
+/app o /src
+  /backend
+    /api
+    /core
+    /modules
+      /auth
+      /accounts
+      /products
+      /creatives
+      /campaigns
+      /tracking
+      /sales
+      /analytics
+      /automation
+      /integrations
+        /tiktok
+      /alerts
+      /workers
+    /db
+    /schemas
+    /models
+    /services
+    /repositories
+    /tasks
+  /frontend
+    /app o /pages
+    /components
+    /features
+    /lib
+    /services
+    /types
+
+Si propones una estructura mejor, justifícala y mantenla limpia.
+
+BASE DE DATOS — TABLAS MÍNIMAS
+Diseña y crea migraciones para estas tablas o equivalente:
+
+1. admins / users
+2. ad_accounts
+3. products
+4. product_offers (si lo consideras útil)
+5. creatives
+6. campaigns
+7. ad_groups
+8. ads
+9. tracking_events
+10. sales
+11. metric_snapshots
+12. automation_rules
+13. automation_actions
+14. alerts
+15. sync_jobs / job_runs
+16. integrations / credentials
+
+Cada tabla con:
+- primary key
+- timestamps
+- índices útiles
+- relaciones correctas
+- campos de status
+
+API / ENDPOINTS ESPERADOS
+Quiero endpoints bien organizados para:
+
+AUTH
+- login
+- logout
+- me
+
+AD ACCOUNTS
+- conectar cuenta
+- listar cuentas
+- detalle de cuenta
+- verificar conexión
+
+PRODUCTS
+- CRUD completo
+
+CREATIVES
+- CRUD completo
+- subir asset
+- listar por producto
+
+CAMPAIGNS
+- crear campaña
+- listar campañas
+- detalle campaña
+- pausar
+- activar
+- sincronizar manual
+- lanzar campaña desde producto
+
+TRACKING / SALES
+- endpoint para recibir eventos
+- endpoint para recibir ventas
+- listar eventos
+- listar ventas
+
+ANALYTICS
+- overview
+- métricas por producto
+- métricas por campaña
+- métricas por creativo
+- embudo simple
+
+AUTOMATION
+- listar reglas
+- crear regla
+- activar/desactivar regla
+- ver acciones ejecutadas
+- ejecutar evaluación manual
+
+ALERTS
+- listar alertas
+- marcar vistas
+
+UI / DASHBOARD — PÁGINAS MÍNIMAS
+1. Login
+2. Dashboard overview
+3. Productos
+4. Detalle producto
+5. Creativos
+6. Campañas
+7. Detalle campaña
+8. Automatización / reglas
+9. Ventas / eventos
+10. Ajustes / conexiones
+
+REQUISITOS DEL DASHBOARD
+Debe verse claro, no recargado.
+Quiero:
+- tarjetas KPI arriba
+- tablas de campañas y productos
+- gráficas simples
+- filtros por fecha
+- navegación lateral
+- detalle suficiente para gestionar sin entrar al panel de TikTok para todo
+
+REGLAS DE IMPLEMENTACIÓN
+1. Empieza por dejar el proyecto corriendo en local.
+2. Usa docker-compose.
+3. Crea seed básico si ayuda.
+4. Escribe README serio.
+5. Escribe .env.example.
+6. Documenta cómo conectar TikTok después.
+7. Si no puedes completar una integración real por falta de credenciales, deja:
+   - interfaz lista,
+   - adapters,
+   - servicios,
+   - mocks controlados,
+   - puntos exactos donde conectar la API real.
+
+MUY IMPORTANTE
+No frenes todo por no tener credenciales.
+Construye la estructura completa y deja el sistema listo para enchufar las credenciales reales después.
+
+FASES DE DESARROLLO QUE QUIERO
+Construye por fases:
+
+FASE 1
+- Setup monorepo o estructura clara
+- backend base
+- frontend base
+- auth admin
+- DB + migraciones
+- CRUD products
+- CRUD creatives
+- dashboard básico
+
+FASE 2
+- módulo ad_accounts
+- módulo campaigns
+- integración estructural TikTok
+- creación de campañas con adapter/mock si falta credencial
+- tablas campaigns/ad_groups/ads
+
+FASE 3
+- tracking events
+- sales ingestion
+- analytics base
+- overview real con datos de DB
+
+FASE 4
+- automation_rules
+- automation_actions
+- worker scheduler
+- evaluación automática de reglas
+- alertas
+
+FASE 5
+- pulido UI
+- hardening
+- logs
+- validaciones
+- documentación
+- dejar base preparada para multi-tenant futuro
+
+MULTI-TENANT FUTURO
+No lo implementes complejo desde el día 1 si atrasa.
+Pero sí deja el diseño preparado para:
+- organization_id
+- ownership de cuentas
+- ownership de productos
+- permisos futuros
+
+SEGURIDAD
+- secretos solo en backend
+- validaciones de inputs
+- logs sin exponer secretos
+- sanitización de webhooks
+- rate limit básico si aplica
+- manejo correcto de errores
+
+LOGGING Y OBSERVABILIDAD
+Quiero logs útiles para:
+- sync de métricas
+- creación/pausa de campañas
+- errores de integración
+- reglas ejecutadas
+- eventos recibidos
+- ventas registradas
+
+TESTING
+Agrega al menos:
+- tests mínimos de servicios críticos
+- tests del motor de reglas
+- tests de endpoints importantes
+- no hace falta cobertura perfecta, pero sí base seria
+
+SALIDA ESPERADA
+Quiero que me entregues:
+
+1. Código completo del proyecto.
+2. Estructura de carpetas final.
+3. Backend y frontend corriendo en local.
+4. Migraciones.
+5. Docker.
+6. README detallado.
+7. .env.example
+8. Endpoints funcionales.
+9. Dashboard funcional.
+10. Motor de reglas funcional.
+11. Integración TikTok lista para conectar.
+12. Comentarios claros donde falte credencial real.
+
+FORMA DE TRABAJO
+No me des teoría eterna.
+Trabaja como engineer.
+Prioriza primero dejar base funcional end-to-end.
+Luego incrementa.
+
+MUY IMPORTANTE SOBRE TU RESPUESTA
+Quiero que ejecutes el trabajo en este orden:
+
+1. Primero muéstrame la estructura final propuesta del proyecto.
+2. Luego crea los archivos base más importantes.
+3. Luego implementa backend.
+4. Luego frontend.
+5. Luego docker y documentación.
+6. Luego reglas automáticas.
+7. Luego revisión final de consistencia.
+
+Cada vez que generes código:
+- entrega archivos completos,
+- no pseudocódigo,
+- no fragmentos incompletos,
+- no omitas imports.
+
+SI NECESITAS DECIDIR ENTRE OPCIONES
+Elige la opción más robusta y práctica para producción pequeña/mediana.
+No me preguntes cosas obvias si puedes resolverlas con criterio técnico sólido.
+
+CONCLUSIÓN DEL ENCARGO
+Construye una plataforma admin propia para automatizar TikTok Ads de productos digitales, con tracking, campañas, dashboard, ventas y motor de reglas, lista para conectar credenciales reales después y escalar más adelante.
+
+FIN DEL PROMPT.
+
+
+ANEXO — ACLARACIONES TÉCNICAS QUE DEBES RESPETAR
+
+1. El sistema debe diferenciar claramente:
+- métricas publicitarias reportadas por TikTok
+- eventos internos recibidos por webhook
+- ventas reales registradas por nuestro sistema
+
+2. El dashboard debe priorizar verdad de negocio:
+- gasto
+- ventas
+- ROAS
+- CPA
+- revenue
+No solo vanity metrics.
+
+3. Todas las automatizaciones deben ser reversibles o al menos auditables.
+
+4. Debe existir una tabla de snapshots o agregados para no recalcular todo siempre.
+
+5. Debe existir un mecanismo simple para:
+- campaign sync now
+- evaluate automation now
+
+6. Naming conventions:
+El sistema debe construir nombres consistentes para campañas, por ejemplo:
+[PRODUCT]-[COUNTRY]-[GOAL]-[DATE]-[VARIANT]
+o equivalente configurable.
+
+7. Creativos:
+Debe permitirse guardar múltiples videos por producto y luego asociarlos a diferentes campañas/ad groups.
+
+8. Productos:
+La arquitectura debe permitir que en el futuro un producto tenga múltiples ofertas o múltiples funnels.
+
+9. Recomendación operativa:
+Primero dejar modo single-admin / single-business.
+Luego dejar preparado para múltiples advertisers.
+
+10. No dependas de una sola fuente de verdad externa.
+Guardar suficiente data local para reporting propio.
+
+11. Si alguna parte del Marketing API de TikTok no puede quedar probada por falta de acceso, deja:
+- cliente HTTP encapsulado,
+- capa service,
+- interfaz adapter,
+- manejo de errores,
+- y un mock provider para desarrollo local.
+
+12. Si necesitas priorizar, prioriza en este orden:
+- estructura
+- base de datos
+- dashboard
+- tracking
+- campañas
+- automatización avanzada
+
+13. Mantén la UI simple.
+No sacrifiques backend serio por una UI bonita.
+
+14. Si puedes, prepara el proyecto para que luego se le pueda agregar:
+- Meta Ads
+- Google Ads
+- otras fuentes
+mediante una capa de providers/integrations.
+
+15. En analytics, incluye al menos:
+- overview por rango de fechas
+- breakdown por producto
+- breakdown por campaña
+- breakdown por creativo
+
+16. En automation, cada regla debe soportar:
+- scope (producto, campaña, ad_group o cuenta)
+- condición
+- acción
+- status
+- prioridad
+- cooldown
+- enabled/disabled
+
+17. Acción mínima soportada:
+- pause_campaign
+- activate_campaign
+- increase_budget_percent
+- decrease_budget_percent
+- send_alert
+
+18. Todas las acciones automáticas deben escribir en automation_actions.
+
+19. Para ventas, registrar:
+- gross revenue
+- net revenue si luego se puede
+- status (paid/refunded/pending)
+- source
+
+20. README final debe explicar:
+- cómo correr local
+- cómo levantar DB
+- cómo levantar workers
+- cómo conectar TikTok luego
+- cómo probar webhooks
+- cómo crear primer producto
+- cómo lanzar primera campaña desde el sistema
