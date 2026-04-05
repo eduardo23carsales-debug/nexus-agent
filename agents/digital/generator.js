@@ -29,7 +29,14 @@ REGLAS DE CALIDAD — OBLIGATORIAS EN CADA SECCIÓN:
 7. EJERCICIO PRÁCTICO: Termina cada sección con una acción inmediata concreta
 8. CONTEXTO CULTURAL: Menciona barrios, ciudades, formas de pago y situaciones reales del subgrupo
 
-Devuelves SOLO el HTML del contenido, sin <html> ni <body>. Contenido denso, rico, específico.`;
+Devuelves SOLO el HTML del contenido, sin <html> ni <body>. Contenido denso, rico, específico.
+
+RESTRICCIONES TÉCNICAS OBLIGATORIAS — NUNCA VIOLARLAS:
+- NUNCA uses <script> ni </script> — el producto ya tiene su propio JS
+- NUNCA uses <style> ni </style> — el producto ya tiene su propio CSS
+- NUNCA uses colores claros en inline style: no "color:#333", no "color:black", no "color:#000", no "background:white", no "background:#fff", no "background:#f5f5f5" — el fondo es OSCURO, texto claro
+- Si necesitas colorear texto, usa las clases ya definidas: .highlight .tip .info .card .section-title
+- Atributos style permitidos solo para: margin, padding, gap, flex, grid, width — nunca color ni background`;
 
 // ── Shell HTML con tabs y acordeón ──────────────────────────
 function crearShellHTML(titulo, subtitulo, tipo, secciones) {
@@ -150,7 +157,7 @@ body { font-family: 'Inter', 'Segoe UI', sans-serif; background: var(--bg); colo
 
 /* ── CONTENT ── */
 .content { flex: 1; padding: 40px 44px; max-width: 860px; }
-.tab-panel { display: none; animation: fadeIn 0.2s ease; }
+.tab-panel { display: none; animation: fadeIn 0.2s ease; overflow-x: auto; }
 .tab-panel.active { display: block; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -253,8 +260,37 @@ td { padding: 11px 16px; border-top: 1px solid var(--border); color: #C8CEDC; fo
 tbody tr:hover { background: var(--surface2); }
 
 /* ── SCROLL HORIZONTAL GLOBAL — tablas, certificados, cualquier contenido ancho ── */
-.tab-panel { overflow-x: auto; }
 .card { overflow-x: auto; }
+
+/* ── FORZAR LEGIBILIDAD — Claude a veces inyecta inline styles con color oscuro ──
+   Cualquier elemento dentro del panel con color oscuro queda ilegible en fondo oscuro.
+   Estos overrides fuerzan el texto a ser legible sin importar el inline style. ── */
+.tab-panel [style*="color:#3"],
+.tab-panel [style*="color: #3"],
+.tab-panel [style*="color:#2"],
+.tab-panel [style*="color: #2"],
+.tab-panel [style*="color:#1"],
+.tab-panel [style*="color: #1"],
+.tab-panel [style*="color:#0"],
+.tab-panel [style*="color: #0"],
+.tab-panel [style*="color:black"],
+.tab-panel [style*="color: black"],
+.tab-panel [style*="color:rgb(0"],
+.tab-panel [style*="color: rgb(0"] { color: var(--text) !important; }
+.tab-panel [style*="background:#f"],
+.tab-panel [style*="background: #f"],
+.tab-panel [style*="background:#e"],
+.tab-panel [style*="background: #e"],
+.tab-panel [style*="background:#d"],
+.tab-panel [style*="background: #d"],
+.tab-panel [style*="background:white"],
+.tab-panel [style*="background: white"],
+.tab-panel [style*="background-color:#f"],
+.tab-panel [style*="background-color: #f"],
+.tab-panel [style*="background-color:#e"],
+.tab-panel [style*="background-color: #e"],
+.tab-panel [style*="background-color:white"],
+.tab-panel [style*="background-color: white"] { background: var(--surface2) !important; }
 
 /* ── TABLE ACTIONS ── */
 .table-actions { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
@@ -487,12 +523,19 @@ export async function generarProducto(nicho) {
   return html;
 }
 
-// ── Sanea el HTML de una sección: balancea <div> y elimina </script> sueltos ──
+// ── Sanea el HTML de una sección: balancea <div> y elimina bloques peligrosos ──
 // Sin esto, un </div> de más en el contenido de Claude cierra el panel wrapper
 // y el resto de la sección queda fuera del contenedor (aparece "vacío").
+// También: un <script>...</script> incompleto (solo eliminando </script>) deja un
+// <script> abierto que consume todo el HTML restante y rompe los tabs.
 function sanearHTML(html) {
-  // Eliminar cierres de script que romperían el <script> del shell
-  let resultado = html.replace(/<\/script>/gi, '');
+  // Eliminar bloques <script>...</script> completos primero
+  let resultado = html.replace(/<script[\s\S]*?<\/script>/gi, '');
+  // Eliminar tags <script> o </script> sueltos que hayan quedado
+  resultado = resultado.replace(/<\/?script[^>]*>/gi, '');
+  // Eliminar bloques <style>...</style> que Claude inyecte (rompen el CSS del shell)
+  resultado = resultado.replace(/<style[\s\S]*?<\/style>/gi, '');
+  resultado = resultado.replace(/<\/?style[^>]*>/gi, '');
 
   // Contar divs abiertos y cerrados para balancear
   const abiertos = (resultado.match(/<div[\s>]/gi) || []).length;
