@@ -52,30 +52,37 @@ Square format 1:1. Text: "${nombre.substring(0, 40)}" prominently displayed.`;
   }
 }
 
-// ── Sube imagen (base64) a ImgBB para obtener URL pública permanente ──
-// ImgBB tiene plan gratuito con 32MB por imagen y URLs permanentes
+// ── Sube imagen (base64) a Supabase Storage para obtener URL pública permanente ──
+// Usa el bucket de Supabase que ya está configurado — sin cuentas ni APIs adicionales
 export async function subirImagenPublica(b64) {
-  const apiKey = process.env.IMGBB_API_KEY;
-  if (!apiKey) {
-    console.warn('[Imagen] IMGBB_API_KEY no configurado — no se puede subir imagen pública');
-    return null;
-  }
-
   try {
-    const form = new URLSearchParams();
-    form.append('key', apiKey);
-    form.append('image', b64);
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
 
-    const res = await axios.post('https://api.imgbb.com/1/upload', form, {
-      timeout: 30000
-    });
+    // Crear bucket si no existe
+    await supabase.storage.createBucket('product-images', { public: true }).catch(() => {});
 
-    const url = res.data?.data?.url;
-    console.log(`[Imagen] Imagen subida a ImgBB: ${url}`);
+    // Convertir base64 a buffer
+    const buffer = Buffer.from(b64, 'base64');
+    const filename = `producto_${Date.now()}.png`;
+
+    const { error } = await supabase.storage
+      .from('product-images')
+      .upload(filename, buffer, { contentType: 'image/png', upsert: true });
+
+    if (error) throw new Error(error.message);
+
+    const { data } = supabase.storage.from('product-images').getPublicUrl(filename);
+    const url = data.publicUrl;
+
+    console.log(`[Imagen] Imagen subida a Supabase Storage: ${url}`);
     return url;
 
   } catch (err) {
-    console.warn(`[Imagen] Error subiendo a ImgBB: ${err.message}`);
+    console.warn(`[Imagen] Error subiendo a Supabase Storage: ${err.message}`);
     return null;
   }
 }
