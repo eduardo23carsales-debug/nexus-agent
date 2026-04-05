@@ -202,13 +202,12 @@ async function leerComandosTelegram() {
         }
 
       } else if (texto === 'HOTMART') {
-        // Publica el último producto en Hotmart — para testear el fix sin relanzar todo
-        await enviar('🔥 Publicando último producto en Hotmart...');
+        // Muestra los datos del último producto para crear en Hotmart manualmente
         try {
           const { supabase } = await import('./core/database.js');
           const { data: exps } = await supabase
             .from('experiments')
-            .select('id, nombre, descripcion, precio, url, producto_url, hotmart_url')
+            .select('id, nombre, descripcion, problema_que_resuelve, precio, url, producto_url, hotmart_url')
             .order('fecha_inicio', { ascending: false })
             .limit(1);
 
@@ -217,32 +216,55 @@ async function leerComandosTelegram() {
           } else {
             const exp = exps[0];
             if (exp.hotmart_url && !exp.hotmart_url.includes('undefined')) {
-              await enviar(`ℹ️ Este producto ya está en Hotmart:\n${exp.hotmart_url}\n\n¿Quieres republicarlo? Escribe <b>HOTMART2</b> para forzar.`);
-            } else {
-              const { hotmart } = await import('./core/hotmart.js');
-              const hData = await hotmart.crearProducto({
-                nombre: exp.nombre,
-                descripcion: exp.descripcion || exp.nombre,
-                precio: exp.precio,
-                productoUrl: exp.producto_url || exp.url,
-                imagenUrl: null
-              });
-              // Actualizar en DB
-              await supabase
-                .from('experiments')
-                .update({ hotmart_id: String(hData.hotmart_id), hotmart_url: hData.hotmart_url })
-                .eq('id', exp.id);
               await enviar(
-                `✅ <b>Publicado en Hotmart</b>\n\n` +
-                `📦 Producto: <b>${exp.nombre}</b>\n` +
-                `💰 Precio: $${exp.precio}\n` +
-                `🔥 Link: ${hData.hotmart_url}`
+                `🔥 <b>Hotmart ya configurado</b>\n\n` +
+                `📦 ${exp.nombre}\n` +
+                `🔗 ${exp.hotmart_url}\n\n` +
+                `Para cambiar el link usa:\n<code>SETHOTMART https://pay.hotmart.com/XXXX</code>`
+              );
+            } else {
+              const desc = (exp.descripcion || '') + (exp.problema_que_resuelve ? '\n\n' + exp.problema_que_resuelve : '');
+              await enviar(
+                `🔥 <b>CREAR EN HOTMART</b> (manual — 2 min)\n━━━━━━━━━━━━━\n` +
+                `📦 <b>Nombre:</b> ${exp.nombre}\n` +
+                `💰 <b>Precio:</b> $${exp.precio} USD\n` +
+                `📝 <b>Descripción:</b>\n${desc.slice(0, 500)}\n\n` +
+                `🌐 <b>Página de ventas:</b>\n${exp.url}\n\n` +
+                `📦 <b>URL entrega del producto:</b>\n${exp.producto_url || exp.url}\n\n` +
+                `Cuando lo crees escribe:\n<code>SETHOTMART https://pay.hotmart.com/XXXX</code>`
               );
             }
           }
         } catch (e) {
-          const msgSeguro = e.message.replace(/</g, '&lt;').replace(/>/g, '&gt;').slice(0, 400);
-          await enviar(`❌ <b>Hotmart falló</b>\n\n${msgSeguro}`);
+          await enviar(`❌ Error: ${e.message.slice(0, 300)}`);
+        }
+
+      } else if (texto?.startsWith('SETHOTMART')) {
+        const hotmartLink = msg.text.trim().replace(/^SETHOTMART\s*/i, '').trim();
+        if (!hotmartLink || !hotmartLink.startsWith('http')) {
+          await enviar('❌ Escribe el link completo. Ejemplo:\n<code>SETHOTMART https://pay.hotmart.com/XXXX</code>');
+        } else {
+          try {
+            const { supabase } = await import('./core/database.js');
+            const { data: exps } = await supabase
+              .from('experiments')
+              .select('id, nombre')
+              .is('hotmart_url', null)
+              .order('fecha_inicio', { ascending: false })
+              .limit(1);
+            if (!exps?.length) {
+              await enviar('❌ No hay experimentos sin link de Hotmart. Usa <b>HOTMART2</b> para forzar actualización del último.');
+            } else {
+              const exp = exps[0];
+              await supabase
+                .from('experiments')
+                .update({ hotmart_url: hotmartLink })
+                .eq('id', exp.id);
+              await enviar(`✅ <b>Hotmart guardado</b>\n\n📦 ${exp.nombre}\n🔥 ${hotmartLink}`);
+            }
+          } catch (e) {
+            await enviar(`❌ Error: ${e.message.slice(0, 300)}`);
+          }
         }
 
       } else if (texto === 'HOTMART2') {
@@ -308,7 +330,8 @@ async function leerComandosTelegram() {
           `<b>TESTGOOGLE</b> — Verifica conexión Google Ads\n` +
           `<b>TESTHOTMART</b> — Verifica conexión Hotmart\n` +
           `<b>RELANZMETA</b> — Relanza campaña Meta del último producto\n` +
-          `<b>HOTMART</b> — Publica el último producto en Hotmart\n\n` +
+          `<b>HOTMART</b> — Ver datos para crear producto en Hotmart\n` +
+          `<b>SETHOTMART [link]</b> — Guardar link de Hotmart del último producto\n\n` +
           `<b>LEADCAMP</b> — Lanza campaña para cualquier oferta tuya\n` +
           `<i>Escribe libre: LEADCAMP + tu oferta + tu página web + WhatsApp (opcional)</i>\n` +
           `<i>Ej: LEADCAMP Elantra 2026 $299/mes Miami https://miweb.com +13055551234</i>\n\n` +
@@ -621,24 +644,10 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
     console.error('[Gumroad] Error publicando:', e.message);
   }
 
-  // Publicar en Hotmart (canal adicional de ventas)
+  // Hotmart no tiene API para crear productos — se crea manualmente.
+  // El bot manda los datos listos para pegar y el usuario registra el link con SETHOTMART.
   let hotmartUrl = null;
   let hotmartId = null;
-  try {
-    const { hotmart } = await import('./core/hotmart.js');
-    const hData = await hotmart.crearProducto({
-      nombre: nicho.nombre_producto,
-      descripcion: `${nicho.subtitulo}\n\n${nicho.problema_que_resuelve}`,
-      precio: nicho.precio,
-      productoUrl,
-      imagenUrl: imagenUrlPublica
-    });
-    hotmartUrl = hData.hotmart_url;
-    hotmartId = hData.hotmart_id;
-    console.log(`[Hotmart] Publicado: ${hotmartUrl}`);
-  } catch (e) {
-    console.error('[Hotmart] Error publicando:', e.message);
-  }
 
   const experimento = await db.crearExperimento({
     nicho: nicho.nicho,
@@ -667,8 +676,18 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
     `📦 Producto: ${productoUrl || 'pendiente'}\n` +
     `💳 Stripe: ${stripeData.stripe_payment_link}` +
     (gumroadUrl ? `\n🛒 Gumroad: ${gumroadUrl}` : '') +
-    (hotmartUrl ? `\n🔥 Hotmart: ${hotmartUrl}` : '') +
     `\n\n⚡ Lanzando campaña Meta Ads...`
+  );
+
+  // Instrucciones para crear el producto en Hotmart manualmente
+  await enviar(
+    `🔥 <b>CREAR EN HOTMART</b> (manual — 2 min)\n━━━━━━━━━━━━━\n` +
+    `📦 <b>Nombre:</b> ${nicho.nombre_producto}\n` +
+    `💰 <b>Precio:</b> $${nicho.precio} USD\n` +
+    `📝 <b>Descripción:</b>\n${nicho.subtitulo}\n\n${nicho.problema_que_resuelve}\n\n` +
+    `🌐 <b>Página de ventas:</b>\n${url}\n\n` +
+    `📦 <b>URL entrega del producto:</b>\n${productoUrl}\n\n` +
+    `Cuando lo crees en Hotmart escribe:\n<code>SETHOTMART https://pay.hotmart.com/XXXX</code>`
   );
 
   // Lanzar campaña Meta Ads automáticamente
