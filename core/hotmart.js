@@ -13,7 +13,7 @@ const AUTH_URL = IS_SANDBOX
   : 'https://api-sec-vlc.hotmart.com/security/oauth/token';
 const BASE = IS_SANDBOX
   ? 'https://sandbox.hotmart.com/product/api/v1'
-  : 'https://api-hotmart.com/product/api/v1';
+  : 'https://developers.hotmart.com/product/api/v1';
 
 // Cache de token en memoria (dura 1h)
 let _token = null;
