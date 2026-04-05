@@ -410,12 +410,35 @@ async function publicarAutomatico(nicho) {
 
   if (cancelarFlag) { cancelarFlag = false; await enviar('🛑 Proceso cancelado.'); return null; }
 
+  // Generar imagen de portada con DALL-E (se reutiliza en Hotmart, Gumroad y Meta Ads)
+  await enviar('🎨 Generando imagen de portada con IA...');
+  let imagenProducto = null;
+  let imagenUrlPublica = null;
+  try {
+    const { generarImagenProducto, subirImagenPublica } = await import('./core/imagen.js');
+    imagenProducto = await generarImagenProducto({
+      nombre: nicho.nombre_producto,
+      nicho: nicho.nicho,
+      subtitulo: nicho.subtitulo,
+      precio: nicho.precio
+    });
+    if (imagenProducto?.b64) {
+      imagenUrlPublica = await subirImagenPublica(imagenProducto.b64);
+    }
+    if (imagenUrlPublica) {
+      await enviar(`✅ Imagen generada y lista para todos los canales`);
+    }
+  } catch (e) {
+    console.warn('[Pipeline] Error generando imagen de portada:', e.message);
+  }
+
   // Crear producto en Stripe
   await enviar('💳 Creando producto en Stripe...');
   const stripeData = await stripeCore.crearProductoCompleto({
     nombre: nicho.nombre_producto,
     descripcion: nicho.problema_que_resuelve,
-    precio: nicho.precio
+    precio: nicho.precio,
+    imagenUrl: imagenUrlPublica
   });
 
   if (cancelarFlag) { cancelarFlag = false; await enviar('🛑 Proceso cancelado.'); return null; }
@@ -505,7 +528,8 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
       nombre: nicho.nombre_producto,
       descripcion: `${nicho.subtitulo}\n\n${nicho.problema_que_resuelve}`,
       precio: nicho.precio,
-      productoUrl
+      productoUrl,
+      imagenUrl: imagenUrlPublica
     });
     gumroadUrl = gData.gumroad_url;
     console.log(`[Gumroad] Publicado: ${gumroadUrl}`);
@@ -522,7 +546,8 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
       nombre: nicho.nombre_producto,
       descripcion: `${nicho.subtitulo}\n\n${nicho.problema_que_resuelve}`,
       precio: nicho.precio,
-      productoUrl
+      productoUrl,
+      imagenUrl: imagenUrlPublica
     });
     hotmartUrl = hData.hotmart_url;
     hotmartId = hData.hotmart_id;

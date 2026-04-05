@@ -43,7 +43,7 @@ async function getToken() {
 export const hotmart = {
 
   // ── Crea un producto en Hotmart y devuelve el link de checkout ──
-  async crearProducto({ nombre, descripcion, precio, productoUrl }) {
+  async crearProducto({ nombre, descripcion, precio, productoUrl, imagenUrl = null }) {
     if (!process.env.HOTMART_CLIENT_ID) throw new Error('HOTMART_CLIENT_ID no configurado');
 
     const token = await getToken();
@@ -56,7 +56,8 @@ export const hotmart = {
       payment_type: 'SINGLE_PAYMENT',
       product_type: 'EBOOK',         // tipo digital — no requiere envío
       warranty_days: 7,              // garantía de 7 días (estándar Hotmart)
-      sales_page_url: productoUrl || undefined
+      sales_page_url: productoUrl || undefined,
+      ...(imagenUrl && { cover_image_url: imagenUrl })
     };
 
     const res = await axios.post(`${BASE}/products`, payload, {
