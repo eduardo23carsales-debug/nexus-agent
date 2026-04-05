@@ -191,7 +191,7 @@ export const metaAds = {
       billing_event: 'IMPRESSIONS',
       optimization_goal: 'LANDING_PAGE_VIEWS', // LPV funciona desde día 1 sin historial de compras
       bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
-      promoted_object: { pixel_id: PIXEL_ID }, // pixel activo para trackear, sin requerir historial de PURCHASE
+      // LANDING_PAGE_VIEWS no requiere promoted_object — quitarlo evita error 1885014
       dsa_beneficiary: 'Aprende Gana y Crece IA',
       dsa_payor: 'Aprende Gana y Crece IA',
       targeting,
@@ -318,7 +318,7 @@ export const metaAds = {
     try {
       const { data } = await metaGet(`/${campaignId}/insights`, {
         fields: 'spend,impressions,clicks,ctr,cpc,actions',
-        date_preset: 'lifetime'
+        date_preset: 'maximum'
       });
 
       if (!data?.length) return { spend: 0, clicks: 0, impressions: 0, conversiones: 0, ctr: 0 };

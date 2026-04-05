@@ -15,17 +15,21 @@ export const gumroad = {
   async crearProducto({ nombre, descripcion, precio, productoUrl, imagenUrl = null }) {
     if (!TOKEN) throw new Error('GUMROAD_ACCESS_TOKEN no configurado');
     try {
-      const payload = {
-        access_token: TOKEN,
+      // Gumroad v2 requiere form-urlencoded, no JSON.
+      // El token va en la query string — en el body no funciona.
+      const params = new URLSearchParams({
         name: nombre,
         description: `${descripcion}\n\n✅ Acceso inmediato después de la compra.`,
-        price: Math.round(precio * 100), // en centavos
+        price: String(Math.round(precio * 100)), // en centavos
         currency: 'usd',
-        url: productoUrl || undefined, // URL del producto en Vercel — entregada al comprador
-        published: true,
-        ...(imagenUrl && { preview_url: imagenUrl })
-      };
-      const res = await axios.post(`${BASE}/products`, payload);
+        published: 'true',
+      });
+      if (productoUrl) params.set('url', productoUrl);
+      if (imagenUrl)  params.set('preview_url', imagenUrl);
+
+      const res = await axios.post(`${BASE}/products?access_token=${TOKEN}`, params, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
 
       const producto = res.data.product;
 

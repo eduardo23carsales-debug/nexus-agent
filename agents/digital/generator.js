@@ -487,14 +487,42 @@ export async function generarProducto(nicho) {
   return html;
 }
 
+// ── Sanea el HTML de una sección: balancea <div> y elimina </script> sueltos ──
+// Sin esto, un </div> de más en el contenido de Claude cierra el panel wrapper
+// y el resto de la sección queda fuera del contenedor (aparece "vacío").
+function sanearHTML(html) {
+  // Eliminar cierres de script que romperían el <script> del shell
+  let resultado = html.replace(/<\/script>/gi, '');
+
+  // Contar divs abiertos y cerrados para balancear
+  const abiertos = (resultado.match(/<div[\s>]/gi) || []).length;
+  const cerrados = (resultado.match(/<\/div>/gi) || []).length;
+  const diferencia = abiertos - cerrados;
+
+  if (diferencia > 0) {
+    // Faltan cierres — agregar los que faltan al final
+    resultado += '</div>'.repeat(diferencia);
+    console.log(`[Generator] HTML saneado: +${diferencia} </div> agregados`);
+  } else if (diferencia < 0) {
+    // Sobran cierres — eliminar los últimos sobrantes
+    const sobrantes = Math.abs(diferencia);
+    for (let i = 0; i < sobrantes; i++) {
+      const idx = resultado.lastIndexOf('</div>');
+      if (idx !== -1) resultado = resultado.slice(0, idx) + resultado.slice(idx + 6);
+    }
+    console.log(`[Generator] HTML saneado: -${sobrantes} </div> removidos`);
+  }
+
+  return resultado;
+}
+
 // ── Helper: genera una sección con Claude — nunca cancela todo ─
-// Si una sección falla tras reintentos, devuelve placeholder y SIGUE con las demás
 async function generarSeccion(prompt, agente = 'generator', etiqueta = '') {
   // Intento 1 — full quality, hasta 8 continuaciones
   try {
     const resultado = await preguntarCompleto(prompt, SYSTEM, agente, 6000, 8, null, MODEL_SONNET);
     const limpio = resultado.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
-    if (limpio.length > 200) return limpio;
+    if (limpio.length > 200) return sanearHTML(limpio);
     throw new Error('Respuesta demasiado corta');
   } catch (err) {
     console.warn(`[Generator] Sección "${etiqueta}" falló en intento 1: ${err.message} — reintentando versión compacta...`);
@@ -507,12 +535,11 @@ async function generarSeccion(prompt, agente = 'generator', etiqueta = '') {
     const promptCompacto = prompt + `\n\nIMPORTANTE: Versión compacta. Máximo 500 palabras. Directo al punto, sin introducciones. Completa la sección en una sola respuesta.`;
     const resultado = await preguntarCompleto(promptCompacto, SYSTEM, agente, 4000, 4, null, MODEL_SONNET);
     const limpio = resultado.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
-    if (limpio.length > 100) return limpio;
+    if (limpio.length > 100) return sanearHTML(limpio);
     throw new Error('Respuesta demasiado corta en intento compacto');
   } catch (err) {
-    console.error(`[Generator] Sección "${etiqueta}" falló en intento 2: ${err.message} — usando placeholder`);
-    // NO cancelar todo — devolver placeholder y continuar con las demás secciones
-    return `<div class="card"><div class="highlight">⚠️ Esta sección se generó parcialmente. El resto del producto está completo y disponible.</div><p style="color:var(--text-muted);">Sección: ${etiqueta || 'contenido'} — Regenera el producto si necesitas esta sección completa.</p></div>`;
+    console.error(`[Generator] Sección "${etiqueta}" falló en intento 2: ${err.message}`);
+    throw err; // propagar para que el llamador sepa que falló
   }
 }
 

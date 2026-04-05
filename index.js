@@ -201,6 +201,87 @@ async function leerComandosTelegram() {
           await enviar(`❌ <b>Hotmart FALLÓ</b>\n\n${e.message}\n\nConfigura en Railway:\n• HOTMART_CLIENT_ID\n• HOTMART_CLIENT_SECRET\n• HOTMART_WEBHOOK_TOKEN (opcional)`);
         }
 
+      } else if (texto === 'HOTMART') {
+        // Publica el último producto en Hotmart — para testear el fix sin relanzar todo
+        await enviar('🔥 Publicando último producto en Hotmart...');
+        try {
+          const { supabase } = await import('./core/database.js');
+          const { data: exps } = await supabase
+            .from('experiments')
+            .select('id, nombre, descripcion, precio, url, producto_url, hotmart_url')
+            .order('fecha_inicio', { ascending: false })
+            .limit(1);
+
+          if (!exps?.length) {
+            await enviar('❌ No hay productos publicados todavía. Usa <b>LANZAR</b> primero.');
+          } else {
+            const exp = exps[0];
+            if (exp.hotmart_url && !exp.hotmart_url.includes('undefined')) {
+              await enviar(`ℹ️ Este producto ya está en Hotmart:\n${exp.hotmart_url}\n\n¿Quieres republicarlo? Escribe <b>HOTMART2</b> para forzar.`);
+            } else {
+              const { hotmart } = await import('./core/hotmart.js');
+              const hData = await hotmart.crearProducto({
+                nombre: exp.nombre,
+                descripcion: exp.descripcion || exp.nombre,
+                precio: exp.precio,
+                productoUrl: exp.producto_url || exp.url,
+                imagenUrl: null
+              });
+              // Actualizar en DB
+              await supabase
+                .from('experiments')
+                .update({ hotmart_id: String(hData.hotmart_id), hotmart_url: hData.hotmart_url })
+                .eq('id', exp.id);
+              await enviar(
+                `✅ <b>Publicado en Hotmart</b>\n\n` +
+                `📦 Producto: <b>${exp.nombre}</b>\n` +
+                `💰 Precio: $${exp.precio}\n` +
+                `🔥 Link: ${hData.hotmart_url}`
+              );
+            }
+          }
+        } catch (e) {
+          await enviar(`❌ <b>Hotmart falló</b>\n\n${e.message}`);
+        }
+
+      } else if (texto === 'HOTMART2') {
+        // Fuerza republicar en Hotmart aunque ya tenga URL
+        await enviar('🔥 Forzando republicación en Hotmart...');
+        try {
+          const { supabase } = await import('./core/database.js');
+          const { data: exps } = await supabase
+            .from('experiments')
+            .select('id, nombre, descripcion, precio, url, producto_url')
+            .order('fecha_inicio', { ascending: false })
+            .limit(1);
+
+          if (!exps?.length) {
+            await enviar('❌ No hay productos publicados todavía.');
+          } else {
+            const exp = exps[0];
+            const { hotmart } = await import('./core/hotmart.js');
+            const hData = await hotmart.crearProducto({
+              nombre: exp.nombre,
+              descripcion: exp.descripcion || exp.nombre,
+              precio: exp.precio,
+              productoUrl: exp.producto_url || exp.url,
+              imagenUrl: null
+            });
+            await supabase
+              .from('experiments')
+              .update({ hotmart_id: String(hData.hotmart_id), hotmart_url: hData.hotmart_url })
+              .eq('id', exp.id);
+            await enviar(
+              `✅ <b>Publicado en Hotmart</b>\n\n` +
+              `📦 Producto: <b>${exp.nombre}</b>\n` +
+              `💰 Precio: $${exp.precio}\n` +
+              `🔥 Link: ${hData.hotmart_url}`
+            );
+          }
+        } catch (e) {
+          await enviar(`❌ <b>Hotmart falló</b>\n\n${e.message}`);
+        }
+
       } else if (texto === 'LANZAR') {
         await enviar('🚀 Lanzando nuevo experimento ahora...');
         lanzarExperimento().catch(e => enviar(`❌ Error: ${e.message}`));
@@ -224,7 +305,8 @@ async function leerComandosTelegram() {
           `<b>TESTTIKTOK</b> — Verifica conexión TikTok Ads\n` +
           `<b>TESTGOOGLE</b> — Verifica conexión Google Ads\n` +
           `<b>TESTHOTMART</b> — Verifica conexión Hotmart\n` +
-          `<b>RELANZMETA</b> — Relanza campaña Meta del último producto\n\n` +
+          `<b>RELANZMETA</b> — Relanza campaña Meta del último producto\n` +
+          `<b>HOTMART</b> — Publica el último producto en Hotmart\n\n` +
           `<b>LEADCAMP</b> — Lanza campaña para cualquier oferta tuya\n` +
           `<i>Escribe libre: LEADCAMP + tu oferta + tu página web + WhatsApp (opcional)</i>\n` +
           `<i>Ej: LEADCAMP Elantra 2026 $299/mes Miami https://miweb.com +13055551234</i>\n\n` +

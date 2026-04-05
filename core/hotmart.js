@@ -5,7 +5,7 @@
 // ════════════════════════════════════
 
 import axios from 'axios';
-import { db } from './database.js';
+import { db, supabase } from './database.js';
 
 const IS_SANDBOX = process.env.HOTMART_ENV === 'sandbox';
 const AUTH_URL = IS_SANDBOX
@@ -68,10 +68,13 @@ export const hotmart = {
     });
 
     const producto = res.data;
-    const checkoutUrl = producto.checkout_url || `https://pay.hotmart.com/${producto.product_id}`;
+    // La API de Hotmart devuelve "id" no "product_id"
+    const hotmartId = producto.id || producto.product_id;
+    if (!hotmartId) throw new Error(`Hotmart no devolvió ID de producto. Respuesta: ${JSON.stringify(producto)}`);
+    const checkoutUrl = producto.checkout_url || `https://pay.hotmart.com/${hotmartId}`;
 
     await db.log('hotmart', 'producto_creado', {
-      id: producto.product_id,
+      id: hotmartId,
       nombre: producto.name,
       precio: precio,
       link: checkoutUrl
@@ -79,7 +82,7 @@ export const hotmart = {
 
     console.log(`[Hotmart] Producto publicado: ${checkoutUrl}`);
     return {
-      hotmart_id: producto.product_id,
+      hotmart_id: hotmartId,
       hotmart_url: checkoutUrl
     };
   },
@@ -109,7 +112,7 @@ export async function procesarVentaHotmart({ data, event }) {
   if (!emailCliente) return;
 
   // Buscar experimento por hotmart_id guardado en DB
-  const { data: exps } = await db.supabase
+  const { data: exps } = await supabase
     .from('experiments')
     .select('*')
     .eq('hotmart_id', productoId)

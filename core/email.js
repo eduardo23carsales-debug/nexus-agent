@@ -5,7 +5,7 @@
 
 import { Resend } from 'resend';
 import dotenv from 'dotenv';
-import { db } from './database.js';
+import { db, supabase } from './database.js';
 dotenv.config();
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -133,7 +133,7 @@ export const email = {
       if (yaEntregado) continue;
 
       // Buscar el experimento que corresponde a este pago por payment link
-      const { data: exps } = await db.supabase
+      const { data: exps } = await supabase
         .from('experiments')
         .select('*')
         .not('stripe_payment_link', 'is', null)
@@ -203,7 +203,7 @@ export const email = {
     if (!abandonadas.length) return 0;
 
     // Cargar experimentos recientes para resolver el nombre del producto
-    const { data: exps } = await db.supabase
+    const { data: exps } = await supabase
       .from('experiments')
       .select('id, nombre, precio, stripe_payment_link, producto_url')
       .not('stripe_payment_link', 'is', null)
@@ -361,7 +361,7 @@ export const email = {
 
   // ── Secuencia post-compra: 4 emails automáticos en días 1, 3, 7, 14 ──
   async procesarSecuenciaPostCompra() {
-    const { data: customers, error } = await db.supabase
+    const { data: customers, error } = await supabase
       .from('customers')
       .select('email, nombre, producto, experiment_id, created_at')
       .order('created_at', { ascending: false })
@@ -371,7 +371,7 @@ export const email = {
 
     // Cargar URLs de productos para incluir en emails
     const expIds = [...new Set(customers.map(c => c.experiment_id).filter(Boolean))];
-    const { data: exps } = await db.supabase
+    const { data: exps } = await supabase
       .from('experiments')
       .select('id, producto_url, precio, stripe_payment_link')
       .in('id', expIds);
