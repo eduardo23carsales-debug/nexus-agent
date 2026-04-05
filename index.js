@@ -241,7 +241,8 @@ async function leerComandosTelegram() {
             }
           }
         } catch (e) {
-          await enviar(`❌ <b>Hotmart falló</b>\n\n${e.message}`);
+          const msgSeguro = e.message.replace(/</g, '&lt;').replace(/>/g, '&gt;').slice(0, 400);
+          await enviar(`❌ <b>Hotmart falló</b>\n\n${msgSeguro}`);
         }
 
       } else if (texto === 'HOTMART2') {
@@ -279,7 +280,8 @@ async function leerComandosTelegram() {
             );
           }
         } catch (e) {
-          await enviar(`❌ <b>Hotmart falló</b>\n\n${e.message}`);
+          const msgSeguro = e.message.replace(/</g, '&lt;').replace(/>/g, '&gt;').slice(0, 400);
+          await enviar(`❌ <b>Hotmart falló</b>\n\n${msgSeguro}`);
         }
 
       } else if (texto === 'LANZAR') {

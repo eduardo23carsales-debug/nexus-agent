@@ -68,9 +68,19 @@ export const hotmart = {
     });
 
     const producto = res.data;
+
+    // Detectar si Hotmart devolvió HTML en vez de JSON (endpoint incorrecto o credenciales malas)
+    if (typeof producto === 'string' && producto.trim().toLowerCase().startsWith('<!')) {
+      console.error('[Hotmart] Respuesta HTML recibida (no JSON):', producto.slice(0, 300));
+      throw new Error('Hotmart devolvió HTML en vez de JSON — verifica HOTMART_CLIENT_ID, HOTMART_CLIENT_SECRET y el endpoint en Railway');
+    }
+
     // La API de Hotmart devuelve "id" no "product_id"
     const hotmartId = producto.id || producto.product_id;
-    if (!hotmartId) throw new Error(`Hotmart no devolvió ID de producto. Respuesta: ${JSON.stringify(producto)}`);
+    if (!hotmartId) {
+      console.error('[Hotmart] Respuesta sin ID:', JSON.stringify(producto).slice(0, 500));
+      throw new Error(`Hotmart no devolvió ID — respuesta: ${JSON.stringify(producto).slice(0, 200)}`);
+    }
     const checkoutUrl = producto.checkout_url || `https://pay.hotmart.com/${hotmartId}`;
 
     await db.log('hotmart', 'producto_creado', {
