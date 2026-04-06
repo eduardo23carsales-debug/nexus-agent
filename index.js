@@ -21,10 +21,7 @@ import { investigarNicho } from './agents/digital/researcher.js';
 import { cargarCostoHoy, resetCostoHoy } from './core/claude.js';
 import { generarProducto } from './agents/digital/generator.js';
 import { publicarProducto } from './agents/digital/publisher.js';
-import { writeFileSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { enviarArchivo } from './core/telegram.js';
 import { calificarLeadManual } from './agents/leadgen/lead-qualifier.js';
 import { entregarLeadsCalificados } from './agents/leadgen/lead-delivery.js';
 import { lanzarCampanaParaProducto, lanzarCampanaLeadCamp } from './agents/advanced/ads-manager.js';
@@ -304,9 +301,10 @@ async function leerComandosTelegram() {
               // Mensaje 3 — Pasos 7-9
               await enviar(
                 `<b>📋 PASO 7 — Contenido del Producto</b>\n` +
-                `1. Abre en Edge: <code>C:\\dev\\agentes de hacer dinero\\assets\\hotmart-acceso-${exp.id}.html</code>\n` +
-                `2. Ctrl+P → Impresora: Microsoft Print to PDF → Imprimir\n` +
-                `3. Sube ese PDF en Hotmart → Contenido del Producto\n\n` +
+                `1. Busca el archivo HTML que te mandé como documento adjunto\n` +
+                `2. Descárgalo → ábrelo en Edge\n` +
+                `3. Ctrl+P → Impresora: Microsoft Print to PDF → Imprimir\n` +
+                `4. Sube ese PDF en Hotmart → Contenido del Producto\n\n` +
                 `━━━━━━━━━━━━━\n` +
                 `<b>📋 PASO 8 — Programa de Afiliados</b>\n` +
                 `Regla: ✅ Todos con 1 clic\n` +
@@ -883,8 +881,8 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
     `🔥 <b>HOTMART — listo para publicar</b>\n━━━━━━━━━━━━━\n` +
     `📦 <b>${nicho.nombre_producto}</b>\n` +
     `💰 $${nicho.precio} USD\n\n` +
-    `📄 PDF de acceso generado:\n<code>assets/hotmart-acceso-${experimento.id}.html</code>\n` +
-    `→ Ábrelo en Edge → Ctrl+P → Microsoft Print to PDF\n\n` +
+    `📄 El archivo HTML de acceso te llega por aquí como documento adjunto.\n` +
+    `→ Descárgalo → ábrelo en Edge → Ctrl+P → Microsoft Print to PDF\n\n` +
     `Escribe <b>HOTMART</b> para ver la guía completa paso a paso con todo listo para copiar.`
   );
 
@@ -901,7 +899,7 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
 // GENERAR ARCHIVO HTML DE ACCESO PARA HOTMART (PDF)
 // ════════════════════════════════════
 
-function generarArchivoAccesoHotmart(exp) {
+async function generarArchivoAccesoHotmart(exp) {
   try {
     const nombre = exp.nombre || 'Producto Digital';
     const precio = exp.precio || 47;
@@ -1004,15 +1002,12 @@ function generarArchivoAccesoHotmart(exp) {
 </body>
 </html>`;
 
-    const assetsDir = join(__dirname, 'assets');
-    mkdirSync(assetsDir, { recursive: true });
-    const filePath = join(assetsDir, `hotmart-acceso-${exp.id}.html`);
-    writeFileSync(filePath, html, 'utf8');
-    console.log(`[Hotmart] Archivo de acceso generado: ${filePath}`);
-    return filePath;
+    const buffer = Buffer.from(html, 'utf8');
+    const filename = `hotmart-acceso-${(nombre).replace(/[^a-zA-Z0-9]/g, '-').slice(0, 40)}.html`;
+    await enviarArchivo(buffer, filename, `📄 PDF de acceso para Hotmart\n→ Descárgalo → ábrelo en Edge → Ctrl+P → Microsoft Print to PDF → súbelo en Hotmart`);
+    console.log(`[Hotmart] Archivo de acceso enviado por Telegram: ${filename}`);
   } catch (err) {
     console.error('[Hotmart] Error generando archivo de acceso:', err.message);
-    return null;
   }
 }
 

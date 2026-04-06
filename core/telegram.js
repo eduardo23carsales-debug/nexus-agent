@@ -26,6 +26,15 @@ export async function enviar(mensaje) {
   }
 }
 
+// Envía un archivo (Buffer) como documento adjunto por Telegram
+export async function enviarArchivo(buffer, filename, caption = '') {
+  try {
+    await bot.sendDocument(CHAT_ID, buffer, { caption }, { filename, contentType: 'text/html' });
+  } catch (err) {
+    console.error('[Telegram] Error enviando archivo:', err.message);
+  }
+}
+
 // ════════════════════════════════════
 // ALERTAS PREDEFINIDAS DEL SISTEMA
 // ════════════════════════════════════
