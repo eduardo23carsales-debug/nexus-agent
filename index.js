@@ -291,7 +291,7 @@ async function leerComandosTelegram() {
                 `Categoría: Finanzas Personales\n` +
                 `Número de páginas: 45\n` +
                 `Formato: PDF\n\n` +
-                `<b>Público objetivo:</b>\n<code>${publicoObj.slice(0, 200)}</code>\n\n` +
+                `<b>Público objetivo:</b>\n<code>${publicoObj.slice(0, 500)}</code>\n\n` +
                 `<b>Palabras clave:</b>\n<code>${tagsHotmart}</code>\n\n` +
                 `<b>Ventajas:</b>\n<code>${ventajas}</code>`
               );
