@@ -252,28 +252,51 @@ async function leerComandosTelegram() {
         }
 
       } else if (texto?.startsWith('SETHOTMART')) {
-        const hotmartLink = msg.text.trim().replace(/^SETHOTMART\s*/i, '').trim();
+        // Formato: SETHOTMART [link] [keyword opcional para buscar producto]
+        const partes = msg.text.trim().replace(/^SETHOTMART\s*/i, '').trim();
+        const [hotmartLink, ...keywordPartes] = partes.split(' ');
+        const keyword = keywordPartes.join(' ').trim().toLowerCase();
+
         if (!hotmartLink || !hotmartLink.startsWith('http')) {
-          await enviar('❌ Escribe el link completo. Ejemplo:\n<code>SETHOTMART https://pay.hotmart.com/XXXX</code>');
+          await enviar('❌ Escribe el link completo. Ejemplo:\n<code>SETHOTMART https://pay.hotmart.com/XXXX</code>\n\nSi quieres especificar el producto:\n<code>SETHOTMART https://pay.hotmart.com/XXXX casa</code>');
         } else {
           try {
             const { supabase } = await import('./core/database.js');
-            const { data: exps } = await supabase
-              .from('experiments')
-              .select('id, nombre')
-              .is('hotmart_url', null)
-              .order('fecha_inicio', { ascending: false })
-              .limit(1);
-            if (!exps?.length) {
-              await enviar('❌ No hay experimentos sin link de Hotmart. Usa <b>HOTMART2</b> para forzar actualización del último.');
-            } else {
-              const exp = exps[0];
-              await supabase
+            let exp = null;
+
+            if (keyword) {
+              // Buscar por keyword en el nombre del experimento
+              const { data: exps } = await supabase
                 .from('experiments')
-                .update({ hotmart_url: hotmartLink })
-                .eq('id', exp.id);
-              await enviar(`✅ <b>Hotmart guardado</b>\n\n📦 ${exp.nombre}\n🔥 ${hotmartLink}`);
+                .select('id, nombre')
+                .ilike('nombre', `%${keyword}%`)
+                .order('fecha_inicio', { ascending: false })
+                .limit(1);
+              exp = exps?.[0];
+              if (!exp) {
+                await enviar(`❌ No encontré ningún experimento con "${keyword}" en el nombre.`);
+                return;
+              }
+            } else {
+              // Sin keyword: tomar el más recientemente actualizado sin hotmart_url
+              const { data: exps } = await supabase
+                .from('experiments')
+                .select('id, nombre')
+                .is('hotmart_url', null)
+                .order('updated_at', { ascending: false })
+                .limit(1);
+              exp = exps?.[0];
+              if (!exp) {
+                await enviar('❌ No hay experimentos sin link de Hotmart. Usa <b>HOTMART2</b> para forzar actualización del último.');
+                return;
+              }
             }
+
+            await supabase
+              .from('experiments')
+              .update({ hotmart_url: hotmartLink })
+              .eq('id', exp.id);
+            await enviar(`✅ <b>Hotmart guardado</b>\n\n📦 ${exp.nombre}\n🔥 ${hotmartLink}`);
           } catch (e) {
             await enviar(`❌ Error: ${e.message.slice(0, 300)}`);
           }
