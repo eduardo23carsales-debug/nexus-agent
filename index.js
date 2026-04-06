@@ -241,8 +241,9 @@ async function leerComandosTelegram() {
             } else {
               const nombreCorto = exp.nombre.slice(0, 22).replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s+/g, '').toLowerCase();
               const desc = `${exp.descripcion || ''}\n\n${exp.problema_que_resuelve || ''}`.trim();
-              const nichoKeywords = (exp.nicho || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').split(' ').filter(w => w.length > 3).slice(0, 5).join(', ');
-              const tagsHotmart = `primera casa, ${nichoKeywords}, latinos usa, programas gobierno, down payment`.slice(0, 255);
+              const nichoKeywords = (exp.nicho || '').toLowerCase().replace(/[^a-z0-9\sáéíóúñü]/g, '').split(' ').filter(w => w.length > 3).slice(0, 6).join(', ');
+              const nombreKeywords = exp.nombre.toLowerCase().replace(/[^a-z0-9\sáéíóúñü]/g, '').split(' ').filter(w => w.length > 3).slice(0, 4).join(', ');
+              const tagsHotmart = `${nichoKeywords}, ${nombreKeywords}, latinos usa, español`.replace(/,\s*,/g, ',').slice(0, 255);
               const publicoObj = exp.cliente_ideal || `Latinos en USA que quieren ${exp.nicho} pero no saben por dónde empezar`;
               const ventajas = [
                 `✅ Acceso inmediato después de la compra`,
