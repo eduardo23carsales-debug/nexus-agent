@@ -253,79 +253,104 @@ async function leerComandosTelegram() {
               const descAfiliados = `Buscamos afiliados con audiencia latina en USA — grupos de Facebook, TikTok, YouTube o email.\n\n✅ Dolor muy real: ${(exp.problema_que_resuelve || exp.descripcion || '').slice(0, 120)}\n✅ Precio accesible: $${exp.precio} — fácil de vender\n✅ 40% comisión por venta\n✅ Garantía 7 días — reduce chargebacks\n\nIdeal para creators de contenido financiero y comunidades latinas.`;
               const promptImagen = `Diseña una imagen de portada para un ebook digital. Título principal: "${exp.nombre}". Estilo: profesional, moderno, oscuro con acento dorado. Fondo degradado azul marino oscuro. Texto en blanco y dorado. Incluye un ícono o ilustración minimalista relacionada con el tema. Formato 1000x1000px. Sin marcos ni bordes decorativos.`;
 
-              // Mensaje 1 — Datos básicos + Pasos 1-3
+              const keyword1 = (exp.nombre.split(' ')[2] || exp.nombre.split(' ')[0]).toLowerCase();
+
+              // Mensaje 1 — Pasos 1-3
               await enviar(
-                `🔥 <b>GUÍA HOTMART — PASO A PASO</b>\n━━━━━━━━━━━━━\n\n` +
-                `<b>📋 PASO 1 — Crear producto</b>\n` +
-                `Hotmart → Productos → + Crear → eBook\n\n` +
-                `<b>Nombre:</b>\n<code>${exp.nombre}</code>\n\n` +
-                `<b>Idioma:</b> Español\n` +
-                `<b>Tipo:</b> eBook\n\n` +
+                `🔥 <b>GUÍA HOTMART — PASO A PASO</b>\n` +
+                `<i>Copia cada dato y pégalo directo en Hotmart</i>\n━━━━━━━━━━━━━\n\n` +
+                `<b>📋 PASO 1 — Crear el producto</b>\n` +
+                `Ve a <a href="https://app.hotmart.com/products">app.hotmart.com/products</a>\n` +
+                `Clic en <b>+ Crear</b> → selecciona <b>eBook</b>\n\n` +
+                `Nombre del producto — copia esto:\n<code>${exp.nombre}</code>\n\n` +
+                `Idioma: <b>Español</b> · Tipo: <b>eBook</b>\n` +
+                `→ Clic en <b>Continuar</b>\n\n` +
                 `━━━━━━━━━━━━━\n` +
                 `<b>📋 PASO 2 — Precio y garantía</b>\n` +
-                `Moneda: USD\n` +
-                `<b>Precio:</b> <code>${exp.precio}</code>\n` +
-                `Garantía: 7 días\n` +
-                `Pago: Único\n\n` +
+                `Moneda: <b>USD (Dólar americano)</b>\n` +
+                `Precio — copia esto:\n<code>${exp.precio}</code>\n` +
+                `Garantía: <b>7 días</b>\n` +
+                `Tipo de pago: <b>Único</b>\n` +
+                `→ Clic en <b>Continuar</b>\n\n` +
                 `━━━━━━━━━━━━━\n` +
                 `<b>📋 PASO 3 — Página de Venta</b>\n` +
-                `<code>${exp.url}</code>`
+                `Pega este link en el campo "Página de Venta":\n` +
+                `<a href="${exp.url}">${exp.url}</a>\n` +
+                `→ Clic en <b>Continuar</b>`
               );
 
-              await new Promise(r => setTimeout(r, 1000));
+              await new Promise(r => setTimeout(r, 1200));
 
               // Mensaje 2 — Pasos 4-5
               await enviar(
                 `<b>📋 PASO 4 — Páginas de Agradecimiento</b>\n` +
-                `URL para Compras Aprobadas:\n<code>${exp.producto_url || exp.url}</code>\n` +
-                `⚠️ Espera que Vercel cargue antes de pegar el link\n\n` +
+                `Busca la opción <b>"URL para Compras Aprobadas"</b>\n` +
+                `Pega este link — el comprador llega aquí después de pagar:\n` +
+                `<a href="${exp.producto_url || exp.url}">${exp.producto_url || exp.url}</a>\n` +
+                `⚠️ Si no guarda, abre el link primero en el browser y confirma que carga, luego vuelve a pegarlo\n` +
+                `→ Clic en <b>Guardar</b>\n\n` +
                 `━━━━━━━━━━━━━\n` +
-                `<b>📋 PASO 5 — Configuración página de pago</b>\n` +
-                `Email soporte: <code>eduardo23carsales@gmail.com</code>\n` +
-                `Nombre factura: <code>${nombreCorto}</code>\n` +
-                `✅ Activar: PayPal, Apple Pay, Google Pay\n` +
-                `✅ Activar: Solicitar teléfono en poscompra\n` +
-                `→ Guardar\n\n` +
-                `━━━━━━━━━━━━━\n` +
-                `<b>📋 PASO 6 — Info básica / Marketplace</b>\n` +
-                `Categoría: Finanzas Personales\n` +
-                `Número de páginas: 45\n` +
-                `Formato: PDF\n\n` +
-                `<b>Público objetivo:</b>\n<code>${publicoObj.slice(0, 500)}</code>\n\n` +
-                `<b>Palabras clave:</b>\n<code>${tagsHotmart}</code>\n\n` +
-                `<b>Ventajas:</b>\n<code>${ventajas}</code>`
+                `<b>📋 PASO 5 — Configuración de la página de pago</b>\n` +
+                `Email de soporte — copia esto:\n<code>eduardo23carsales@gmail.com</code>\n\n` +
+                `Nombre en factura (máx 22 caracteres) — copia esto:\n<code>${nombreCorto}</code>\n\n` +
+                `Opciones de pago — activa estas:\n` +
+                `✅ PayPal\n✅ Apple Pay\n✅ Google Pay\n\n` +
+                `Datos del comprador — activa:\n` +
+                `✅ Solicitar teléfono en la poscompra\n` +
+                `→ Clic en <b>Guardar</b>`
               );
 
-              await new Promise(r => setTimeout(r, 1000));
+              await new Promise(r => setTimeout(r, 1200));
 
-              // Mensaje 3 — Pasos 7-9
+              // Mensaje 3 — Paso 6
+              await enviar(
+                `<b>📋 PASO 6 — Información básica / Marketplace</b>\n` +
+                `Categoría: <b>Negocios y Carrera → Emprendimiento</b>\n` +
+                `Número de páginas: <b>45</b>\n` +
+                `Formato de archivo: <b>PDF</b>\n\n` +
+                `<b>Público objetivo</b> — copia esto:\n<code>${publicoObj.slice(0, 500)}</code>\n\n` +
+                `<b>Palabras clave</b> — copia esto:\n<code>${tagsHotmart}</code>\n\n` +
+                `<b>Ventajas</b> — copia esto:\n<code>${ventajas}</code>\n\n` +
+                `→ Clic en <b>Guardar</b>`
+              );
+
+              await new Promise(r => setTimeout(r, 1200));
+
+              // Mensaje 4 — Pasos 7-9
               await enviar(
                 `<b>📋 PASO 7 — Contenido del Producto</b>\n` +
-                `1. Busca el archivo HTML que te mandé como documento adjunto\n` +
-                `2. Descárgalo → ábrelo en Edge\n` +
-                `3. Ctrl+P → Impresora: Microsoft Print to PDF → Imprimir\n` +
-                `4. Sube ese PDF en Hotmart → Contenido del Producto\n\n` +
+                `El bot te mandó un archivo <b>.html</b> como documento adjunto al publicar.\n` +
+                `1. Descárgalo de Telegram\n` +
+                `2. Ábrelo con <b>Microsoft Edge</b> (no Chrome)\n` +
+                `3. Presiona <b>Ctrl+P</b>\n` +
+                `4. En "Impresora" selecciona <b>Microsoft Print to PDF</b>\n` +
+                `5. Clic en <b>Imprimir</b> → guárdalo donde quieras\n` +
+                `6. Súbelo en Hotmart → <b>Contenido del Producto → Selecciona archivo</b>\n` +
+                `→ Clic en <b>Guardar</b>\n\n` +
                 `━━━━━━━━━━━━━\n` +
                 `<b>📋 PASO 8 — Programa de Afiliados</b>\n` +
-                `Regla: ✅ Todos con 1 clic\n` +
-                `Comisión: <code>40</code>%\n` +
-                `Norma: Por último clic\n` +
-                `Email afiliados: <code>eduardo23carsales@gmail.com</code>\n` +
-                `✅ Activar Mercado de Afiliación\n\n` +
-                `<b>Tags afiliados:</b>\n<code>${tagsHotmart}</code>\n\n` +
-                `<b>Descripción para afiliados:</b>\n<code>${descAfiliados.slice(0, 400)}</code>\n\n` +
+                `Regla de afiliación: ✅ <b>Todos con 1 clic</b>\n` +
+                `Comisión — escribe esto:\n<code>40</code>\n` +
+                `Norma: <b>Por último clic</b>\n` +
+                `Email afiliados:\n<code>eduardo23carsales@gmail.com</code>\n` +
+                `✅ Activa <b>Mercado de Afiliación</b>\n\n` +
+                `Tags afiliados — copia esto:\n<code>${tagsHotmart}</code>\n\n` +
+                `Descripción para afiliados — copia esto:\n<code>${descAfiliados.slice(0, 500)}</code>\n` +
+                `→ Clic en <b>Guardar</b>\n\n` +
                 `━━━━━━━━━━━━━\n` +
-                `<b>📋 PASO 9 — Finalizar</b>\n` +
-                `→ Clic en "Finalizar Registro"\n` +
-                `→ Copiar: pay.hotmart.com/XXXX\n` +
-                `→ Mandar aquí: <code>SETHOTMART https://pay.hotmart.com/XXXX ${(exp.nombre.split(' ')[2] || exp.nombre.split(' ')[0]).toLowerCase()}</code>`
+                `<b>📋 PASO 9 — Finalizar y obtener el link</b>\n` +
+                `1. En el panel del producto clic en <b>"Finalizar Registro"</b>\n` +
+                `2. Ve a <b>Links de Divulgación</b> en el menú izquierdo\n` +
+                `3. Copia el link de <b>Página de Pago</b>: pay.hotmart.com/XXXX\n` +
+                `4. Manda aquí:\n<code>SETHOTMART https://pay.hotmart.com/XXXX ${keyword1}</code>`
               );
 
-              await new Promise(r => setTimeout(r, 1000));
+              await new Promise(r => setTimeout(r, 1200));
 
-              // Mensaje 4 — Imagen DALL-E
+              // Mensaje 5 — Imagen
               await enviar(
-                `<b>🖼️ PASO IMAGEN — Prompt para DALL-E / ChatGPT</b>\n\n` +
+                `<b>🖼️ IMAGEN DEL PRODUCTO — Prompt para DALL-E o ChatGPT</b>\n` +
+                `<i>Genera la imagen, descárgala y súbela en Hotmart → Información básica → Imagen de portada</i>\n\n` +
                 `<code>${promptImagen}</code>`
               );
             }
