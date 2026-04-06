@@ -938,8 +938,9 @@ async function generarArchivoAccesoHotmart(exp) {
   .header p { color: #9AA3B8; font-size: 0.95em; line-height: 1.7; max-width: 520px; margin: 0 auto; }
   .access-box { background: linear-gradient(135deg, #0F1729 0%, #1a2a4a 100%); border-radius: 14px; padding: 32px 40px; margin: 32px 0; text-align: center; border: 1px solid rgba(245,166,35,0.3); }
   .access-box .label { color: #9AA3B8; font-size: 0.82em; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; }
-  .access-box .url { font-size: 0.85em; color: #F5A623; word-break: break-all; margin-bottom: 20px; font-weight: 600; line-height: 1.6; }
-  .access-box .btn { display: inline-block; background: #F5A623; color: #000; font-weight: 800; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-size: 1em; }
+  .access-box .url-link { display: block; font-size: 0.82em; color: #F5A623; word-break: break-all; margin-bottom: 20px; font-weight: 600; line-height: 1.6; text-decoration: underline; }
+  .access-box .btn { display: inline-block; background: #F5A623; color: #000; font-weight: 800; padding: 16px 44px; border-radius: 10px; text-decoration: none; font-size: 1.05em; margin-bottom: 16px; }
+  .access-box .btn-note { color: #9AA3B8; font-size: 0.78em; margin-top: 12px; }
   .section-title { font-family: 'Poppins', sans-serif; font-size: 1.1em; font-weight: 700; color: #1a1a2e; margin: 36px 0 18px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f5; }
   .steps { display: flex; flex-direction: column; gap: 12px; }
   .step { display: flex; gap: 16px; align-items: flex-start; background: #f8f9ff; border-radius: 12px; padding: 16px 20px; border-left: 4px solid #F5A623; }
@@ -972,15 +973,17 @@ async function generarArchivoAccesoHotmart(exp) {
     <p>Gracias por tu compra. Tienes acceso completo e inmediato a todo el contenido.</p>
   </div>
   <div class="access-box">
-    <div class="label">🔑 Tu acceso está aquí</div>
-    <div class="url">${productoUrl}</div>
-    <a class="btn" href="${productoUrl}">▶ Acceder ahora</a>
+    <div class="label">🔑 Tu acceso completo está aquí — guarda este link</div>
+    <a class="btn" href="${productoUrl}">▶ Acceder a ${nombre}</a>
+    <br>
+    <a class="url-link" href="${productoUrl}">${productoUrl}</a>
+    <p class="btn-note">Copia y pega este link en tu navegador si el botón no abre · Funciona en celular, tablet y computadora · Sin contraseña</p>
   </div>
-  <div class="section-title">📋 Cómo acceder</div>
+  <div class="section-title">📋 Cómo acceder a tu producto en 3 pasos</div>
   <div class="steps">
-    <div class="step"><div class="step-num">1</div><div class="step-content"><h4>Haz clic en el botón de arriba</h4><p>Funciona desde cualquier dispositivo — celular, tablet o computadora. Sin instalaciones.</p></div></div>
-    <div class="step"><div class="step-num">2</div><div class="step-content"><h4>Navega por los módulos del kit</h4><p>Usa el menú lateral para moverte entre secciones. Cada módulo tiene pasos accionables.</p></div></div>
-    <div class="step"><div class="step-num">3</div><div class="step-content"><h4>Guarda el link en favoritos</h4><p>Agrega la página a favoritos para acceder en cualquier momento. Tu acceso no expira.</p></div></div>
+    <div class="step"><div class="step-num">1</div><div class="step-content"><h4>Haz clic en el botón dorado de arriba</h4><p>O copia y pega el link directamente en tu navegador. Funciona en cualquier dispositivo — no necesitas instalar nada ni crear cuenta.</p></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-content"><h4>Navega por los módulos del menú lateral</h4><p>Haz clic en cada sección del menú para ver el contenido. Cada módulo tiene pasos concretos que puedes ejecutar hoy mismo.</p></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-content"><h4>Guarda el link en favoritos de tu navegador</h4><p>Presiona Ctrl+D (o el ícono ⭐ en tu navegador) para guardarlo. Tu acceso es de por vida — no expira nunca.</p></div></div>
   </div>
   <div class="section-title">📚 Lo que incluye tu kit</div>
   <div class="modules">${modulosHtml}</div>
@@ -992,11 +995,16 @@ async function generarArchivoAccesoHotmart(exp) {
     </div>
   </div>
   <div class="support">
-    <h4>¿Necesitas ayuda?</h4>
-    <p>Escríbenos a <a href="mailto:${email_soporte}">${email_soporte}</a><br>Respondemos en menos de 24 horas, de lunes a viernes.</p>
+    <h4>¿Tienes alguna pregunta o problema para acceder?</h4>
+    <p>Escríbenos y te respondemos en menos de 24 horas, de lunes a viernes.<br>
+    📧 <a href="mailto:${email_soporte}">${email_soporte}</a><br><br>
+    <strong>Incluye en tu mensaje:</strong> tu nombre, email de compra y describe tu problema.<br>
+    Te ayudamos con gusto.</p>
   </div>
   <div class="footer">
-    <p>© ${new Date().getFullYear()} ${nombre} · Todos los derechos reservados<br>Compra procesada de forma segura por <strong>Hotmart</strong></p>
+    <p>© ${new Date().getFullYear()} ${nombre} · Todos los derechos reservados<br>
+    Tu compra está protegida por la <strong>Garantía de 7 días</strong> de Hotmart.<br>
+    Compra procesada de forma segura por <strong>Hotmart</strong></p>
   </div>
 </div>
 </body>
