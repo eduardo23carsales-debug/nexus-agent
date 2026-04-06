@@ -21,6 +21,10 @@ import { investigarNicho } from './agents/digital/researcher.js';
 import { cargarCostoHoy, resetCostoHoy } from './core/claude.js';
 import { generarProducto } from './agents/digital/generator.js';
 import { publicarProducto } from './agents/digital/publisher.js';
+import { writeFileSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+const __dirname = dirname(fileURLToPath(import.meta.url));
 import { calificarLeadManual } from './agents/leadgen/lead-qualifier.js';
 import { entregarLeadsCalificados } from './agents/leadgen/lead-delivery.js';
 import { lanzarCampanaParaProducto, lanzarCampanaLeadCamp } from './agents/advanced/ads-manager.js';
@@ -214,12 +218,12 @@ async function leerComandosTelegram() {
         }
 
       } else if (texto === 'HOTMART') {
-        // Muestra los datos del último producto para crear en Hotmart manualmente
+        // Guía completa paso a paso para publicar en Hotmart manualmente
         try {
           const { supabase } = await import('./core/database.js');
           const { data: exps } = await supabase
             .from('experiments')
-            .select('id, nombre, descripcion, problema_que_resuelve, precio, url, producto_url, hotmart_url')
+            .select('*')
             .order('fecha_inicio', { ascending: false })
             .limit(1);
 
@@ -232,23 +236,103 @@ async function leerComandosTelegram() {
                 `🔥 <b>Hotmart ya configurado</b>\n\n` +
                 `📦 ${exp.nombre}\n` +
                 `🔗 ${exp.hotmart_url}\n\n` +
-                `Para cambiar el link usa:\n<code>SETHOTMART https://pay.hotmart.com/XXXX</code>`
+                `Para cambiar el link usa:\n<code>SETHOTMART https://pay.hotmart.com/XXXX [keyword]</code>`
               );
             } else {
-              const desc = (exp.descripcion || '') + (exp.problema_que_resuelve ? '\n\n' + exp.problema_que_resuelve : '');
+              const nombreCorto = exp.nombre.slice(0, 22).replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s+/g, '').toLowerCase();
+              const desc = `${exp.descripcion || ''}\n\n${exp.problema_que_resuelve || ''}`.trim();
+              const nichoKeywords = (exp.nicho || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').split(' ').filter(w => w.length > 3).slice(0, 5).join(', ');
+              const tagsHotmart = `primera casa, ${nichoKeywords}, latinos usa, programas gobierno, down payment`.slice(0, 255);
+              const publicoObj = exp.cliente_ideal || `Latinos en USA que quieren ${exp.nicho} pero no saben por dónde empezar`;
+              const ventajas = [
+                `✅ Acceso inmediato después de la compra`,
+                `✅ Guía paso a paso en español, sin tecnicismos`,
+                `✅ ${exp.nombre} — actualizado ${new Date().getFullYear()}`,
+                `✅ Herramientas y plantillas listas para usar`,
+                `✅ Ejemplos reales con resultados concretos`,
+                `✅ Garantía de 7 días sin preguntas`
+              ].join('\n');
+              const descAfiliados = `Buscamos afiliados con audiencia latina en USA — grupos de Facebook, TikTok, YouTube o email.\n\n✅ Dolor muy real: ${(exp.problema_que_resuelve || exp.descripcion || '').slice(0, 120)}\n✅ Precio accesible: $${exp.precio} — fácil de vender\n✅ 40% comisión por venta\n✅ Garantía 7 días — reduce chargebacks\n\nIdeal para creators de contenido financiero y comunidades latinas.`;
+              const promptImagen = `Diseña una imagen de portada para un ebook digital. Título principal: "${exp.nombre}". Estilo: profesional, moderno, oscuro con acento dorado. Fondo degradado azul marino oscuro. Texto en blanco y dorado. Incluye un ícono o ilustración minimalista relacionada con el tema. Formato 1000x1000px. Sin marcos ni bordes decorativos.`;
+
+              // Mensaje 1 — Datos básicos + Pasos 1-3
               await enviar(
-                `🔥 <b>CREAR EN HOTMART</b> (manual — 2 min)\n━━━━━━━━━━━━━\n` +
-                `📦 <b>Nombre:</b> ${exp.nombre}\n` +
-                `💰 <b>Precio:</b> $${exp.precio} USD\n` +
-                `📝 <b>Descripción:</b>\n${desc.slice(0, 500)}\n\n` +
-                `🌐 <b>Página de ventas:</b>\n${exp.url}\n\n` +
-                `📦 <b>URL entrega del producto:</b>\n${exp.producto_url || exp.url}\n\n` +
-                `Cuando lo crees escribe:\n<code>SETHOTMART https://pay.hotmart.com/XXXX</code>`
+                `🔥 <b>GUÍA HOTMART — PASO A PASO</b>\n━━━━━━━━━━━━━\n\n` +
+                `<b>📋 PASO 1 — Crear producto</b>\n` +
+                `Hotmart → Productos → + Crear → eBook\n\n` +
+                `<b>Nombre:</b>\n<code>${exp.nombre}</code>\n\n` +
+                `<b>Idioma:</b> Español\n` +
+                `<b>Tipo:</b> eBook\n\n` +
+                `━━━━━━━━━━━━━\n` +
+                `<b>📋 PASO 2 — Precio y garantía</b>\n` +
+                `Moneda: USD\n` +
+                `<b>Precio:</b> <code>${exp.precio}</code>\n` +
+                `Garantía: 7 días\n` +
+                `Pago: Único\n\n` +
+                `━━━━━━━━━━━━━\n` +
+                `<b>📋 PASO 3 — Página de Venta</b>\n` +
+                `<code>${exp.url}</code>`
+              );
+
+              await new Promise(r => setTimeout(r, 1000));
+
+              // Mensaje 2 — Pasos 4-5
+              await enviar(
+                `<b>📋 PASO 4 — Páginas de Agradecimiento</b>\n` +
+                `URL para Compras Aprobadas:\n<code>${exp.producto_url || exp.url}</code>\n` +
+                `⚠️ Espera que Vercel cargue antes de pegar el link\n\n` +
+                `━━━━━━━━━━━━━\n` +
+                `<b>📋 PASO 5 — Configuración página de pago</b>\n` +
+                `Email soporte: <code>eduardo23carsales@gmail.com</code>\n` +
+                `Nombre factura: <code>${nombreCorto}</code>\n` +
+                `✅ Activar: PayPal, Apple Pay, Google Pay\n` +
+                `✅ Activar: Solicitar teléfono en poscompra\n` +
+                `→ Guardar\n\n` +
+                `━━━━━━━━━━━━━\n` +
+                `<b>📋 PASO 6 — Info básica / Marketplace</b>\n` +
+                `Categoría: Finanzas Personales\n` +
+                `Número de páginas: 45\n` +
+                `Formato: PDF\n\n` +
+                `<b>Público objetivo:</b>\n<code>${publicoObj.slice(0, 200)}</code>\n\n` +
+                `<b>Palabras clave:</b>\n<code>${tagsHotmart}</code>\n\n` +
+                `<b>Ventajas:</b>\n<code>${ventajas}</code>`
+              );
+
+              await new Promise(r => setTimeout(r, 1000));
+
+              // Mensaje 3 — Pasos 7-9
+              await enviar(
+                `<b>📋 PASO 7 — Contenido del Producto</b>\n` +
+                `1. Abre en Edge: <code>C:\\dev\\agentes de hacer dinero\\assets\\hotmart-acceso-${exp.id}.html</code>\n` +
+                `2. Ctrl+P → Impresora: Microsoft Print to PDF → Imprimir\n` +
+                `3. Sube ese PDF en Hotmart → Contenido del Producto\n\n` +
+                `━━━━━━━━━━━━━\n` +
+                `<b>📋 PASO 8 — Programa de Afiliados</b>\n` +
+                `Regla: ✅ Todos con 1 clic\n` +
+                `Comisión: <code>40</code>%\n` +
+                `Norma: Por último clic\n` +
+                `Email afiliados: <code>eduardo23carsales@gmail.com</code>\n` +
+                `✅ Activar Mercado de Afiliación\n\n` +
+                `<b>Tags afiliados:</b>\n<code>${tagsHotmart}</code>\n\n` +
+                `<b>Descripción para afiliados:</b>\n<code>${descAfiliados.slice(0, 400)}</code>\n\n` +
+                `━━━━━━━━━━━━━\n` +
+                `<b>📋 PASO 9 — Finalizar</b>\n` +
+                `→ Clic en "Finalizar Registro"\n` +
+                `→ Copiar: pay.hotmart.com/XXXX\n` +
+                `→ Mandar aquí: <code>SETHOTMART https://pay.hotmart.com/XXXX ${(exp.nombre.split(' ')[2] || exp.nombre.split(' ')[0]).toLowerCase()}</code>`
+              );
+
+              await new Promise(r => setTimeout(r, 1000));
+
+              // Mensaje 4 — Imagen DALL-E
+              await enviar(
+                `<b>🖼️ PASO IMAGEN — Prompt para DALL-E / ChatGPT</b>\n\n` +
+                `<code>${promptImagen}</code>`
               );
             }
           }
         } catch (e) {
-          await enviar(`❌ Error: ${e.message.slice(0, 300)}`);
+          await enviar(`❌ Error: ${e.message.replace(/</g, '&lt;').replace(/>/g, '&gt;').slice(0, 300)}`);
         }
 
       } else if (texto?.startsWith('SETHOTMART')) {
@@ -790,15 +874,17 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
     `\n\n⚡ Lanzando campaña Meta Ads...`
   );
 
+  // Generar archivo HTML de acceso para Hotmart (Eduardo lo convierte a PDF en Edge)
+  generarArchivoAccesoHotmart(experimento);
+
   // Instrucciones para crear el producto en Hotmart manualmente
   await enviar(
-    `🔥 <b>CREAR EN HOTMART</b> (manual — 2 min)\n━━━━━━━━━━━━━\n` +
-    `📦 <b>Nombre:</b> ${nicho.nombre_producto}\n` +
-    `💰 <b>Precio:</b> $${nicho.precio} USD\n` +
-    `📝 <b>Descripción:</b>\n${nicho.subtitulo}\n\n${nicho.problema_que_resuelve}\n\n` +
-    `🌐 <b>Página de ventas:</b>\n${url}\n\n` +
-    `📦 <b>URL entrega del producto:</b>\n${productoUrl}\n\n` +
-    `Cuando lo crees en Hotmart escribe:\n<code>SETHOTMART https://pay.hotmart.com/XXXX</code>`
+    `🔥 <b>HOTMART — listo para publicar</b>\n━━━━━━━━━━━━━\n` +
+    `📦 <b>${nicho.nombre_producto}</b>\n` +
+    `💰 $${nicho.precio} USD\n\n` +
+    `📄 PDF de acceso generado:\n<code>assets/hotmart-acceso-${experimento.id}.html</code>\n` +
+    `→ Ábrelo en Edge → Ctrl+P → Microsoft Print to PDF\n\n` +
+    `Escribe <b>HOTMART</b> para ver la guía completa paso a paso con todo listo para copiar.`
   );
 
   // Lanzar campaña Meta Ads automáticamente
@@ -808,6 +894,125 @@ src="https://www.facebook.com/tr?id=${process.env.META_PIXEL_ID || '241355006573
   });
 
   return { url, productoUrl, experimento, stripeData };
+}
+
+// ════════════════════════════════════
+// GENERAR ARCHIVO HTML DE ACCESO PARA HOTMART (PDF)
+// ════════════════════════════════════
+
+function generarArchivoAccesoHotmart(exp) {
+  try {
+    const nombre = exp.nombre || 'Producto Digital';
+    const precio = exp.precio || 47;
+    const productoUrl = exp.producto_url || exp.url || '';
+    const email_soporte = 'eduardo23carsales@gmail.com';
+
+    const modulos = [
+      { icon: '📚', titulo: 'Guía Principal', desc: 'Contenido completo paso a paso en español.' },
+      { icon: '📄', titulo: 'Plantillas y Documentos', desc: 'Listos para usar, solo rellena tus datos.' },
+      { icon: '🔧', titulo: 'Herramientas del Kit', desc: 'Las mejores herramientas recomendadas para tu caso.' },
+      { icon: '📊', titulo: 'Calculadoras y Recursos', desc: 'Toma decisiones con datos reales.' },
+      { icon: '🗺️', titulo: 'Plan de Acción', desc: 'Semana a semana qué hacer para ver resultados.' },
+      { icon: '🎯', titulo: 'Casos de Éxito', desc: 'Ejemplos reales de personas como tú.' }
+    ];
+
+    const modulosHtml = modulos.map(m => `
+      <div class="module">
+        <div class="icon">${m.icon}</div>
+        <h4>${m.titulo}</h4>
+        <p>${m.desc}</p>
+      </div>`).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>${nombre} — Acceso al Producto</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a2e; }
+  .page { max-width: 760px; margin: 0 auto; padding: 60px 48px; }
+  .header { text-align: center; padding: 48px 40px; background: linear-gradient(135deg, #0F1729 0%, #1a2a4a 100%); border-radius: 16px; margin-bottom: 40px; color: #fff; }
+  .badge { display: inline-block; background: rgba(245,166,35,0.15); color: #F5A623; border: 1px solid rgba(245,166,35,0.4); padding: 5px 18px; border-radius: 20px; font-size: 0.72em; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
+  .header h1 { font-family: 'Poppins', sans-serif; font-size: 1.8em; font-weight: 800; line-height: 1.2; margin-bottom: 14px; color: #fff; }
+  .header p { color: #9AA3B8; font-size: 0.95em; line-height: 1.7; max-width: 520px; margin: 0 auto; }
+  .access-box { background: linear-gradient(135deg, #0F1729 0%, #1a2a4a 100%); border-radius: 14px; padding: 32px 40px; margin: 32px 0; text-align: center; border: 1px solid rgba(245,166,35,0.3); }
+  .access-box .label { color: #9AA3B8; font-size: 0.82em; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; }
+  .access-box .url { font-size: 0.85em; color: #F5A623; word-break: break-all; margin-bottom: 20px; font-weight: 600; line-height: 1.6; }
+  .access-box .btn { display: inline-block; background: #F5A623; color: #000; font-weight: 800; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-size: 1em; }
+  .section-title { font-family: 'Poppins', sans-serif; font-size: 1.1em; font-weight: 700; color: #1a1a2e; margin: 36px 0 18px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f5; }
+  .steps { display: flex; flex-direction: column; gap: 12px; }
+  .step { display: flex; gap: 16px; align-items: flex-start; background: #f8f9ff; border-radius: 12px; padding: 16px 20px; border-left: 4px solid #F5A623; }
+  .step-num { background: #F5A623; color: #000; font-weight: 800; font-size: 0.82em; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .step-content h4 { font-size: 0.92em; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+  .step-content p { font-size: 0.85em; color: #555; line-height: 1.6; }
+  .modules { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+  .module { background: #f8f9ff; border-radius: 12px; padding: 16px 18px; border-top: 3px solid #4f8ef7; }
+  .module .icon { font-size: 1.3em; margin-bottom: 8px; }
+  .module h4 { font-size: 0.85em; font-weight: 700; color: #1a1a2e; margin-bottom: 5px; }
+  .module p { font-size: 0.78em; color: #666; line-height: 1.5; }
+  .guarantee { display: flex; gap: 18px; align-items: center; background: #f0fff8; border: 1px solid #b2f0d4; border-radius: 14px; padding: 22px 26px; margin: 28px 0; }
+  .guarantee .icon { font-size: 2.5em; flex-shrink: 0; }
+  .guarantee h4 { font-size: 0.95em; font-weight: 700; color: #065f46; margin-bottom: 6px; }
+  .guarantee p { font-size: 0.84em; color: #047857; line-height: 1.6; }
+  .support { background: #f8f9ff; border-radius: 14px; padding: 24px 28px; text-align: center; margin-top: 28px; }
+  .support h4 { font-size: 0.95em; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
+  .support p { font-size: 0.85em; color: #666; line-height: 1.7; }
+  .support a { color: #F5A623; font-weight: 600; text-decoration: none; }
+  .footer { text-align: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid #e8e8f0; }
+  .footer p { font-size: 0.75em; color: #aaa; line-height: 1.8; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .page { padding: 40px 32px; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="badge">📦 Producto Premium · Acceso Inmediato</div>
+    <h1>${nombre}</h1>
+    <p>Gracias por tu compra. Tienes acceso completo e inmediato a todo el contenido.</p>
+  </div>
+  <div class="access-box">
+    <div class="label">🔑 Tu acceso está aquí</div>
+    <div class="url">${productoUrl}</div>
+    <a class="btn" href="${productoUrl}">▶ Acceder ahora</a>
+  </div>
+  <div class="section-title">📋 Cómo acceder</div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-content"><h4>Haz clic en el botón de arriba</h4><p>Funciona desde cualquier dispositivo — celular, tablet o computadora. Sin instalaciones.</p></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-content"><h4>Navega por los módulos del kit</h4><p>Usa el menú lateral para moverte entre secciones. Cada módulo tiene pasos accionables.</p></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-content"><h4>Guarda el link en favoritos</h4><p>Agrega la página a favoritos para acceder en cualquier momento. Tu acceso no expira.</p></div></div>
+  </div>
+  <div class="section-title">📚 Lo que incluye tu kit</div>
+  <div class="modules">${modulosHtml}</div>
+  <div class="guarantee">
+    <div class="icon">🛡️</div>
+    <div>
+      <h4>Garantía de 7 días — Sin preguntas</h4>
+      <p>Si por cualquier razón no es lo que esperabas, contáctanos dentro de los 7 días y te devolvemos el 100% de tu dinero. Sin formularios ni complicaciones.</p>
+    </div>
+  </div>
+  <div class="support">
+    <h4>¿Necesitas ayuda?</h4>
+    <p>Escríbenos a <a href="mailto:${email_soporte}">${email_soporte}</a><br>Respondemos en menos de 24 horas, de lunes a viernes.</p>
+  </div>
+  <div class="footer">
+    <p>© ${new Date().getFullYear()} ${nombre} · Todos los derechos reservados<br>Compra procesada de forma segura por <strong>Hotmart</strong></p>
+  </div>
+</div>
+</body>
+</html>`;
+
+    const assetsDir = join(__dirname, 'assets');
+    mkdirSync(assetsDir, { recursive: true });
+    const filePath = join(assetsDir, `hotmart-acceso-${exp.id}.html`);
+    writeFileSync(filePath, html, 'utf8');
+    console.log(`[Hotmart] Archivo de acceso generado: ${filePath}`);
+    return filePath;
+  } catch (err) {
+    console.error('[Hotmart] Error generando archivo de acceso:', err.message);
+    return null;
+  }
 }
 
 // ════════════════════════════════════
