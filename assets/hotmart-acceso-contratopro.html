@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>ContratoPro — Acceso al Producto</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a2e; }
+  .page { max-width: 760px; margin: 0 auto; padding: 60px 48px; }
+
+  .header { text-align: center; padding: 48px 40px; background: linear-gradient(135deg, #0F1729 0%, #1a2a4a 100%); border-radius: 16px; margin-bottom: 40px; color: #fff; }
+  .badge { display: inline-block; background: rgba(245,166,35,0.15); color: #F5A623; border: 1px solid rgba(245,166,35,0.4); padding: 5px 18px; border-radius: 20px; font-size: 0.72em; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
+  .header h1 { font-family: 'Poppins', sans-serif; font-size: 1.9em; font-weight: 800; line-height: 1.25; margin-bottom: 14px; color: #fff; }
+  .header p { color: #9AA3B8; font-size: 0.95em; line-height: 1.7; max-width: 520px; margin: 0 auto; }
+
+  .access-box { background: linear-gradient(135deg, #0F1729 0%, #1a2a4a 100%); border-radius: 14px; padding: 36px 40px; margin: 32px 0; text-align: center; border: 1px solid rgba(245,166,35,0.3); }
+  .access-box .label { color: #9AA3B8; font-size: 0.82em; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; }
+  .access-box .url-link { display: block; font-size: 0.82em; color: #F5A623; word-break: break-all; margin-bottom: 20px; font-weight: 600; line-height: 1.6; text-decoration: underline; }
+  .access-box .btn { display: inline-block; background: #F5A623; color: #000; font-weight: 800; padding: 16px 44px; border-radius: 10px; text-decoration: none; font-size: 1.05em; margin-bottom: 16px; }
+  .access-box .btn-note { color: #9AA3B8; font-size: 0.78em; margin-top: 12px; }
+
+  .section-title { font-family: 'Poppins', sans-serif; font-size: 1.1em; font-weight: 700; color: #1a1a2e; margin: 36px 0 18px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f5; }
+
+  .steps { display: flex; flex-direction: column; gap: 12px; }
+  .step { display: flex; gap: 16px; align-items: flex-start; background: #f8f9ff; border-radius: 12px; padding: 16px 20px; border-left: 4px solid #F5A623; }
+  .step-num { background: #F5A623; color: #000; font-weight: 800; font-size: 0.82em; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .step-content h4 { font-size: 0.92em; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+  .step-content p { font-size: 0.85em; color: #555; line-height: 1.6; }
+
+  .modules { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+  .module { background: #f8f9ff; border-radius: 12px; padding: 18px 20px; border-top: 3px solid #4f8ef7; }
+  .module .icon { font-size: 1.4em; margin-bottom: 8px; }
+  .module h4 { font-size: 0.88em; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+  .module p { font-size: 0.8em; color: #666; line-height: 1.6; }
+
+  .guarantee { display: flex; gap: 18px; align-items: center; background: #f0fff8; border: 1px solid #b2f0d4; border-radius: 14px; padding: 24px 28px; margin: 32px 0; }
+  .guarantee .icon { font-size: 2.6em; flex-shrink: 0; }
+  .guarantee h4 { font-size: 0.95em; font-weight: 700; color: #065f46; margin-bottom: 6px; }
+  .guarantee p { font-size: 0.85em; color: #047857; line-height: 1.6; }
+
+  .support { background: #f8f9ff; border-radius: 14px; padding: 26px 30px; text-align: center; margin-top: 28px; }
+  .support h4 { font-size: 0.95em; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
+  .support p { font-size: 0.85em; color: #666; line-height: 1.8; }
+  .support a { color: #F5A623; font-weight: 600; text-decoration: none; }
+
+  .footer { text-align: center; margin-top: 44px; padding-top: 24px; border-top: 1px solid #e8e8f0; }
+  .footer p { font-size: 0.75em; color: #aaa; line-height: 1.8; }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { padding: 40px 32px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="badge">📦 Kit Legal Premium · Acceso Inmediato</div>
+    <h1>ContratoPro<br>Kit Legal Bilingüe para Contratistas Hispanos</h1>
+    <p>Gracias por tu compra. Tienes acceso completo e inmediato a todos los contratos, plantillas y herramientas del kit.</p>
+  </div>
+
+  <div class="access-box">
+    <div class="label">🔑 Tu acceso completo está aquí — guarda este link</div>
+    <a class="btn" href="https://nexus-contratopro-kit-legal-b-eduardo23carsales-debugs-projects.vercel.app/producto/">▶ Acceder a ContratoPro</a>
+    <br>
+    <a class="url-link" href="https://nexus-contratopro-kit-legal-b-eduardo23carsales-debugs-projects.vercel.app/producto/">https://nexus-contratopro-kit-legal-b-eduardo23carsales-debugs-projects.vercel.app/producto/</a>
+    <p class="btn-note">Copia y pega este link en tu navegador si el botón no abre · Funciona en celular, tablet y computadora · Sin contraseña</p>
+  </div>
+
+  <div class="section-title">📋 Cómo acceder a tu kit</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>Haz clic en el botón de acceso</h4>
+        <p>Funciona desde cualquier dispositivo — celular, tablet o computadora. Sin instalaciones ni contraseñas.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>Navega por los módulos del kit</h4>
+        <p>Usa el menú lateral para moverte entre secciones. Cada módulo tiene contratos y pasos listos para usar hoy.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>Descarga y personaliza tus contratos</h4>
+        <p>Edita las plantillas con tu nombre y los datos de tu negocio. Listo en menos de 5 minutos.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>Guarda el link en favoritos</h4>
+        <p>Agrega la página a favoritos para acceder cuando lo necesites. Tu acceso no expira nunca.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">📚 Lo que incluye ContratoPro</div>
+  <div class="modules">
+    <div class="module">
+      <div class="icon">📄</div>
+      <h4>Contratos Bilingües Listos</h4>
+      <p>Contratos de servicio en español e inglés, redactados para ser válidos legalmente en USA. Solo rellena tu nombre y firma.</p>
+    </div>
+    <div class="module">
+      <div class="icon">💰</div>
+      <h4>Facturas e Invoices Profesionales</h4>
+      <p>Plantillas de invoice con todos los campos requeridos para cobrar sin problemas y llevar tu contabilidad ordenada.</p>
+    </div>
+    <div class="module">
+      <div class="icon">⚖️</div>
+      <h4>Guía de Small Claims Court</h4>
+      <p>Paso a paso para demandar a un cliente que no pagó — formularios, tiempos y cómo presentarte al tribunal.</p>
+    </div>
+    <div class="module">
+      <div class="icon">🤝</div>
+      <h4>Acuerdos de Subcontratistas</h4>
+      <p>Contratos para cuando contratas a otros trabajadores — protégete de responsabilidades legales y laborales.</p>
+    </div>
+    <div class="module">
+      <div class="icon">📋</div>
+      <h4>Propuestas de Trabajo Formales</h4>
+      <p>Plantillas para presentar cotizaciones profesionales que cierran más trabajos y proyectan confianza.</p>
+    </div>
+    <div class="module">
+      <div class="icon">🛡️</div>
+      <h4>Guía de Protección Legal</h4>
+      <p>Cómo registrar tu negocio como LLC, qué seguros necesitas y cómo separar tus finanzas personales del negocio.</p>
+    </div>
+  </div>
+
+  <div class="guarantee">
+    <div class="icon">🛡️</div>
+    <div>
+      <h4>Garantía de 7 días — Sin preguntas</h4>
+      <p>Si por cualquier razón ContratoPro no es lo que esperabas, contáctanos dentro de los 7 días siguientes a tu compra y te devolvemos el 100% de tu dinero. Sin formularios, sin esperas, sin complicaciones.</p>
+    </div>
+  </div>
+
+  <div class="support">
+    <h4>¿Tienes alguna pregunta o problema para acceder?</h4>
+    <p>Escríbenos y te respondemos en menos de 24 horas, de lunes a viernes.<br>
+    📧 <a href="mailto:eduardo23carsales@gmail.com">eduardo23carsales@gmail.com</a><br><br>
+    <strong>Incluye en tu mensaje:</strong> tu nombre, email de compra y describe tu problema.<br>
+    Te ayudamos con gusto.</p>
+  </div>
+
+  <div class="footer">
+    <p>© 2026 ContratoPro · Kit Legal Bilingüe para Contratistas Hispanos · Todos los derechos reservados<br>
+    Este kit es para uso personal del comprador. Prohibida su reproducción o distribución sin autorización.<br>
+    Compra procesada de forma segura por <strong>Hotmart</strong></p>
+  </div>
+
+</div>
+</body>
+</html>

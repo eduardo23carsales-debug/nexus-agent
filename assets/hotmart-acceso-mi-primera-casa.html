@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Mi Primera Casa USA — Acceso al Producto</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a2e; }
+
+  .page { max-width: 760px; margin: 0 auto; padding: 60px 48px; }
+
+  /* Header */
+  .header { text-align: center; padding: 48px 40px; background: linear-gradient(135deg, #0F1729 0%, #1a2a4a 100%); border-radius: 16px; margin-bottom: 40px; color: #fff; }
+  .badge { display: inline-block; background: rgba(245,166,35,0.15); color: #F5A623; border: 1px solid rgba(245,166,35,0.4); padding: 5px 18px; border-radius: 20px; font-size: 0.72em; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
+  .header h1 { font-family: 'Poppins', sans-serif; font-size: 2em; font-weight: 800; line-height: 1.2; margin-bottom: 14px; color: #fff; }
+  .header p { color: #9AA3B8; font-size: 1em; line-height: 1.7; max-width: 520px; margin: 0 auto; }
+
+  /* Access box */
+  .access-box { background: linear-gradient(135deg, #0F1729 0%, #1a2a4a 100%); border-radius: 14px; padding: 36px 40px; margin: 32px 0; text-align: center; border: 1px solid rgba(245,166,35,0.3); }
+  .access-box .label { color: #9AA3B8; font-size: 0.85em; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; }
+  .access-box .url { font-size: 0.92em; color: #F5A623; word-break: break-all; margin-bottom: 20px; font-weight: 600; line-height: 1.6; }
+  .access-box .btn { display: inline-block; background: #F5A623; color: #000; font-weight: 800; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-size: 1em; letter-spacing: 0.3px; }
+
+  /* Steps */
+  .section-title { font-family: 'Poppins', sans-serif; font-size: 1.15em; font-weight: 700; color: #1a1a2e; margin: 36px 0 20px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f5; }
+  .steps { display: flex; flex-direction: column; gap: 14px; }
+  .step { display: flex; gap: 16px; align-items: flex-start; background: #f8f9ff; border-radius: 12px; padding: 18px 20px; border-left: 4px solid #F5A623; }
+  .step-num { background: #F5A623; color: #000; font-weight: 800; font-size: 0.85em; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-content h4 { font-size: 0.95em; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+  .step-content p { font-size: 0.88em; color: #555; line-height: 1.6; }
+
+  /* Modules */
+  .modules { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px; }
+  .module { background: #f8f9ff; border-radius: 12px; padding: 18px 20px; border-top: 3px solid #4f8ef7; }
+  .module .icon { font-size: 1.4em; margin-bottom: 8px; }
+  .module h4 { font-size: 0.88em; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+  .module p { font-size: 0.8em; color: #666; line-height: 1.6; }
+
+  /* Guarantee */
+  .guarantee { display: flex; gap: 20px; align-items: center; background: #f0fff8; border: 1px solid #b2f0d4; border-radius: 14px; padding: 24px 28px; margin: 32px 0; }
+  .guarantee .icon { font-size: 2.8em; flex-shrink: 0; }
+  .guarantee h4 { font-size: 1em; font-weight: 700; color: #065f46; margin-bottom: 6px; }
+  .guarantee p { font-size: 0.87em; color: #047857; line-height: 1.6; }
+
+  /* Support */
+  .support { background: #f8f9ff; border-radius: 14px; padding: 28px 32px; text-align: center; margin-top: 32px; }
+  .support h4 { font-size: 1em; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
+  .support p { font-size: 0.88em; color: #666; line-height: 1.7; }
+  .support a { color: #F5A623; font-weight: 600; text-decoration: none; }
+
+  /* Footer */
+  .footer { text-align: center; margin-top: 48px; padding-top: 28px; border-top: 1px solid #e8e8f0; }
+  .footer p { font-size: 0.78em; color: #aaa; line-height: 1.8; }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { padding: 40px 32px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="badge">📦 Producto Premium · Acceso Inmediato</div>
+    <h1>Mi Primera Casa USA<br>Kit de Compra con Ayuda del Gobierno</h1>
+    <p>Gracias por tu compra. Tienes acceso completo e inmediato a todo el contenido de tu kit.</p>
+  </div>
+
+  <!-- ACCESO -->
+  <div class="access-box">
+    <div class="label">🔑 Tu acceso está aquí</div>
+    <div class="url">https://nexus-mi-primera-casa-usa-kit-eduardo23carsales-debugs-projects.vercel.app/producto/</div>
+    <a class="btn" href="https://nexus-mi-primera-casa-usa-kit-eduardo23carsales-debugs-projects.vercel.app/producto/">
+      ▶ Acceder a Mi Primera Casa USA
+    </a>
+  </div>
+
+  <!-- PASOS -->
+  <div class="section-title">📋 Cómo acceder a tu producto</div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>Haz clic en el botón de acceso</h4>
+        <p>Usa el link de arriba desde cualquier dispositivo — celular, tablet o computadora. No necesitas instalar nada.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>Navega por los módulos del kit</h4>
+        <p>Usa el menú lateral para moverte entre secciones. Cada módulo tiene pasos accionables que puedes ejecutar hoy.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>Guarda el link en tus favoritos</h4>
+        <p>Agrega la página a favoritos para acceder en cualquier momento. Tu acceso no expira.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MÓDULOS -->
+  <div class="section-title">📚 Lo que incluye tu kit</div>
+  <div class="modules">
+    <div class="module">
+      <div class="icon">🏠</div>
+      <h4>Módulo 1 — Programas de Ayuda por Estado</h4>
+      <p>Lista completa de programas que dan $10,000–$50,000 para el enganche sin devolverlos. Actualizado 2026.</p>
+    </div>
+    <div class="module">
+      <div class="icon">📊</div>
+      <h4>Módulo 2 — Calculadora de Elegibilidad</h4>
+      <p>Descubre exactamente qué programas aplican para ti según tu estado, ingresos y tamaño de familia.</p>
+    </div>
+    <div class="module">
+      <div class="icon">📄</div>
+      <h4>Módulo 3 — Documentos Listos para Usar</h4>
+      <p>Cartas de presentación, listas de documentos y plantillas para aplicar a cada programa en español.</p>
+    </div>
+    <div class="module">
+      <div class="icon">💳</div>
+      <h4>Módulo 4 — Crédito y Calificación</h4>
+      <p>Pasos exactos para subir tu score y calificar para hipoteca aunque nunca hayas tenido crédito en USA.</p>
+    </div>
+    <div class="module">
+      <div class="icon">🏦</div>
+      <h4>Módulo 5 — Cómo Hablar con el Banco</h4>
+      <p>Frases exactas, qué preguntar, qué evitar decir y cómo conseguir la mejor tasa de interés.</p>
+    </div>
+    <div class="module">
+      <div class="icon">🗺️</div>
+      <h4>Módulo 6 — Plan de Acción 90 Días</h4>
+      <p>Semana a semana qué hacer para cerrar en tu primera casa en 90 días o menos.</p>
+    </div>
+  </div>
+
+  <!-- GARANTÍA -->
+  <div class="guarantee">
+    <div class="icon">🛡️</div>
+    <div>
+      <h4>Garantía de 7 días — Sin preguntas</h4>
+      <p>Si por cualquier razón el kit no es lo que esperabas, contáctanos dentro de los 7 días siguientes a tu compra y te devolvemos el 100% de tu dinero. Sin formularios, sin esperas, sin complicaciones.</p>
+    </div>
+  </div>
+
+  <!-- SOPORTE -->
+  <div class="support">
+    <h4>¿Necesitas ayuda?</h4>
+    <p>Estamos para apoyarte en cada paso del proceso.<br>
+    Escríbenos a <a href="mailto:eduardo23carsales@gmail.com">eduardo23carsales@gmail.com</a><br>
+    Respondemos en menos de 24 horas, de lunes a viernes.</p>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <p>© 2026 Mi Primera Casa USA · Todos los derechos reservados<br>
+    Este producto es para uso personal. Prohibida su reproducción o distribución sin autorización.<br>
+    Compra procesada de forma segura por <strong>Hotmart</strong></p>
+  </div>
+
+</div>
+</body>
+</html>

@@ -22,7 +22,14 @@
       "Bash(railway variables:*)",
       "Bash(node -e \"const d=require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\); console.log\\(JSON.stringify\\(JSON.parse\\(d\\), null, 2\\)\\)\")",
       "Bash(curl:*)",
-      "Bash(railway run:*)"
+      "Bash(railway run:*)",
+      "Bash(npm install:*)",
+      "Bash(node server.js)",
+      "Bash(pkill -f \"node server.js\")",
+      "Bash(python3 -m json.tool)",
+      "Bash(netstat -ano)",
+      "Bash(wmic process:*)",
+      "Bash(tasklist:*)"
     ]
   }
 }
