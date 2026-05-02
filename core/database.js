@@ -11,6 +11,12 @@ dotenv.config();
 // Ambos usan service_role key — sistema backend puro, sin usuarios públicos.
 // La service_role bypasses RLS, así que las políticas de seguridad no bloquean nada internamente.
 // La anon key ya no se usa — RLS bloquea el acceso anónimo externo.
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+  console.error('\n❌ SUPABASE_URL y SUPABASE_SERVICE_KEY son requeridos.');
+  console.error('   Agrégalos en Railway → Variables del servicio.\n');
+  process.exit(1);
+}
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
