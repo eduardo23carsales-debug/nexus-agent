@@ -8,6 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { db, supabase } from './database.js';
 import { email } from './email.js';
+import { cohete } from './cohete.js';
 import axios from 'axios';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -579,9 +580,19 @@ app.post('/webhook/stripe', express.raw({ type: 'application/json' }), async (re
 
   if (event.type === 'checkout.session.completed') {
     console.log('[Webhook] Pago confirmado — procesando entrega inmediata...');
-    email.procesarPagosNuevos().catch(err =>
-      console.error('[Webhook] Error procesando entrega:', err.message)
-    );
+    const session = event.data.object;
+    // ── COHETE BOT: si es la compra del Cohete, emite + manda la licencia ──
+    if (cohete.esCompraCohete(session)) {
+      console.log('[Webhook] Compra de COHETE detectada — emitiendo licencia...');
+      cohete.entregarLicencia(session).catch(err =>
+        console.error('[Webhook] Error entregando licencia Cohete:', err.message)
+      );
+    } else {
+      // Resto de productos digitales → entrega genérica de siempre
+      email.procesarPagosNuevos().catch(err =>
+        console.error('[Webhook] Error procesando entrega:', err.message)
+      );
+    }
 
     // Disparar evento Purchase a Meta Conversions API (server-side — más confiable que pixel)
     const pixelId = process.env.META_PIXEL_ID;
